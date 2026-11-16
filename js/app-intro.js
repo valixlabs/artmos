@@ -1,4 +1,4 @@
-// 앱 첫 화면 인트로: ART + COSMOS → ARTMOS (앱을 켤 때마다 한 번, 약 4초)
+// 앱 첫 화면 인트로: 작은 ART COSMOS → ARTMOS (앱을 켤 때마다 한 번, 약 4초). 배경은 우주로 빨려 들어가는 별 터널
 // 흐름: 성운 먼지가 가운데로 모임 → 왼쪽에 ART, 오른쪽에 별로 된 COSMOS → COS가 별가루로 흩어지고 MOS가 ART에 붙어 ARTMOS
 //      → 붙는 순간 빛 + 웅장한 소리, O가 고리를 두른 행성이 되고 작은 위성이 한 바퀴 → 카피 → 앱
 // 소리는 실시간 합성(Web Audio): 낮은 금관 같은 화음이 차오르다 → 북·종 화음이 터지고 → 큰 홀 잔향.
@@ -28,7 +28,8 @@
   .ai .stage{position:absolute;left:0;right:0;top:calc(47% - 70px);width:100%;height:140px;display:flex;align-items:center;justify-content:center}
   @font-face{font-family:'ARTMOS Michroma';src:url('assets/fonts/michroma-latin-400.woff2') format('woff2');font-display:block}
   .ai .word{position:relative;display:flex;align-items:center;font-family:'ARTMOS Michroma','Michroma',sans-serif;font-weight:400;font-size:clamp(22px,7vw,56px);letter-spacing:.18em;white-space:nowrap;-webkit-text-stroke:.055em currentColor}
-  .ai .live{transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
+  .ai .live{transform:scale(.58);transition:transform 1.3s cubic-bezier(.3,.7,.2,1)}
+  .ai .live.mid{transform:scale(1)}
   .ai .live.big{transform:scale(1.35)}
   .ai .word.ghost{position:absolute;visibility:hidden}
   .ai .ch{display:inline-block;opacity:0;transform:translateY(12px);filter:blur(8px);transition:transform .95s cubic-bezier(.65,0,.2,1),opacity .6s,filter .6s,color .6s,text-shadow .6s}
@@ -43,8 +44,10 @@
   .ai.copyon .copy{opacity:1;transform:none}
   .ai .copy b{display:block;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;font-weight:300;font-size:clamp(17px,4.8vw,22px);line-height:1.5;color:#e9e9ee;font-weight:400;letter-spacing:.02em}
   .ai .copy small{display:block;margin-top:10px;font-size:12.5px;letter-spacing:.14em;color:#9aa1bd}
-  .ai .enter{position:absolute;z-index:2;top:calc(47% + 190px);left:50%;margin-left:-80px;width:160px;padding:13px 30px;border-radius:999px;border:1px solid rgba(255,255,255,.45);color:#f2f2f2;font-size:15px;letter-spacing:.12em;background:rgba(255,255,255,.04);opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s;font-family:inherit}
+  .ai .enter{position:absolute;z-index:2;top:calc(47% + 190px);left:50%;margin-left:-80px;width:160px;padding:13px 30px;border-radius:999px;border:1px solid #fff;color:#fff;font-size:15px;letter-spacing:.12em;background:#000;opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s,background .2s;font-family:inherit;outline:none;-webkit-tap-highlight-color:transparent}
   .ai .enter.show{opacity:1;transform:none}
+  .ai .enter:active{background:rgba(255,255,255,.14)}
+  .ai .enter:focus,.ai .enter:focus-visible{outline:none;box-shadow:none}
   .ai .by{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);font-size:11px;letter-spacing:.3em;color:#5f6684;opacity:0;transition:opacity 1s}
   .ai.copyon .by{opacity:1}
   @keyframes aiDraw{to{stroke-dashoffset:0}}
@@ -73,20 +76,28 @@
   const dpr = Math.min(devicePixelRatio || 1, 2); let W = 0, H = 0;
   const size = () => { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
   size(); addEventListener('resize', size);
-  const N = 0, P = []; // 배경은 그냥 검은색 (성운 먼지 없음)
-  for (let i = 0; i < N; i++) { const a = Math.random() * Math.PI * 2, r = 0.35 + Math.random() * 0.75; P.push({ a, r, s: 0.4 + Math.random() * 1.3, hue: Math.random() < 0.7 ? 205 : 40, sp: (Math.random() - 0.5) * 0.4, tw: Math.random() * 6 }); }
+  // 배경: 우주 속으로 빨려 들어가는 별 터널 (별이 가운데에서 바깥으로 길게 흐름, 합쳐지는 순간까지 빨라지다 부드럽게 느려짐)
+  const NS = 260, S = [];
+  const star = (z) => ({ a: Math.random() * 6.283, d: 0.05 + Math.pow(Math.random(), 0.7) * 0.95, z, c: Math.random() < 0.75 ? '205,225,255' : '255,236,200' });
+  for (let i = 0; i < NS; i++) S.push(star(0.05 + Math.random() * 0.95));
   const sparks = []; // COS가 흩어질 때·합쳐질 때 생기는 별가루
-  let t0 = performance.now(), raf = 0;
+  let t0 = performance.now(), raf = 0, lt = t0;
   function frame(now) {
-    const t = now - t0; cx.clearRect(0, 0, W, H);
-    const R = Math.max(W, H) * 0.62, mx = W / 2, my = H * 0.47;
-    const pull = t < T.hit ? Math.min(1, t / T.hit) : 1, burst = t > T.hit ? Math.min(1, (t - T.hit) / 1400) : 0;
-    for (const p of P) {
-      const ang = p.a + p.sp * t / 1000 + pull * 0.6 * p.sp;
-      const rr = p.r * R * (1 - 0.55 * easeOut(pull) + 0.75 * easeOut(burst));
-      const x = mx + Math.cos(ang) * rr, y = my + Math.sin(ang) * rr * 0.62;
-      const al = (0.25 + 0.5 * Math.abs(Math.sin(p.tw + t / 600))) * Math.min(1, t / 600) * (1 - burst * 0.6);
-      cx.fillStyle = `hsla(${p.hue},80%,82%,${al})`; cx.fillRect(x, y, p.s, p.s);
+    const t = now - t0, dt = Math.min(0.05, (now - lt) / 1000); lt = now; cx.clearRect(0, 0, W, H);
+    const mx = W / 2, my = H * 0.47, M = Math.max(W, H), Rf = M * 0.1;
+    const ramp = t < T.hit ? Math.pow(t / T.hit, 2) : 1 - Math.min(1, (t - T.hit) / 1400) * 0.65;
+    const sp = 0.2 + 1.2 * ramp, fade = Math.min(1, t / 700), swirl = t * 0.00015;
+    cx.lineCap = 'round';
+    for (const s of S) {
+      s.z -= sp * dt * (0.6 + s.d * 0.6);
+      const rad = s.d * Rf / s.z;
+      if (s.z < 0.03 || rad > M * 0.8) { Object.assign(s, star(1)); continue; }
+      const pz = Math.min(1.2, s.z + sp * dt * 2.2), prad = s.d * Rf / pz, ang = s.a + swirl;
+      const ca = Math.cos(ang), sa = Math.sin(ang) * 0.82;
+      const al = 0.62 * Math.min(1, (1 - s.z) * 1.25 + 0.08) * fade * Math.min(1, rad / 110);
+      if (al <= 0.01) continue;
+      cx.strokeStyle = `rgba(${s.c},${al})`; cx.lineWidth = 0.5 + (1 - s.z) * 1.3;
+      cx.beginPath(); cx.moveTo(mx + ca * prad, my + sa * prad); cx.lineTo(mx + ca * rad, my + sa * rad); cx.stroke();
     }
     for (let i = sparks.length - 1; i >= 0; i--) {
       const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.vx *= 0.97; s.vy *= 0.97; s.life -= 1;
@@ -167,10 +178,12 @@
     at(T.scatter, () => $$('.cos .x').forEach((c, i) => { // COS가 별가루로 흩어짐
       c.classList.add('dust'); c.style.transform = `translate(${(i - 1) * 30}px,${-40 - i * 12}px) scale(.4)`; burstAt(c, 26, 3.2);
     }));
-    at(T.join, () => { // 남은 글자를 ARTMOS 자리로 (ghost 단어의 글자 위치로 이동)
-      const ghost = $$('.ghost .ch'), live = [0, 1, 2, 3, 4, 5].map((i) => $('.live .k' + i));
-      live.forEach((c, i) => { const a = c.getBoundingClientRect(), b = ghost[i].getBoundingClientRect(); c.style.transform = `translate(${b.left - a.left}px,${b.top - a.top}px)`; });
+    at(T.join, () => { // 남은 글자를 ARTMOS 자리로 (ghost 단어의 글자 위치로 이동) + 작던 글씨가 본래 크기로 자라남
+      const ghost = $$('.ghost .ch'), live = [0, 1, 2, 3, 4, 5].map((i) => $('.live .k' + i)), gw = $('.ghost'), lw = $('.live');
+      const mid = (c, w) => c.offsetLeft + c.offsetWidth / 2 - w.offsetWidth / 2; // 글자 가운데 위치(크기 변환과 무관한 레이아웃 값)
+      live.forEach((c, i) => { c.style.transform = `translate(${mid(ghost[i], gw) - mid(c, lw)}px,0)`; });
       $$('.cos .k').forEach((c) => { c.style.color = ''; c.style.textShadow = ''; });
+      lw.classList.add('mid');
     });
     at(T.hit - 40, () => {
       const live = $$('.live .k'); live.forEach((c) => c.classList.add('lit')); setTimeout(() => live.forEach((c) => c.classList.remove('lit')), 700);
