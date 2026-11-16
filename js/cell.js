@@ -234,7 +234,7 @@ langSwitcher(document.querySelector('.topbar'));
 // 모바일: 첫 탭에서 기울기 권한 · 흔들면 화면에 보이는 양자 실험을 관측
 if (IS_MOBILE) {
   document.body.classList.add('is-mobile');
-  import('./cell-mobile.js?v=6');
+  import('./cell-mobile.js?v=7');
   addEventListener('click', function once() { removeEventListener('click', once, true); sensor.enable(); keepAwake(); }, true);
   sensor.onShake(() => {
     const q = [...document.querySelectorAll('.q-stage')].find((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.7 && r.bottom > innerHeight * 0.3; });
@@ -305,6 +305,9 @@ function setupAll(color) {
 
 // ---------- 기획전: 방 1 → 2 → 3 을 하나의 흐름으로 ----------
 function renderGroup(g, blocks) {
+  // 기획전 자체 블록(cell_id = 기획전 id)이 있으면 방 나눔 없이 하나의 전시로 (A-001 최초의 방)
+  const own = blocks.filter((b) => b.cell_id === g.id);
+  if (own.length) return renderFlow(g, own);
   document.title = `${g.title} — ARTMOS`;
   const rooms = g.rooms;
   document.documentElement.style.setProperty('--accent', rooms[0]?.color || g.color);
@@ -342,6 +345,31 @@ function renderGroup(g, blocks) {
   addEventListener('scroll', update, { passive: true }); update();
   if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView(), 300);
   document.querySelectorAll('.end-rooms a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); e.stopImmediatePropagation(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' }); }, true));
+}
+
+// ---------- 하나로 이어지는 전시 (기획전 id로 된 블록만, 방 번호·방 이동 없음) ----------
+async function renderFlow(g, blocks) {
+  document.title = `${g.title} — ARTMOS`;
+  document.documentElement.style.setProperty('--accent', g.color);
+  document.getElementById('cell-label').textContent = g.title;
+  const FR = await import('./first-room.js?v=1');
+  Object.assign(R, FR.renderers({ esc, paras }));
+  const c = { id: g.id, code: g.code, title: g.title, subtitle: g.subtitle, artist: g.artist, period: g.period, color: g.color };
+  let bs = blocks.filter((b) => b.type !== 'end');
+  if (!bs.some((b) => b.type === 'cover')) bs = [{ type: 'cover' }, ...bs];
+  const top = TOP.filter((x) => x.status === 'open'), gi = top.indexOf(g), next = top[(gi + 1) % top.length];
+  const href = (x) => (x.isGroup ? `cell.html?id=${encodeURIComponent(x.id)}` : x.url || `cell.html?id=${encodeURIComponent(x.id)}`);
+  const end = `<section class="b-end">
+    <p class="eyebrow">END OF ${esc(g.title)}</p>
+    ${next && next !== g ? `<a class="next" href="${href(next)}" style="--accent:${esc(next.color)}"><span>${tr('다음 행성으로')}</span><strong>${esc(next.title)}</strong></a>` : ''}
+    <a class="back" href="./">${tr('← 행성계로 돌아가기')}</a>
+  </section>`;
+  story.innerHTML = `<div class="room flow" data-room="0">${bs.map((b, i) => (R[b.type] || R.text)(b, c, i, [c])).join('')}</div>` + end;
+  mountVideos(story);
+  setupAll(g.color);
+  FR.setup();
+  const bgm = setupGroupBgm([{ bgm: 'ambient:cosmos' }]); // 처음부터 끝까지 같은 우주 소리
+  bgm && bgm.room(0);
 }
 
 // 방마다 다른 앰비언트 (bgm 칸이 ambient:* 인 방), 스크롤로 넘어가면 교차 전환

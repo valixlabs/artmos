@@ -27,6 +27,11 @@ const WORDS = {
   '기울이면 박자가 어긋나요 · 흔들면 다시 맞춰져요 · 엎어두면 고요': ['Tilt to drift out of sync · shake to resync · lay face down for silence', '倾斜让节拍错开 · 摇晃重新对齐 · 朝下放置归于寂静', '傾けると拍がずれる · 振るとそろう · 伏せると静寂'],
   '기울여 바람과 빗줄기 · 엎어두면 양동이 속 빗소리': ['Tilt for wind and rain · lay face down to hear it inside the bucket', '倾斜控制风和雨 · 朝下放置听水桶里的雨声', '傾けて風と雨脚 · 伏せるとバケツの中の雨音'],
   '몸을 돌려 소리가 오는 쪽을 찾아요 · 앞으로 기울이면 가까이': ['Turn to find where each sound comes from · tilt forward to get closer', '转身寻找声音的方向 · 向前倾斜靠近', '体を回して音の方向を探す · 前に傾けると近づく'],
+  '꾹 누르는 만큼 고민이 무거워져요 · 손끝에 심장이 뛰어요': ['Hold longer and the worry grows heavier · feel a heartbeat in your fingertip', '按得越久，烦恼越重 · 指尖感到心跳', '長押しするほど悩みが重くなる · 指先に鼓動'],
+  '원을 따라 숨 쉬기 · 내쉴 때 화면에 후~': ['Breathe with the circle · blow on the screen as you breathe out', '跟着圆呼吸 · 呼气时对屏幕吹气', '円に合わせて息をする · 吐くとき画面にふーっと'],
+  '천천히 내리면 멀어져요 · 떨림이 점점 약해져요': ['Scroll slowly to move away · the buzz grows weaker', '慢慢下滑就会远离 · 振动越来越弱', 'ゆっくり下ると遠ざかる · 震えがだんだん弱くなる'],
+  '물을 마시는 동안 버튼을 꾹': ['Hold the button while you sip', '喝水时按住按钮', '飲むあいだボタンを長押し'],
+  '폰을 엎어 두면 고민을 놓아 줘요': ['Lay your phone face down to let the worry go', '把手机朝下放，放下烦恼', 'スマホを伏せると悩みを手放せます'],
   '폰을 엎어 두고 10초 동안 고요를 들어요': ['Lay your phone face down and listen to 10 seconds of silence', '把手机朝下放，聆听10秒的寂静', 'スマホを伏せて10秒間の静寂を聴く'],
 };
 const IDX = { en: 0, zh: 1, ja: 2 };
@@ -34,6 +39,11 @@ Object.entries(WORDS).forEach(([ko, a]) => Object.entries(IDX).forEach(([l, i]) 
 
 // 화면 안의 블록별 안내 (먼저 맞는 것)
 const HINTS = [
+  ['.b-worry .fr-hold:not([hidden])', '꾹 누르는 만큼 고민이 무거워져요 · 손끝에 심장이 뛰어요', 'touch'],
+  ['.b-breath', '원을 따라 숨 쉬기 · 내쉴 때 화면에 후~', 'mic'],
+  ['.b-zoom', '천천히 내리면 멀어져요 · 떨림이 점점 약해져요', 'touch'],
+  ['.b-sip', '물을 마시는 동안 버튼을 꾹', 'touch'],
+  ['.b-release', '폰을 엎어 두면 고민을 놓아 줘요', 'touch'],
   ['.b-cosmos', '기울이면 별이 흐르는 방향이 바뀌어요 · 누르고 있으면 빛의 속도로', 'tilt'],
   ['.b-quantum', '흔들어 관측 · 기울이면 구름이 움직여요 · 엎어두면 다시 중첩', 'shake'],
   ['.b-prism', '화면을 보며 폰을 돌리면 프리즘이 돌아요 · 기울여 빛', 'spin'],
