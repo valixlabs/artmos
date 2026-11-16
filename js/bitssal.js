@@ -189,9 +189,10 @@ function runSeq(c) {
   if (SEQ_RM) { ps.forEach((p) => p.classList.add('shown')); unlockAfter(c); return; }
   // 쌀알 얼굴이 먼저 그려지고(1.4초) → 문단이 함께 나타남 → 읽을 시간이 지나면 체험이 열림
   const chars = ps.reduce((n, p) => n + p.textContent.trim().length, 0);
-  let wait = 1400, read = Math.max(4000, Math.min(14000, chars * (lang === 'en' ? 18 : 45))), shown = false;
+  let wait = 400, read = Math.max(4000, Math.min(14000, chars * (lang === 'en' ? 18 : 45))), shown = false;
   const tick = () => {
-    if (!c.classList.contains('in')) { if (c.getBoundingClientRect().bottom < 0) { ps.forEach((p) => p.classList.add('shown')); unlockAfter(c); return; } setTimeout(tick, 400); return; } // 화면 밖이면 멈춤, 이미 지나 내려갔으면 열어 둠
+    const bx = (c.querySelector('.st-box') || c).getBoundingClientRect(), seen = bx.top < innerHeight * 0.85 && bx.bottom > innerHeight * 0.1; // 글 상자가 올라와야 시작 (얼굴 자리만 보일 땐 기다림)
+    if (!seen) { if (bx.bottom < 0) { ps.forEach((p) => p.classList.add('shown')); unlockAfter(c); return; } setTimeout(tick, 400); return; } // 화면 밖이면 멈춤, 이미 지나 내려갔으면 열어 둠
     if (!shown) { if ((wait -= 200) > 0) { setTimeout(tick, 200); return; } shown = true; ps.forEach((p, k) => setTimeout(() => p.classList.add('shown'), k * 350)); }
     if ((read -= 200) > 0) { setTimeout(tick, 200); return; }
     unlockAfter(c);
@@ -341,23 +342,23 @@ const FN = 1000;
 function wantFace(id) {
   if (id === 'light' && state.brotherLight) return { kind: 'brother', col: 3 };
   if (id === 'street' && state.dawn) return { kind: 'brother', col: 0, max: 0.92 };
-  return readCard && readCard.dataset.face ? { kind: readCard.dataset.face, col: 0 } : null;
+  return faceCard ? { kind: faceCard.dataset.face, col: 0, max: faceMax } : null; // 얼굴은 얼굴 자리에만, 글이 올라오면 사라짐
 }
 function applyFace(id) {
   const want = wantFace(id);
   if (want && want.kind !== face.kind) { if (face.k > 0.04) face.k = Math.max(0, face.k - 0.06); else { face.kind = want.kind; face.pts = facePoints(want.kind, FN); } }
-  else if (want) face.k = Math.min(want.max || 1, face.k + 0.025);
+  else if (want) face.k = face.k > (want.max ?? 1) ? Math.max(want.max ?? 1, face.k - 0.06) : Math.min(want.max ?? 1, face.k + 0.025);
   else face.k = Math.max(0, face.k - 0.04);
   if (want) face.col = want.col;
-  if (face.k <= 0 || !face.pts) { face.lastFy = null; return; }
+  if (face.k <= 0 || !face.pts) { face.lastFy = null; face.fy = null; return; }
   TA[0] *= 1 - face.k; // 첫 쌀알(빛)이 얼굴을 가리지 않게
   let sc = R * (mobile ? 0.55 : 0.62), fx = CX, fy = mobile ? CY - R * 0.32 : CY - R * 0.05; const k = face.k;
-  // 휴대폰: 이야기 카드 위쪽의 빈 자리(.st-stage)에 얼굴을 그려 글과 겹치지 않게, 스크롤하면 카드와 함께 움직임
-  const stage = mobile && readCard ? readCard.querySelector('.st-stage') : null;
-  if (stage) { const r = stage.getBoundingClientRect(); sc = Math.min(r.height * 0.42, W * 0.4); fy = r.top + r.height / 2 - sc * 0.1; face.fy = fy; face.sc = sc; }
-  else if (mobile && face.fy != null && !readCard) { fy = face.fy; sc = face.sc; }
-  if (mobile && face.lastFy != null && Math.abs(fy - face.lastFy) < 600) { const dy = fy - face.lastFy; for (let i = 1; i <= FN; i++) Y[i] += dy; } // 카드와 함께 그대로 따라 움직임
-  face.lastFy = mobile ? fy : null;
+  // 이야기 카드 위쪽의 얼굴 자리(.st-stage, 한 화면)에 얼굴을 그림 → 스크롤하면 카드와 함께 올라가고, 글 상자는 그 아래라 겹치지 않음
+  const stage = faceCard ? faceCard.querySelector('.st-stage') : null;
+  if (stage) { const r = stage.getBoundingClientRect(); sc = Math.min(r.height * 0.36, mobile ? W * 0.42 : R * 0.75); fy = r.top + r.height / 2 - sc * 0.1; face.fy = fy; face.sc = sc; }
+  else if (face.fy != null) { fy = face.fy; sc = face.sc; }
+  if (face.lastFy != null && Math.abs(fy - face.lastFy) < 600) { const dy = fy - face.lastFy; for (let i = 1; i <= FN; i++) Y[i] += dy; } // 카드와 함께 그대로 따라 움직임
+  face.lastFy = fy;
   const n = face.pts.length;
   for (let j = 0; j < n; j++) { const q = face.pts[j], i = j + 1, kj = Math.max(0, Math.min(1, k * 1.7 - (j / n) * 0.7)); TX[i] = lerp(TX[i], fx + q.x * sc, kj); TY[i] = lerp(TY[i], fy + q.y * sc, kj); TA[i] = lerp(TA[i], q.a, kj); if (kj > 0.5) C[i] = face.col === 3 ? 3 : q.c; TROT[i] = q.r; }
   for (let i = face.pts.length + 1; i < N; i++) TA[i] *= 1 - 0.97 * k; // 얼굴을 그리는 동안 다른 쌀알은 거의 끔
@@ -673,11 +674,16 @@ function playProgress(i, p) {
   const sr = sc.getBoundingClientRect(), top = sr.top + (parseFloat(pc.style.top) || 0);
   return Math.max(0, Math.min(1, (innerHeight * 0.72 - top) / Math.max(1, sr.bottom - top - innerHeight * 0.18)));
 }
-let readCard = null, hold = false; // hold: 지금은 체험을 받지 않음 (읽는 중이거나 아직 이야기를 다 읽지 않음)
-function findReadCard() {
-  const band0 = innerHeight * 0.22, band1 = innerHeight * 0.78; let best = null, bd = 1e9;
-  sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => { const r = el.getBoundingClientRect(); if (r.bottom < band0 || r.top > band1) return; const d = Math.abs(r.top + r.height / 2 - innerHeight / 2); if (d < bd) { bd = d; best = el; } });
-  return best;
+let readCard = null, faceCard = null, faceMax = 1, hold = false; // hold: 지금은 체험을 받지 않음 (얼굴·글을 보는 중이거나 아직 이야기를 다 읽지 않음)
+// 이야기 카드는 두 단계: ① 얼굴 자리만 보임(faceCard) → ② 글 상자가 올라옴(readCard). 그다음 체험
+function findStory() {
+  const H0 = innerHeight, band0 = H0 * 0.22, band1 = H0 * 0.78; let best = null, bd = 1e9, fc = null, fm = 1;
+  sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => {
+    const st = el.querySelector('.st-stage'), br = (el.querySelector('.st-box') || el).getBoundingClientRect();
+    if (st && el.dataset.face) { const sr = st.getBoundingClientRect(), mid = (sr.top + sr.bottom) / 2; if (mid < H0 * 0.9 && mid > -H0 * 0.2 && br.top > H0 * 0.45) { fc = el; fm = Math.max(0, Math.min(1, (br.top - H0 * 0.45) / (H0 * 0.3))); } }
+    if (br.bottom < band0 || br.top > band1) return; const d = Math.abs(br.top + br.height / 2 - H0 / 2); if (d < bd) { bd = d; best = el; }
+  });
+  faceCard = fc; faceMax = fm; readCard = best;
 }
 let frameErr = 0;
 function frame(now) {
@@ -691,7 +697,7 @@ function draw(now) {
   measure();
   const sc = SCENES[cur], id = sc.id, p = curP;
   { const tl = IS_MOBILE && sensor.on ? Math.min(1, Math.abs(sensor.tiltX) + Math.abs(sensor.tiltY)) : 0; state.flowT += dt * 0.03 * (1 + tl * 3.5); }
-  readCard = findReadCard();
+  findStory();
   // 휴대폰: 체험 카드에 닿으면 화면 아래에 고정 → 위쪽 그림을 가리지 않고 보면서 해 볼 수 있게
   if (mobile) document.querySelectorAll('.card.play').forEach((pc) => {
     const sr = pc.parentElement.getBoundingClientRect(), top = sr.top + (parseFloat(pc.style.top) || 0);
@@ -700,8 +706,13 @@ function draw(now) {
     pc.classList.toggle('docked', top < innerHeight * 0.72 && sr.bottom > innerHeight * 0.9 && nextTop > innerHeight * 0.9); // 다음 카드·다음 장이 보이기 전에 내려감
   });
   sections[cur].querySelectorAll(':scope > .card.story, :scope > .card.chap-open').forEach((el) => { const r = el.getBoundingClientRect(); el.classList.toggle('past', r.bottom < innerHeight * (el.classList.contains('chap-open') ? 0.42 : 0.3)); });
-  const reading = !!readCard; hold = reading || !!sections[cur].querySelector(':scope > .card.play.locked'); state.readK = Math.max(0, Math.min(1, (state.readK || 0) + (reading ? dt * 2.5 : -dt * 2)));
-  document.body.classList.toggle('phase-read', reading);
+  const reading = !!readCard || !!faceCard;
+  // 체험 카드가 올라오기 전(장 표지·얼굴·글·그 사이 빈 자리)에는 체험 그림·쌀알을 끔 → 얼굴 → 글 → 체험이 하나씩만 보이게
+  const secEl = sections[cur], pcard = secEl.querySelector(':scope > .card.play');
+  const beforePlay = !!pcard && !!secEl.querySelector(':scope > .card.story') && secEl.getBoundingClientRect().top + (parseFloat(pcard.style.top) || 0) > innerHeight * 0.95;
+  const quiet = reading || beforePlay;
+  hold = quiet || !!secEl.querySelector(':scope > .card.play.locked'); state.readK = Math.max(0, Math.min(1, (state.readK || 0) + (quiet ? dt * 2.5 : -dt * 1.6)));
+  document.body.classList.toggle('phase-read', quiet);
   // 장 표지가 화면 가운데 있으면 쌀알·장면 그림을 거의 꺼서 제목만 보이게
   const opening = !reading && [...sections[cur].querySelectorAll(':scope > .card.chap-open')].some((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.45; });
   state.openK = Math.max(0, Math.min(1, (state.openK || 0) + (opening ? dt * 2.5 : -dt * 1.5)));
@@ -778,13 +789,13 @@ function draw(now) {
     if (A[i] < 0.01) continue;
     if (face.k > 0.3 && i > 0 && i <= FN) { const d = ((TROT[i] - ROT[i]) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2; ROT[i] += d * 0.12; }
     else if (!state.freeze) ROT[i] += (R3[i] - 0.5) * 0.01;
-    let al = A[i] * (1 - 0.98 * state.openK);
+    let al = A[i] * (1 - 0.98 * Math.max(state.openK, face.k > 0.02 && i > 0 && i <= FN ? 0 : state.readK)); // 얼굴 쌀알만 남기고 끔
     if (torch > 0) { const d = Math.hypot(X[i] - tx, Y[i] - ty); al *= lerp(1, d < 150 ? 1.25 - d / 300 : 0.12, torch); }
     if (al < 0.01) continue;
     const k = 0.4 + R1[i], jx = sh ? (Math.random() - 0.5) * sh * 16 : 0, jy = sh ? (Math.random() - 0.5) * sh * 16 : 0;
     grain(X[i] + ox * k + jx, Y[i] + oy * k + jy, ROT[i] + jx * 0.1, Math.min(1, al), COLORS[C[i]], i === 0 && id === 'prologue' ? 3 : 1);
   }
-  if (id === 'prologue') { // 첫 쌀알의 빛
+  if (id === 'prologue' && state.readK < 0.5) { // 첫 쌀알의 빛
     const hg = g.createRadialGradient(X[0], Y[0], 0, X[0], Y[0], 120); hg.addColorStop(0, 'rgba(255,240,210,.22)'); hg.addColorStop(1, 'rgba(255,240,210,0)'); g.fillStyle = hg; g.fillRect(X[0] - 120, Y[0] - 120, 240, 240);
   }
   if (torch > 0) { const tg = g.createRadialGradient(tx, ty, 0, tx, ty, 170); tg.addColorStop(0, `rgba(255,236,200,${0.1 * torch})`); tg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = tg; g.fillRect(tx - 170, ty - 170, 340, 340); }
