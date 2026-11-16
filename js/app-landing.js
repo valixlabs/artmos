@@ -45,6 +45,9 @@ export function createAppLanding({ planetBitmap, hasRing, name, translate: t, mo
     if (waiting) { const a = now / 520; ctx.arc(cx, cy, R, a, a + Math.PI * 1.6); } else ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(.002, progress));
     ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, cy, 2.2 + 1.6 * eased, 0, Math.PI * 2); ctx.fill();
+    // 도착할 때쯤 화면이 흰색으로 확 바뀌고, 그 흰 화면에서 전시로 들어감
+    if (!calm && progress > .86) { const w = Math.min(1, (progress - .86) / .12); ctx.fillStyle = `rgba(255,255,255,${w * w * (3 - 2 * w)})`; ctx.fillRect(0, 0, width, height); }
+    element.classList.toggle('bright', !calm && progress > .93);
     const nextPercent = Math.round(progress * 100);
     if (nextPercent !== percent) { percent = nextPercent; state.textContent = calm ? t('착륙하는 중') : `${t('대기권 진입')} ${percent}%`; }
     if (loaded && (calm || progress >= 1)) finish();
