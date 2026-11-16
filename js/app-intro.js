@@ -2,7 +2,7 @@
 // 흐름: 성운 먼지가 가운데로 모임 → 왼쪽에 ART, 오른쪽에 별로 된 COSMOS → COS가 별가루로 흩어지고 MOS가 ART에 붙어 ARTMOS
 //      → 붙는 순간 빛 + 웅장한 소리, O가 고리를 두른 행성이 되고 작은 위성이 한 바퀴 → 카피 → 앱
 // 소리는 실시간 합성(Web Audio): 낮은 금관 같은 화음이 차오르다 → 북·종 화음이 터지고 → 큰 홀 잔향.
-// 자동 재생이 막히면 로고가 다 그려진 뒤 '입장하기' 버튼(누르면 소리와 함께 입장). 화면을 누르면 건너뜀.
+// 로고가 다 그려지면 '입장하기' 버튼이 뜨고 누를 때까지 머묾(소리가 막혀 있었으면 누를 때 소리와 함께 입장). 화면을 누르면 건너뜀.
 // 모션 줄이기 설정이면 짧게 페이드만. 소리 끄기(xpace-sound=off)면 소리·버튼 없이.
 (() => {
   const L = (() => { // 앱(i18n.js)과 같은 순서: 주소 ?lang= → 지난번 선택 → 기기 언어 → 한국어
@@ -22,7 +22,7 @@
   const T = { art: 300, cosmos: 650, scatter: 1850, join: 1900, hit: 2600, ring: 2650, copy: 3200, end: 3950 }; // ms
 
   const css = `
-  .ai{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#f2f3f8;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;transition:opacity .7s ease}
+  .ai{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#fff;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;transition:opacity .7s ease}
   .ai.out{opacity:0;pointer-events:none}
   .ai canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .ai .stage{position:absolute;left:0;right:0;top:calc(47% - 70px);width:100%;height:140px;display:flex;align-items:center;justify-content:center}
@@ -35,8 +35,7 @@
   .ai .ch{display:inline-block;opacity:0;transform:translateY(12px);filter:blur(8px);transition:transform .95s cubic-bezier(.65,0,.2,1),opacity .6s,filter .6s,color .6s,text-shadow .6s}
   .ai .ch.on{opacity:1;transform:none;filter:none}
   .ai .gap{display:inline-block;width:.9em}
-  .ai .cos .x{color:#cfe8ff;text-shadow:0 0 14px rgba(160,215,255,.7)}
-  .ai .ch.dust{opacity:0!important;filter:blur(14px)!important;transition:transform 1s cubic-bezier(.2,.7,.2,1),opacity .9s,filter .9s}
+    .ai .ch.dust{opacity:0!important;filter:blur(14px)!important;transition:transform 1s cubic-bezier(.2,.7,.2,1),opacity .9s,filter .9s}
   .ai .ch.lit{color:#fff;text-shadow:0 0 20px rgba(255,255,255,.8)}
   .ai .flash{position:absolute;left:50%;top:50%;width:340px;height:340px;margin:-170px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.45) 0%,rgba(255,255,255,.12) 26%,rgba(255,255,255,0) 62%);opacity:0;pointer-events:none}
   .ai .flash.on{animation:aiFlash 1.2s ease-out forwards}
@@ -48,7 +47,7 @@
   .ai .enter.show{opacity:1;transform:none}
   .ai .enter:active{background:rgba(255,255,255,.14)}
   .ai .enter:focus,.ai .enter:focus-visible{outline:none;box-shadow:none}
-  .ai .by{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);font-size:11px;letter-spacing:.3em;color:#5f6684;opacity:0;transition:opacity 1s}
+  .ai .by{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);font-size:11px;letter-spacing:.3em;color:#fff;opacity:0;transition:opacity 1s}
   .ai.copyon .by{opacity:1}
   @keyframes aiDraw{to{stroke-dashoffset:0}}
   @keyframes aiFlash{0%{opacity:0;transform:scale(.2)}16%{opacity:1;transform:scale(.7)}to{opacity:0;transform:scale(1.9)}}`;
@@ -66,7 +65,7 @@
       <span class="flash"></span>
     </div>
     <div class="copy"><b>${C[0]}</b></div>
-    <button class="enter" type="button" hidden>♪&nbsp;&nbsp;${C[1]}</button>
+    <button class="enter" type="button" hidden>${C[1]}</button>
     <p class="by">ARTMOS · BY VALIX LAB</p>`;
   document.body.appendChild(el);
   const $ = (s) => el.querySelector(s), $$ = (s) => [...el.querySelectorAll(s)];
@@ -102,7 +101,7 @@
     for (let i = sparks.length - 1; i >= 0; i--) {
       const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.vx *= 0.97; s.vy *= 0.97; s.life -= 1;
       if (s.life <= 0) { sparks.splice(i, 1); continue; }
-      cx.fillStyle = `rgba(200,235,255,${(s.life / s.max) * 0.9})`; cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
+      cx.fillStyle = `rgba(255,255,255,${(s.life / s.max) * 0.9})`; cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
     }
     if (!done) raf = requestAnimationFrame(frame);
   }
@@ -192,13 +191,13 @@
     });
     at(T.copy, () => el.classList.add('copyon'));
     at(T.end, () => {
-      if (soundOn && !audible()) { const b = $('.enter'); b.hidden = false; requestAnimationFrame(() => b.classList.add('show')); b.focus({ preventScroll: true }); at(T.end + 9000, finish); }
+      if (soundOn) { const b = $('.enter'); b.hidden = false; requestAnimationFrame(() => b.classList.add('show')); b.focus({ preventScroll: true }); } // '입장하기'를 누를 때까지 머묾
       else at(T.end + 900, finish);
     });
   }
   el.addEventListener('click', (e) => {
     const b = e.target.closest('.enter');
-    if (b) { b.disabled = true; sound(T.hit / 1000 - 0.05); at(T.end + 1800, finish); setTimeout(finish, 1800); return; } // 북·종소리부터 울리고 입장
+    if (b) { b.disabled = true; if (audible()) { setTimeout(finish, 500); return; } sound(T.hit / 1000 - 0.05); setTimeout(finish, 1800); return; } // 소리가 이미 났으면 바로 입장, 막혀 있었으면 북·종소리부터 울리고 입장
     finish(); // 아무 데나 누르면 건너뛰기
   });
 })();
