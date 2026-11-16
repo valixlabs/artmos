@@ -5,7 +5,7 @@ export function createMotionPreference() {
   let requested = false;
   try { requested = localStorage.getItem('nebula-calm') === 'true'; } catch {}
   function sync() {
-    document.body.classList.toggle('nebula-calm', system.matches || requested);
+    document.body.classList.toggle('artmos-calm', system.matches || requested);
     events.dispatchEvent(new Event('change'));
   }
   system.addEventListener('change', sync);
@@ -14,7 +14,7 @@ export function createMotionPreference() {
     try { requested = localStorage.getItem('nebula-calm') === 'true'; } catch {}
     sync();
   });
-  document.body.classList.toggle('nebula-calm', system.matches || requested);
+  document.body.classList.toggle('artmos-calm', system.matches || requested);
   return {
     get matches() { return system.matches || requested; },
     get requested() { return requested; },

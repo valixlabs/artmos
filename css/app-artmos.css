@@ -406,14 +406,14 @@ body.vx.vx-paused :is(.vx-view, .vx-tabs, .vx-onboard) *,
 body.vx.vx-paused :is(.vx-view, .vx-tabs, .vx-onboard) *::before,
 body.vx.vx-paused :is(.vx-view, .vx-tabs, .vx-onboard) *::after { animation-play-state: paused !important; }
 body.vx.vx-paused :is(.mc-layer, .mc-orbit, .mc-planet, .mc-gloss) { will-change: auto; }
-body.vx.nebula-calm, body.vx.nebula-calm *,
-body.vx.nebula-calm::before, body.vx.nebula-calm::after,
-body.vx.nebula-calm *::before, body.vx.nebula-calm *::after {
+body.vx.artmos-calm, body.vx.artmos-calm *,
+body.vx.artmos-calm::before, body.vx.artmos-calm::after,
+body.vx.artmos-calm *::before, body.vx.artmos-calm *::after {
   animation: none !important; transition: none !important; scroll-behavior: auto !important;
 }
-body.vx.nebula-calm :is(.rs, .art-visual.rs) { opacity: 1 !important; translate: none !important; }
-body.vx.nebula-calm :is(.card, .gcard) .poster { transform: none !important; }
-body.vx.nebula-calm :is([data-tiltcard], [data-depth]) { will-change: auto; }
+body.vx.artmos-calm :is(.rs, .art-visual.rs) { opacity: 1 !important; translate: none !important; }
+body.vx.artmos-calm :is(.card, .gcard) .poster { transform: none !important; }
+body.vx.artmos-calm :is([data-tiltcard], [data-depth]) { will-change: auto; }
 @media (prefers-reduced-motion: reduce) {
   body.vx, .vx *, body.vx::before, body.vx::after, .vx *::before, .vx *::after {
     animation: none !important; transition: none !important; scroll-behavior: auto !important;
@@ -425,7 +425,7 @@ body.vx.nebula-calm :is([data-tiltcard], [data-depth]) { will-change: auto; }
 
 /* Final integration: refinement's opt-in variables have higher specificity than
    body.vx; explicitly resolve those tokens here, without affecting other pages. */
-body.vx.nebula-refined {
+body.vx.artmos-refined {
   --tx2: #abb8b8;
   --tx3: #8d9da3;
   --line: rgba(189, 218, 199, .19);

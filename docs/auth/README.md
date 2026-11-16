@@ -32,7 +32,7 @@
    - **Apple**: 애플 개발자에서 Services ID, Key(.p8), Team ID를 만들어 넣어요.
    - **Google**: Google Cloud에서 OAuth 클라이언트(웹)를 만들어 Client ID와 Secret을 넣어요.
    - 세 곳 모두 Redirect URL은 `https://<프로젝트>.supabase.co/auth/v1/callback`이에요.
-4. Authentication → URL Configuration에 사이트 주소(`https://vailixlab.github.io/nebula/app.html`)와 앱 주소(`artmos://auth`)를 넣어요.
+4. Authentication → URL Configuration에 사이트 주소(`https://vailixlab.github.io/artmos/app.html`)와 앱 주소(`artmos://auth`)를 넣어요.
 5. Edge Function `delete-account`(`docs/auth/delete-account.ts`)를 배포해요.
 6. `js/config.js`의 `auth.supabaseUrl`과 `auth.supabaseAnonKey`를 채워요.
    - anon 키는 공개돼도 괜찮은 키예요.

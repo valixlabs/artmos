@@ -1,6 +1,6 @@
 /* ARTMOS refinement · additive UI layer, no canvas or sensor overrides.
    Page bodies opt in; original exhibition palettes and magazine cover remain. */
-body.nebula-refined {
+body.artmos-refined {
   --ref-line: rgba(226, 232, 255, .18);
   --ref-focus: #c4d3ff;
   --ref-ease: cubic-bezier(.22, .75, .18, 1);
@@ -9,46 +9,46 @@ body.nebula-refined {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-:where(.nebula-refined) :where(button, a, input, textarea, summary) {
+:where(.artmos-refined) :where(button, a, input, textarea, summary) {
   -webkit-tap-highlight-color: rgba(196, 211, 255, .16);
 }
-:where(.nebula-refined) button {
+:where(.artmos-refined) button {
   min-height: 44px;
   transition: background-color var(--ref-fast) ease, border-color var(--ref-fast) ease,
     color var(--ref-fast) ease, box-shadow 260ms var(--ref-ease), filter var(--ref-fast) ease;
 }
-:where(.nebula-refined) :where(a, button, input, textarea, summary, [tabindex]):focus-visible {
+:where(.artmos-refined) :where(a, button, input, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--ref-focus);
   outline-offset: 4px;
 }
-:where(.nebula-refined) button:disabled {
+:where(.artmos-refined) button:disabled {
   cursor: not-allowed;
 }
-:where(.nebula-refined) button:active:not(:disabled) {
+:where(.artmos-refined) button:active:not(:disabled) {
   filter: brightness(.9);
 }
-:where(.nebula-refined) :where(.lang-btn, .ic, .icons button, .back, .car-nav button) {
+:where(.artmos-refined) :where(.lang-btn, .ic, .icons button, .back, .car-nav button) {
   min-width: 44px;
   min-height: 44px;
 }
-:where(.nebula-refined) .lang-list {
+:where(.artmos-refined) .lang-list {
   border-color: var(--ref-line);
   padding: 8px;
   box-shadow: 0 18px 48px rgba(0, 0, 0, .35);
 }
-:where(.nebula-refined) .lang-list button { min-height: 44px; }
-:where(.nebula-refined) :where(.snd-gate .g-s, .sg-off) {
+:where(.artmos-refined) .lang-list button { min-height: 44px; }
+:where(.artmos-refined) :where(.snd-gate .g-s, .sg-off) {
   min-height: 44px;
   padding: 10px 14px;
   color: #bbc1ce;
 }
-:where(.nebula-refined) .snd-gate .g-n { color: #a6abb7; line-height: 1.7; }
-:where(.nebula-refined) :where(.snd-gate, .sound-gate) {
+:where(.artmos-refined) .snd-gate .g-n { color: #a6abb7; line-height: 1.7; }
+:where(.artmos-refined) :where(.snd-gate, .sound-gate) {
   transition-timing-function: var(--ref-ease);
 }
 
 /* Exhibition: measured editorial spacing; all original section backgrounds stay. */
-.cell-page.nebula-refined { --muted: #aaaeb9; --line: var(--ref-line); --ease: var(--ref-ease); }
+.cell-page.artmos-refined { --muted: #aaaeb9; --line: var(--ref-line); --ease: var(--ref-ease); }
 .cell-page .topbar {
   mix-blend-mode: normal;
   background: linear-gradient(180deg, rgba(5, 6, 12, .88), rgba(5, 6, 12, 0));
@@ -94,7 +94,7 @@ body.nebula-refined {
 .cell-page .loader { transition-timing-function: var(--ref-ease); }
 
 /* VALIX: retain the full-height MONTHLY PLANET cover and its sensor layers. */
-.vx.nebula-refined { --tx2: #b0b8d0; --tx3: #9aa4c1; --line: var(--ref-line); }
+.vx.artmos-refined { --tx2: #b0b8d0; --tx3: #9aa4c1; --line: var(--ref-line); }
 .vx :where(.mc-dek, .art-dek) { line-height: 1.65; }
 .vx :where(.mc-title, .art-title) { word-break: keep-all; overflow-wrap: anywhere; }
 .vx .mc-foot { gap: 12px; }
@@ -136,7 +136,7 @@ body.nebula-refined {
 .vx :where(.card, .gcard):active .poster { transform: scale(.985); }
 
 /* Bitssal: warm archival materials, no playful elevation or vivid new effects. */
-.bs-page.nebula-refined {
+.bs-page.artmos-refined {
   --muted: #b1aa9f;
   --ref-line: rgba(255, 248, 230, .2);
   --ref-focus: #fff0cc;
@@ -182,7 +182,7 @@ body.nebula-refined {
 }
 
 /* Sansa: refine HUD and sheet only. World/camera/touch behavior is untouched. */
-.sansa.nebula-refined { --ref-line: rgba(255, 240, 215, .24); --ref-focus: #ffe1a5; --tx2: #d1c7b7; }
+.sansa.artmos-refined { --ref-line: rgba(255, 240, 215, .24); --ref-focus: #ffe1a5; --tx2: #d1c7b7; }
 .sansa :where(.pill, .hud-bot, .chant, .sheet, .toast) { border-color: var(--ref-line); }
 .sansa .pill { gap: 8px; padding: 0 10px; }
 .sansa .ic { width: 44px; height: 44px; border-radius: 50%; }
@@ -238,10 +238,10 @@ body.nebula-refined {
 /* Final priority: disable CSS motion only; do not govern any canvas render loop.
    Preserve JS-controlled visibility and absolute archive centering. */
 @media (prefers-reduced-motion: reduce) {
-  body.nebula-refined,
-  .nebula-refined *:not(canvas),
-  .nebula-refined::before, .nebula-refined::after,
-  .nebula-refined *::before, .nebula-refined *::after {
+  body.artmos-refined,
+  .artmos-refined *:not(canvas),
+  .artmos-refined::before, .artmos-refined::after,
+  .artmos-refined *::before, .artmos-refined *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;

@@ -13,7 +13,7 @@ const W = {
 const t = (k) => (W[lang] || W.en)[k];
 const q = new URLSearchParams(location.search), box = document.getElementById('co');
 const backTo = (() => { try { return sessionStorage.getItem('nebula-shop-back') || 'app.html'; } catch (e) { return 'app.html'; } })();
-const mark = '<img class="mark" src="assets/nebula-mark.svg" alt="">';
+const mark = '<img class="mark" src="assets/artmos-mark.svg" alt="">';
 const won = (n) => `${Number(n || 0).toLocaleString('ko-KR')}${lang === 'ko' ? '원' : ' KRW'}`;
 function show(title, text, rows) {
   box.innerHTML = `${mark}<h1>${esc(title)}</h1><p>${esc(text)}</p>${q.get('test') ? `<p class="small">${esc(t('test'))}</p>` : ''}

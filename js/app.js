@@ -10,7 +10,7 @@ import { IS_MOBILE, sensor } from './sensors.js?v=4';
 import { createAppSky } from './app-sky.js?v=2';
 import { createAppSheet } from './app-sheet.js?v=2';
 import { createAppLanding } from './app-landing.js?v=1';
-import { createMotionPreference } from './app-preferences.js?v=1';
+import { createMotionPreference } from './app-preferences.js?v=2';
 import { createAppDiscover } from './app-discover.js?v=3';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=1';
@@ -304,7 +304,7 @@ const screens = {
     return `
       <section class="mag-cover" style="--c:${esc(f.color || '#9db8ff')}" data-tiltzone>
         <div class="mc-top">
-          <button class="mc-mast nb-brand" data-vols aria-label="ARTMOS · ${t('지난 호')}"><img class="nb-brand-mark" src="assets/nebula-mark.svg" alt=""/><span><b class="nb-brand-word">ARTMOS</b><small class="nb-brand-caption">MONTHLY PLANET · No.${n}</small></span></button>
+          <button class="mc-mast nb-brand" data-vols aria-label="ARTMOS · ${t('지난 호')}"><img class="nb-brand-mark" src="assets/artmos-mark.svg" alt=""/><span><b class="nb-brand-word">ARTMOS</b><small class="nb-brand-caption">MONTHLY PLANET · No.${n}</small></span></button>
           <div class="icons"><button data-search aria-label="${t('전시 검색')}">${searchIcon}</button>${bell()}</div>
         </div>
         <div class="mc-stage">
