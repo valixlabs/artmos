@@ -213,3 +213,7 @@
 /* 토스 결제위젯(흰 바탕 위젯이라 둥근 흰 상자에 담음) */
 .sp-twmount { display: grid; gap: 14px; padding: 4px 0 24px; }
 .tw-box { background: #fff; border-radius: 16px; overflow: hidden; color: #111; }
+
+/* 로그인 화면: "이미 계정이 있어요 · 로그인" 한 줄 가운데 정렬 */
+.ob-login .au-row { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 8px; width: 100%; margin: 4px 0 0; }
+.ob-login .au-row > * { width: auto; height: auto; min-height: 0; margin: 0; padding: 0; flex: 0 0 auto; line-height: 1.4; }

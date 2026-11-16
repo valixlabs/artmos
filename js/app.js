@@ -15,8 +15,8 @@ import { createAppDiscover } from './app-discover.js?v=3';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=1';
 import * as MB from './membership.js?v=10';
-import * as SHOP from './app-shop.js?v=12';
-import * as AU from './auth.js?v=7';
+import * as SHOP from './app-shop.js?v=13';
+import * as AU from './auth.js?v=8';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
 
@@ -145,10 +145,17 @@ function checkNick() {
   nickTimer = setTimeout(async () => { const ok = await AU.nickAvailable(f.value); if (seq !== nickSeq) return; el.textContent = ok === false ? AU.at('nickTaken') : ok ? AU.at('nickOk') : ''; el.dataset.s = ok === false ? 'bad' : ok ? 'ok' : ''; }, 350);
 }
 // 로그인을 마치면: 서버에 이름이 있으면 그 이름으로 바로 입장, 없으면 항해명 정하기
+// 주문 페이지 등에서 로그인하러 왔으면(app.html?login=1&next=…) 로그인 뒤 그 페이지로 돌려보냄(같은 사이트 안 주소만)
+function returnAfterLogin() {
+  let next = ''; try { next = sessionStorage.getItem('artmos-next') || ''; } catch (e) {}
+  if (!next || !/^[\w.-]+\.html(\?[^#]*)?$/.test(next)) return false;
+  try { sessionStorage.removeItem('artmos-next'); } catch (e) {}
+  location.href = next; return true;
+}
 async function afterLogin() {
   if (await AU.needsConsent()) { showOB('agree'); return; } // 소셜 첫 가입: 동의 먼저
   const n = await AU.profileNick();
-  if (n) { const old = me(); store.set('valix-me', { nick: n, since: (old && old.since) || Date.now() }); store.set('valix-onboarded', true); ob.hidden = true; ob.innerHTML = ''; toast(AU.at('welcome')); go(tab); return; }
+  if (n) { const old = me(); store.set('valix-me', { nick: n, since: (old && old.since) || Date.now() }); store.set('valix-onboarded', true); if (returnAfterLogin()) return; ob.hidden = true; ob.innerHTML = ''; toast(AU.at('welcome')); go(tab); return; }
   showOB('nick');
 }
 const auCtx = { show: (k, arg) => showOB(k, arg), done: afterLogin, browse: () => showOB('nick'), toast: (m) => toast(m) };
@@ -178,7 +185,7 @@ function finishNick(nick) {
   {
     const old = me();
     store.set('valix-me', { nick, since: (old && old.since) || Date.now() });
-    store.set('valix-onboarded', true); ob.hidden = true; ob.innerHTML = ''; go(tab);
+    store.set('valix-onboarded', true); if (returnAfterLogin()) return; ob.hidden = true; ob.innerHTML = ''; go(tab);
   }
 }
 
@@ -984,7 +991,11 @@ function firstValidData(promises) {
   warm(firstPlanets());
   // 인트로(ARTMOS) 다음 바로 로그인. 소셜 로그인에서 돌아온 경우(세션 있음)엔 항해명 단계로
   const user = await AU.currentUser();
-  if (user && await AU.needsConsent()) showOB('agree'); // 동의 없이 들어온 소셜 계정(마이 탭에서 로그인한 경우 포함)
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('next')) { try { sessionStorage.setItem('artmos-next', qs.get('next')); } catch (e) {} }
+  if (qs.has('login') && !user) showOB('login'); // 다른 페이지에서 '로그인하러 가기'로 온 경우
+  else if (user && qs.get('next') && !(await AU.needsConsent()) && returnAfterLogin()) return; // 이미 로그인돼 있으면 바로 돌아감
+  else if (user && await AU.needsConsent()) showOB('agree'); // 동의 없이 들어온 소셜 계정(마이 탭에서 로그인한 경우 포함)
   else if (!store.get('valix-onboarded', false)) { if (user) afterLogin(); else showOB('login'); } else go('home');
   AU.onAuth(() => { if (tab === 'my' && !view.hidden) go('my', true); });
   if (location.hash === '#orders') { history.replaceState(null, '', location.pathname + location.search); go('my'); SHOP.loadShop().then(() => SHOP.openOrders(sheet)); } // 결제 후 돌아옴

@@ -147,7 +147,7 @@ export function loginHTML() {
       ${PROVIDERS.map((p) => `<button class="btn au-${p}" data-au-social="${p}">${icon[p]}${esc(at(p))}</button>`).join('')}
       <div class="au-or"><span>${esc(at('or'))}</span></div>
       <button class="btn line" data-au="signup">${esc(at('email'))}</button>
-      <p class="au-row"><span>${esc(at('haveAcc'))}</span><button class="link" data-au="login">${esc(at('login'))}</button></p>
+      <p class="au-row"><span>${esc(at('haveAcc'))}</span><button class="link" data-au="login-form">${esc(at('login'))}</button></p>
       <button class="link au-browse" data-au="browse">${esc(at('browse'))} ›</button>
     </div>`;
 }
