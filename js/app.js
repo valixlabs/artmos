@@ -1,4 +1,4 @@
-// ARTMOS 앱 화면 — 시작 화면 → 소개 → 로그인 → 닉네임 → 탭(전시·플레이·컬렉트·리워드·마이)
+// ARTMOS 앱 화면 — 시작 화면 → 소개 → 로그인 → 닉네임 → 탭(홈·플레이·컬렉트·마이)
 // 전시 내용은 기존 ARTMOS 페이지(cell.html, bitssal.html)를 같은 주소에서 그대로 불러옵니다.
 // 데이터는 기존 data.js(구글 시트 → 백업 JSON)를 그대로 씁니다. 개인 기록은 기기 안(localStorage)에만 저장합니다.
 import { loadData, loadLocalData, esc } from './data.js?v=31';
@@ -29,7 +29,8 @@ const T = {
 Object.keys(APP_COPY).forEach((language) => Object.assign(T[language], APP_COPY[language]));
 const t = (k, n) => { let s = (T[lang] && T[lang][k]) ?? k; if (n != null) s = s.replace('{n}', n).replace(/^n/, n); return s; };
 const br = (s) => esc(s).replace(/\n/g, '<br>');
-document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+const TAB_WORDS = { en: { '홈': 'Home' }, zh: { '홈': '首页' }, ja: { '홈': 'ホーム' } };
+document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = (TAB_WORDS[lang] && TAB_WORDS[lang][el.dataset.t]) || t(el.dataset.t); });
 
 const VERSION = '0.9.0';
 
@@ -253,7 +254,7 @@ onPlanet((k, u) => { document.querySelectorAll('img[data-pl]').forEach((im) => {
 
 /* ---------- 탭 화면 ---------- */
 let tab = 'home', ticker = 0, revealIO = null;
-const tabScroll = { home: 0, play: 0, reward: 0, my: 0 };
+const tabScroll = { home: 0, play: 0, shop: 0, my: 0 };
 let countdownNodes = [];
 function stopViewEffects() {
   revealIO?.disconnect(); revealIO = null;
@@ -428,7 +429,82 @@ const screens = {
   },
 };
 
-const TAB_I = { home: 0, play: 1, shop: 2, reward: 3, my: 4 };
+const magazineHTML = screens.home;
+screens.home = () => homeHTML();
+delete screens.reward;
+
+/* ---------- 앱 홈 (2026-11-16 개편: 티빙식 — 위 분류 · 큰 카드 · 동그란 바로가기 · 순위 · 보던 전시 · 줄마다 더보기) ---------- */
+const HT = {
+  en: { '홈': 'Home', '전시': 'Exhibits', '영상': 'Videos', '기사': 'Reads', '매거진': 'Magazine', '지금 열린 행성 TOP': 'Open now · TOP', '님이 보던 전시': '’s exhibitions', '더보기': 'More', '함께 보기': 'Watch along', '함께 읽기': 'Read along', '곧 착륙할 행성': 'Landing soon', '전체 행성': 'All planets', '좋아요': 'Likes', '최근 본': 'Recent', '지난 호': 'Past issues', '컬렉트': 'Collect', '플레이': 'Play', '검색': 'Search', '분 관람': ' min viewed', '공개 예정': 'Coming soon', '아직 영상이 없어요.': 'No videos yet.', '아직 기사가 없어요.': 'No reads yet.', '모든 전시': 'All exhibitions', '이번 달 행성': 'This month' },
+  zh: { '홈': '首页', '전시': '展览', '영상': '视频', '기사': '文章', '매거진': '杂志', '지금 열린 행성 TOP': '正在开放 · TOP', '님이 보던 전시': ' 看过的展览', '더보기': '更多', '함께 보기': '一起看', '함께 읽기': '一起读', '곧 착륙할 행성': '即将登陆', '전체 행성': '全部行星', '좋아요': '喜欢', '최근 본': '最近', '지난 호': '往期', '컬렉트': '收藏', '플레이': '互动', '검색': '搜索', '분 관람': ' 分钟', '공개 예정': '即将开放', '아직 영상이 없어요.': '还没有视频。', '아직 기사가 없어요.': '还没有文章。', '모든 전시': '全部展览', '이번 달 행성': '本月行星' },
+  ja: { '홈': 'ホーム', '전시': '展示', '영상': '動画', '기사': '記事', '매거진': 'マガジン', '지금 열린 행성 TOP': '公開中 · TOP', '님이 보던 전시': 'さんが見ていた展示', '더보기': 'もっと見る', '함께 보기': '一緒に見る', '함께 읽기': '一緒に読む', '곧 착륙할 행성': 'まもなく着陸', '전체 행성': 'すべての惑星', '좋아요': 'いいね', '최근 본': '最近', '지난 호': 'バックナンバー', '컬렉트': 'コレクト', '플레이': 'プレイ', '검색': '検索', '분 관람': '分 観覧', '공개 예정': '公開予定', '아직 영상이 없어요.': 'まだ動画はありません。', '아직 기사가 없어요.': 'まだ記事はありません。', '모든 전시': 'すべての展示', '이번 달 행성': '今月の惑星' },
+};
+const ht = (k) => (HT[lang] && HT[lang][k]) || t(k);
+let homeCat = 'home';
+const HOME_CATS = [['home', '홈'], ['all', '전시'], ['video', '영상'], ['read', '기사'], ['mag', '매거진']];
+function allLinks() {
+  const out = [], seen = new Set(), keys = Object.keys(ISSUES).sort().reverse();
+  for (const k of (keys.length ? keys : [thisMonth()])) for (const c of cells) for (const l of linksFor(c, k)) if (!seen.has(l.url)) { seen.add(l.url); out.push({ ...l, c }); }
+  return out;
+}
+const isNewCell = (c) => { const s = startOf(c), n = new Date(); return isOpen(c) && s.getFullYear() === n.getFullYear() && s.getMonth() === n.getMonth(); };
+const tvPoster = (c, extra = '') => `<span class="tv-poster${isOpen(c) ? '' : ' soon'}"><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false">${isNewCell(c) ? '<em class="tv-new">NEW</em>' : !isOpen(c) ? `<em class="tv-new soon">${esc(ht('공개 예정'))}</em>` : ''}<span class="tv-pt"><small>${esc(c.code || '')}</small><b>${esc(name(c))}</b></span>${extra}</span>`;
+const rowH = (title, more) => `<div class="tv-rh"><h2>${esc(title)}</h2>${more ? `<button ${more}>${esc(ht('더보기'))}</button>` : ''}</div>`;
+const ytCard = (l) => { const id = ytId(l.url); return `<button class="tv-yt" data-yt="${id}" data-ytt="${esc(l.title)}"><span class="tv-yt-th"><img loading="lazy" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" decoding="async"><i></i></span><b>${esc(l.title)}</b><small>${esc(l.source || '')}</small></button>`; };
+const rdCard = (l) => `<a class="tv-rd" href="${esc(l.url)}" target="_blank" rel="noopener"><span><b>${esc(l.title)}</b><small>${esc(l.source || '')}${l.c ? ' · ' + esc(name(l.c)) : ''}</small></span><i>↗</i></a>`;
+const CIRC = [
+  ['data-all', '전체 행성', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.6" transform="rotate(-20 12 12)"/>'],
+  ['data-gotab="play"', '플레이', '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M4 9c-1 2-1 4 0 6M20 9c1 2 1 4 0 6"/>'],
+  ['data-gotab="shop"', '컬렉트', '<rect x="4" y="3.5" width="16" height="17" rx="1.5"/><rect x="7.5" y="7" width="9" height="8" rx=".5"/>'],
+  ['data-cat="mag"', '매거진', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>'],
+  ['data-saved', '좋아요', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'],
+  ['data-recent', '최근 본', '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 8v4l3 2"/>'],
+  ['data-vols', '지난 호', '<rect x="4" y="5" width="16" height="15" rx="1.5"/><path d="M4 10h16M9 3v4M15 3v4"/>'],
+  ['data-search', '검색', '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>'],
+];
+function homeHTML() {
+  const top = `<header class="tv-top"><b class="tv-logo nb-brand-word">ARTMOS</b><div class="icons"><button data-search aria-label="${t('전시 검색')}">${searchIcon}</button>${bell()}</div></header>
+    <nav class="tv-cats" aria-label="${esc(ht('홈'))}">${HOME_CATS.map(([id, k]) => `<button data-cat="${id}" class="${homeCat === id ? 'on' : ''}" aria-pressed="${homeCat === id}">${esc(ht(k))}</button>`).join('')}</nav>`;
+  if (homeCat === 'mag') return `<div class="tv-home tv-magwrap">${top}</div>${magazineHTML()}`;
+  const k = viewMonth || thisMonth(), picks = picksFor(k), open = cells.filter(isOpen);
+  if (homeCat === 'all') {
+    const list = [...open.slice().reverse(), ...cells.filter((c) => !isOpen(c))];
+    return `<div class="tv-home">${top}<section class="tv-sec">${rowH(ht('모든 전시'))}<div class="tv-grid">${list.map((c) => `<button class="tv-card" data-detail="${esc(c.id)}">${tvPoster(c)}</button>`).join('')}</div></section></div>`;
+  }
+  const L = allLinks(), yt = L.filter((l) => l.type === 'youtube' && ytId(l.url)), rd = L.filter((l) => !(l.type === 'youtube' && ytId(l.url)));
+  if (homeCat === 'video') return `<div class="tv-home">${top}<section class="tv-sec">${rowH(ht('함께 보기'))}${yt.length ? `<div class="tv-vgrid">${yt.map(ytCard).join('')}</div>` : `<p class="empty">${ht('아직 영상이 없어요.')}</p>`}</section></div>`;
+  if (homeCat === 'read') return `<div class="tv-home">${top}<section class="tv-sec">${rowH(ht('함께 읽기'))}${rd.length ? `<div class="tv-rlist">${rd.map(rdCard).join('')}</div>` : `<p class="empty">${ht('아직 기사가 없어요.')}</p>`}</section></div>`;
+
+  const heroList = (picks.length ? picks : open.slice().reverse()).filter(Boolean);
+  const rank = [...new Set([...heroList, ...open.slice().reverse()])].filter(isOpen).slice(0, 20);
+  const p = me(), seen = Object.entries(hist()).map(([id, x]) => [cells.find((c) => c.id === id), x]).filter(([c]) => c && isOpen(c)).sort((a, b) => (b[1].last || 0) - (a[1].last || 0));
+  const soon = cells.filter((c) => c.status === 'coming');
+  return `<div class="tv-home">${top}
+    <section class="tv-hero" aria-label="${esc(ht('이번 달 행성'))}"><div class="tv-hero-track">${heroList.map((c) => `
+      <button class="tv-hcard" data-detail="${esc(c.id)}" style="--c:${esc(c.color || '#b7b7b7')}">
+        <span class="tv-hstage"><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"></span>
+        <span class="tv-htext"><small>${esc(c.code || '')}${c.artist ? ' · ' + esc(c.artist) : ''}</small><b>${esc(name(c))}</b><i>${esc(c.subtitle || playOf(c).q || '')}</i></span>
+      </button>`).join('')}</div>
+      ${heroList.length > 1 ? `<div class="tv-dots">${heroList.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</section>
+    <section class="tv-circles">${CIRC.map(([a, k, d]) => `<button ${a}><span><svg viewBox="0 0 24 24">${d}</svg></span><b>${esc(ht(k))}</b></button>`).join('')}</section>
+    ${rank.length ? `<section class="tv-sec">${rowH(ht('지금 열린 행성 TOP') + ' ' + rank.length)}<div class="tv-row tv-rank">${rank.map((c, i) => `<button class="tv-rk" data-detail="${esc(c.id)}"><em>${i + 1}</em>${tvPoster(c)}</button>`).join('')}</div></section>` : ''}
+    ${seen.length ? `<section class="tv-sec">${rowH((p && p.nick ? p.nick : '') + ht('님이 보던 전시'), 'data-recent')}<div class="tv-row">${seen.map(([c, x]) => { const pr = Math.max(.04, Math.min(1, (x.time || 0) / (readMin(c) * 60))); return `<button class="tv-card tv-cont" data-open="${esc(c.id)}">${tvPoster(c, `<span class="tv-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="tv-prog"><i style="width:${Math.round(pr * 100)}%"></i></span>`)}<span class="tv-cap">${fmtTime(x.time || 0)}</span></button>`; }).join('')}</div></section>` : ''}
+    ${yt.length ? `<section class="tv-sec">${rowH(ht('함께 보기'), 'data-cat="video"')}<div class="tv-row">${yt.slice(0, 10).map(ytCard).join('')}</div></section>` : ''}
+    ${rd.length ? `<section class="tv-sec">${rowH(ht('함께 읽기'), 'data-cat="read"')}<div class="tv-rlist">${rd.slice(0, 4).map(rdCard).join('')}</div></section>` : ''}
+    ${soon.length ? `<section class="tv-sec">${rowH(ht('곧 착륙할 행성'), 'data-all')}<div class="tv-row">${soon.map((c) => `<button class="tv-card" data-detail="${esc(c.id)}">${tvPoster(c)}</button>`).join('')}</div></section>` : ''}
+    <p class="tv-foot">ARTMOS · BY VALIX LAB</p>
+  </div>`;
+}
+function bindHero() {
+  const track = view.querySelector('.tv-hero-track'); if (!track) return;
+  const dots = [...view.querySelectorAll('.tv-dots i')];
+  track.addEventListener('scroll', () => {
+    const w = track.firstElementChild ? track.firstElementChild.offsetWidth + 12 : 1, i = Math.round(track.scrollLeft / w);
+    dots.forEach((d, j) => d.classList.toggle('on', j === i));
+  }, { passive: true });
+}
+
+const TAB_I = { home: 0, play: 1, shop: 2, my: 3 };
 function go(next, keepScroll) {
   if (!Object.hasOwn(screens, next)) return;
   const previous = tab, oldScroll = scrollY;
@@ -456,6 +532,7 @@ function go(next, keepScroll) {
   tabsEl.querySelector('.ind').style.transform = `translateX(${TAB_I[tab] * 100}%)`;
   const targetScroll = keepScroll && previous === next ? oldScroll : previous !== next ? tabScroll[next] : 0;
   scrollTo(0, targetScroll);
+  if (tab === 'home') bindHero();
   tlx = tly = 9; bindTilt();
   countdownNodes = [...view.querySelectorAll('[data-left]')].map((el) => ({ el, cell: cells.find((c) => c.id === el.dataset.left) }));
   syncRuntime(); syncPreferenceControls();
@@ -520,6 +597,8 @@ function onAction(e) {
   if ((b = q('[data-share]'))) { const cell = byId(b.dataset.share); if (cell) exhibitShare.share(cell); return true; }
   if ((b = q('[data-cover]'))) { changeCover(Number(b.dataset.cover), null, b.dataset.cover); return true; }
   if ((b = q('[data-cover-index]'))) { changeCover(0, Number(b.dataset.coverIndex), 'index:' + b.dataset.coverIndex); return true; }
+  if ((b = q('[data-cat]'))) { homeCat = b.dataset.cat; if (sheet.isOpen) sheet.close({ restoreFocus: false }); tabScroll.home = 0; go('home'); return true; }
+  if ((b = q('[data-gotab]'))) { go(b.dataset.gotab); return true; }
   if (q('[data-search]')) { discover.open('all', true); return true; }
   if (q('[data-saved]')) { discover.open('liked'); return true; }
   if (q('[data-motion]')) { motionQuery.setReduced(!motionQuery.requested); syncPreferenceControls(); return true; }
