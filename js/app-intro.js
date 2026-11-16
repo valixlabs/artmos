@@ -1,5 +1,5 @@
 // 앱 첫 화면 인트로: 작은 ART COSMOS → ARTMOS (앱을 켤 때마다 한 번, 약 4초). 배경은 우주로 빨려 들어가는 별 터널
-// 흐름: 성운 먼지가 가운데로 모임 → 왼쪽에 ART, 오른쪽에 별로 된 COSMOS → COS가 별가루로 흩어지고 MOS가 ART에 붙어 ARTMOS
+// 흐름: 성운 먼지가 가운데로 모임 → 왼쪽에 ART, 오른쪽에 별로 된 COSMOS → COS가 흩어지고 MOS가 ART에 붙어 ARTMOS
 //      → 붙는 순간 빛 + 웅장한 소리, O가 고리를 두른 행성이 되고 작은 위성이 한 바퀴 → 카피 → 앱
 // 소리는 실시간 합성(Web Audio): 낮은 금관 같은 화음이 차오르다 → 북·종 화음이 터지고 → 큰 홀 잔향.
 // 로고가 다 그려지면 '입장하기' 버튼이 뜨고 누를 때까지 머묾(소리가 막혀 있었으면 누를 때 소리와 함께 입장). 화면을 누르면 건너뜀.
@@ -79,7 +79,6 @@
   const NS = 260, S = [];
   const star = (z) => ({ a: Math.random() * 6.283, d: 0.05 + Math.pow(Math.random(), 0.7) * 0.95, z, c: Math.random() < 0.75 ? '205,225,255' : '255,236,200' });
   for (let i = 0; i < NS; i++) S.push(star(0.05 + Math.random() * 0.95));
-  const sparks = []; // COS가 흩어질 때·합쳐질 때 생기는 별가루
   let t0 = performance.now(), raf = 0, lt = t0;
   function frame(now) {
     const t = now - t0, dt = Math.min(0.05, (now - lt) / 1000); lt = now; cx.clearRect(0, 0, W, H);
@@ -98,17 +97,7 @@
       cx.strokeStyle = `rgba(${s.c},${al})`; cx.lineWidth = 0.5 + (1 - s.z) * 1.3;
       cx.beginPath(); cx.moveTo(mx + ca * prad, my + sa * prad); cx.lineTo(mx + ca * rad, my + sa * rad); cx.stroke();
     }
-    for (let i = sparks.length - 1; i >= 0; i--) {
-      const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.vx *= 0.97; s.vy *= 0.97; s.life -= 1;
-      if (s.life <= 0) { sparks.splice(i, 1); continue; }
-      cx.fillStyle = `rgba(255,255,255,${(s.life / s.max) * 0.9})`; cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
-    }
     if (!done) raf = requestAnimationFrame(frame);
-  }
-  const easeOut = (x) => 1 - Math.pow(1 - x, 3);
-  function burstAt(node, n, spread) {
-    const r = node.getBoundingClientRect(), b = cv.getBoundingClientRect();
-    for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = Math.random() * spread; sparks.push({ x: r.left - b.left + r.width / 2 + (Math.random() - 0.5) * r.width, y: r.top - b.top + r.height / 2 + (Math.random() - 0.5) * r.height, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.3, r: 0.6 + Math.random() * 1.4, life: 40 + Math.random() * 50, max: 90 }); }
   }
 
   // ---------- 소리: 차오르는 낮은 화음 → 합쳐지는 순간 북 + 종 화음 + 큰 홀 잔향 ----------
@@ -175,7 +164,7 @@
     $$('.art .ch').forEach((c, i) => at(T.art + i * 110, () => c.classList.add('on')));
     $$('.cos .ch').forEach((c, i) => at(T.cosmos + i * 70, () => c.classList.add('on')));
     at(T.scatter, () => $$('.cos .x').forEach((c, i) => { // COS가 별가루로 흩어짐
-      c.classList.add('dust'); c.style.transform = `translate(${(i - 1) * 30}px,${-40 - i * 12}px) scale(.4)`; burstAt(c, 26, 3.2);
+      c.classList.add('dust'); c.style.transform = `translate(${(i - 1) * 30}px,${-40 - i * 12}px) scale(.4)`;
     }));
     at(T.join, () => { // 남은 글자를 ARTMOS 자리로 (ghost 단어의 글자 위치로 이동) + 작던 글씨가 본래 크기로 자라남
       const ghost = $$('.ghost .ch'), live = [0, 1, 2, 3, 4, 5].map((i) => $('.live .k' + i)), gw = $('.ghost'), lw = $('.live');
@@ -186,7 +175,7 @@
     });
     at(T.hit - 40, () => {
       const live = $$('.live .k'); live.forEach((c) => c.classList.add('lit')); setTimeout(() => live.forEach((c) => c.classList.remove('lit')), 700);
-      $('.flash').classList.add('on'); burstAt($('.live .k4'), 60, 5);
+      $('.flash').classList.add('on');
       $('.live').classList.add('big');
     });
     at(T.copy, () => el.classList.add('copyon'));
