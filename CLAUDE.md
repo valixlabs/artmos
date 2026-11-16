@@ -2,9 +2,9 @@
 
 온라인 인터랙티브 전시 플랫폼. "살아 있는 예술이 태어나는 우주."
 **ARTMOS = ART + COSMOS**, 예술로 이루어진 우주. 성운 가운데에서 전시 하나하나가 행성으로 태어나 궤도를 돎(홈의 성운·행성 그림은 그대로). 전시는 관람객의 손끝·움직임(센서)에 반응하며 살아 움직임. 서비스·앱 표시 이름은 **ARTMOS**, 만든 곳은 VALIX LAB. 로고는 Michroma 워드마크(`css/artmos-brand.css`, `assets/fonts/michroma-latin-400.woff2` OFL). 기존 기기 저장 키(valix-*, xpace-*, nebula-*)는 호환성을 위해 그대로.
-- 이름 변천: XPACE → NEBULA(2026-11, 저장소 `the-cell` → `nebula`, 번호 X-001 → N-001) → **ARTMOS(2026-11-13, 번호 N-001 → A-001, 상품 id `artmos.*`)**. 저장소 이름·주소(`…/nebula/`)는 아직 nebula. 홈 가운데의 X 표시 → 빛나는 별을 감싼 성운(색 구름 42개 + 나선 팔 먼지 2,600개), 로고는 빛나는 점+궤도.
+- 이름 변천: XPACE → NEBULA(2026-11, 저장소 `the-cell` → `nebula`, 번호 X-001 → N-001) → **ARTMOS(2026-11-13, 번호 N-001 → A-001, 상품 id `artmos.*`)** → **2026-11-16 저장소도 `nebula` → `artmos`**(주소 …/artmos/). 파일·CSS 클래스도 artmos로(`css/app-artmos.css`, `assets/artmos-mark.svg`, `.artmos-refined`, `.artmos-calm`). 기기 저장 키 `nebula-*`(`nebula-calm`, `nebula-paytest*`, `nebula-shop-*`)와 앱 UA 검사 `NEBULAApp`은 호환을 위해 그대로. 홈 가운데의 X 표시 → 빛나는 별을 감싼 성운(색 구름 42개 + 나선 팔 먼지 2,600개), 로고는 빛나는 점+궤도.
 
-- 사이트: https://vailixlab.github.io/nebula/ (GitHub Pages, main 브랜치 루트에서 바로 배포, 빌드 없음). 예전 주소 …/the-cell/ 은 더 이상 열리지 않음.
+- 사이트: **https://vailixlab.github.io/artmos/** (GitHub Pages, main 브랜치 루트에서 바로 배포, 빌드 없음). 예전 주소 …/nebula/·…/the-cell/ 은 열리지 않음(새 주소로 안내 필요). 저장소 vailixlab/artmos.
 - 2026-11-13 저장소를 조직 **vailixlab**으로 옮김(kss09876-alt → vailixlab). 주소가 kss09876-alt.github.io/nebula → **vailixlab.github.io/nebula**로 바뀜. 예전 주소는 열리지 않음. 앱 껍데기 `server.url`도 새 주소로.
 - 저장소 이름을 다시 바꾸면 주소·앱 설정(`server.url`)이 함께 바뀌니 주의.
 - 기기 저장 키(localStorage `xpace-lang`, `xpace-sound` 등)는 사용자 설정이 사라지지 않게 옛 이름 그대로 둠.
