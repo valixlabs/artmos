@@ -33,5 +33,5 @@ export const CONFIG = {
   // appRedirect: 앱(Capacitor)에서 로그인 뒤 돌아올 앱 주소(예: 'artmos://auth'), redirectTo: 웹에서 돌아올 주소(비우면 지금 페이지)
   // providers: Supabase에서 실제로 켠 소셜 로그인만 적기(예: ['kakao', 'apple', 'google']). 비어 있으면 버튼은 보이되 '곧 열려요'. 설정 순서: docs/auth/README.md
   auth: { supabaseUrl: 'https://tyuvosvhmvmlbbinhehz.supabase.co', supabaseAnonKey: 'sb_publishable_dwqT2vrjDRbADssUkt6iCA_xgTtTAKM', // 공개용(publishable) 키 — 비밀 키 아님
-    providers: ['kakao'], appRedirect: '', redirectTo: '' },
+    providers: [], appRedirect: '', redirectTo: '' },
 };
