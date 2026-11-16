@@ -16,7 +16,7 @@ import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=1';
 import * as MB from './membership.js?v=9';
 import * as SHOP from './app-shop.js?v=7';
-import * as AU from './auth.js?v=5';
+import * as AU from './auth.js?v=6';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
 
@@ -104,6 +104,7 @@ const OB = {
       <button class="btn black" data-ob="${step === 0 ? 'intro1' : 'login'}">${t('다음')}</button><button class="link" data-ob="login">${t('건너뛰기')}</button>`;
   },
   login() { return AU.loginHTML(); },
+  agree() { return AU.agreeHTML(); },
   signup() { return AU.signupHTML(); },
   'login-form'() { return AU.loginFormHTML(); },
   reset() { return AU.resetHTML(); },
@@ -144,6 +145,7 @@ function checkNick() {
 }
 // 로그인을 마치면: 서버에 이름이 있으면 그 이름으로 바로 입장, 없으면 항해명 정하기
 async function afterLogin() {
+  if (await AU.needsConsent()) { showOB('agree'); return; } // 소셜 첫 가입: 동의 먼저
   const n = await AU.profileNick();
   if (n) { const old = me(); store.set('valix-me', { nick: n, since: (old && old.since) || Date.now() }); store.set('valix-onboarded', true); ob.hidden = true; ob.innerHTML = ''; toast(AU.at('welcome')); go(tab); return; }
   showOB('nick');
@@ -886,7 +888,8 @@ function firstValidData(promises) {
   warm(firstPlanets());
   // 인트로(ARTMOS) 다음 바로 로그인. 소셜 로그인에서 돌아온 경우(세션 있음)엔 항해명 단계로
   const user = await AU.currentUser();
-  if (!store.get('valix-onboarded', false)) { if (user) afterLogin(); else showOB('login'); } else go('home');
+  if (user && await AU.needsConsent()) showOB('agree'); // 동의 없이 들어온 소셜 계정(마이 탭에서 로그인한 경우 포함)
+  else if (!store.get('valix-onboarded', false)) { if (user) afterLogin(); else showOB('login'); } else go('home');
   AU.onAuth(() => { if (tab === 'my' && !view.hidden) go('my', true); });
   if (location.hash === '#orders') { history.replaceState(null, '', location.pathname + location.search); go('my'); SHOP.loadShop().then(() => SHOP.openOrders(sheet)); } // 결제 후 돌아옴
   const match = location.hash.match(/open=([\w-]+)/);
