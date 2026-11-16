@@ -3,7 +3,7 @@
 //      → 붙는 순간 빛 + 웅장한 소리, O가 고리를 두른 행성이 되고 작은 위성이 한 바퀴 → 카피 → 앱
 // 소리는 실시간 합성(Web Audio): 낮은 금관 같은 화음이 차오르다 → 북·종 화음이 터지고 → 큰 홀 잔향.
 // 로고가 다 그려지면 '입장하기' 버튼이 뜨고 누를 때까지 머묾(소리가 막혀 있었으면 누를 때 소리와 함께 입장). 화면을 누르면 건너뜀.
-// 모션 줄이기 설정이면 짧게 페이드만. 소리 끄기(xpace-sound=off)면 소리·버튼 없이.
+// 모션 줄이기 설정이면 연출만 짧게(버튼은 똑같이 기다림). 소리 끄기(xpace-sound=off)면 소리만 없이.
 (() => {
   const L = (() => { // 앱(i18n.js)과 같은 순서: 주소 ?lang= → 지난번 선택 → 기기 언어 → 한국어
     const ok = (l) => ['ko', 'en', 'zh', 'ja'].includes(l);
@@ -149,6 +149,11 @@
   // ---------- 진행 ----------
   let done = false; const timers = [];
   const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  function showEnter() { // '입장하기' — 이 버튼을 누를 때만 인트로가 끝남(자동·화면 터치로는 넘어가지 않음)
+    const b = $('.enter'); if (!b || !b.hidden) return;
+    b.hidden = false; requestAnimationFrame(() => b.classList.add('show')); try { b.focus({ preventScroll: true }); } catch (e) {}
+  }
+  setTimeout(showEnter, 7000); // 혹시 연출이 멈춰도 버튼은 반드시 나옴
   function finish() {
     if (done) return; done = true; timers.forEach(clearTimeout); cancelAnimationFrame(raf);
     el.classList.add('out');
@@ -156,7 +161,7 @@
   }
   if (reduce) {
     $$('.live .k').forEach((c) => c.classList.add('on')); $$('.live .x').forEach((c) => c.remove()); $('.live .gap').remove();
-    $('.live').classList.add('big'); el.classList.add('copyon'); at(1500, finish);
+    $('.live').classList.add('big'); el.classList.add('copyon'); at(1500, showEnter);
   } else start();
   async function start() {
     try { await Promise.race([document.fonts.load("40px 'ARTMOS Michroma'"), new Promise((r) => setTimeout(r, 700))]); } catch (e) {}
@@ -181,13 +186,12 @@
     });
     at(T.copy, () => el.classList.add('copyon'));
     at(T.end, () => {
-      if (soundOn) { const b = $('.enter'); b.hidden = false; requestAnimationFrame(() => b.classList.add('show')); b.focus({ preventScroll: true }); } // '입장하기'를 누를 때까지 머묾
-      else at(T.end + 900, finish);
+      showEnter();
     });
   }
   el.addEventListener('click', (e) => {
     const b = e.target.closest('.enter');
-    if (b) { b.disabled = true; if (audible()) { setTimeout(finish, 500); return; } sound(T.hit / 1000 - 0.05); setTimeout(finish, 1800); return; } // 소리가 이미 났으면 바로 입장, 막혀 있었으면 북·종소리부터 울리고 입장
-    finish(); // 아무 데나 누르면 건너뛰기
+    if (!b) return; // 화면의 다른 곳을 눌러도 넘어가지 않음
+    b.disabled = true; if (!soundOn || audible()) { setTimeout(finish, 500); return; } sound(T.hit / 1000 - 0.05); setTimeout(finish, 1800); return; // 소리가 이미 났으면 바로 입장, 막혀 있었으면 북·종소리부터 울리고 입장
   });
 })();
