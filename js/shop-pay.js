@@ -15,7 +15,7 @@ const qMode = new URLSearchParams(location.search).get('shoptest');
 const MODE = qMode != null ? (qMode === 'toss' ? 'toss' : '1') : (() => { try { return sessionStorage.getItem('nebula-shoptest') || ''; } catch (e) { return ''; } })();
 if (MODE) { try { sessionStorage.setItem('nebula-shoptest', MODE); } catch (e) {} }
 const TEST_KEY = /^test_/.test(PAY.clientKey || '');
-const WIDGET = /^(test|live)_gck_/.test(PAY.clientKey || ''); // 결제위젯 키면 위젯, ck면 결제창
+export const WIDGET = /^(test|live)_gck_/.test(PAY.clientKey || ''); // 결제위젯 키면 위젯, ck면 결제창
 export const SHOP_SIM = MODE === '1';                        // 기기 안 흉내
 export const TOSS_TEST = MODE === 'toss' && TEST_KEY;          // 토스 테스트 결제창
 export const SHOP_TEST = SHOP_SIM || TOSS_TEST || (!!PAY.enabled && TEST_KEY); // 화면에 '시험 모드' 표시
@@ -31,9 +31,10 @@ export const orders = () => { try { return JSON.parse(localStorage.getItem(OKEY)
 export function saveOrder(o) { const a = orders().filter((x) => x.orderId !== o.orderId); a.unshift({ ...orders().find((x) => x.orderId === o.orderId), ...o }); try { localStorage.setItem(OKEY, JSON.stringify(a.slice(0, 50))); } catch (e) {} }
 
 export const buyable = (w) => PAY_ON && w.status === 'available' && !w.price_request && w.price_krw > 0 && (!w.sample || SHOP_SIM || TOSS_TEST);
-const back = () => new URL('checkout.html', location.href).href;
+export const back = () => new URL('checkout.html', location.href).href;
+export const CLIENT_KEY = PAY.clientKey || '';
 
-async function api(path, body) {
+export async function api(path, body) {
   const token = await accessToken();
   if (!token) throw Object.assign(new Error('login'), { code: 'LOGIN_REQUIRED' });
   const anon = (CONFIG.auth || {}).supabaseAnonKey || '';
@@ -42,7 +43,7 @@ async function api(path, body) {
   if (!r.ok) throw Object.assign(new Error(j.message || 'server'), { code: j.code || r.status });
   return j;
 }
-function loadToss() {
+export function loadToss() {
   if (window.TossPayments) return Promise.resolve(window.TossPayments);
   return new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://js.tosspayments.com/v2/standard'; s.onload = () => ok(window.TossPayments); s.onerror = () => no(new Error('sdk')); document.head.appendChild(s); });
 }

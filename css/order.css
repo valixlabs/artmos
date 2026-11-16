@@ -1,0 +1,42 @@
+/* 주문 / 결제 페이지 (order.html) — 흑백 톤 */
+body { background: #000; color: #f2f2f2; margin: 0; }
+.od-top { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; height: 56px; padding: 0 8px; padding-top: env(safe-area-inset-top); background: #000; border-bottom: 1px solid #1f1f1f; }
+.od-back { color: #fff; text-decoration: none; font-size: 22px; text-align: center; }
+.od-logo { text-align: center; font-family: Michroma, sans-serif; letter-spacing: .18em; font-size: 13px; }
+.od { max-width: 640px; margin: 0 auto; padding: 20px 18px 120px; box-sizing: border-box; }
+.od h1 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 6px 0 16px; }
+.od-note { padding: 12px 14px; border-radius: 12px; background: #111; border: 1px solid #2a2a2a; color: #cfcfcf; font-size: 13.5px; line-height: 1.6; margin: 0 0 14px; }
+.od-sec { border: 1px solid #222; border-radius: 16px; padding: 18px; margin: 0 0 14px; background: #070707; }
+.od-sec h2 { font-size: 16px; font-weight: 700; margin: 0 0 14px; display: flex; justify-content: space-between; align-items: center; }
+.od-sec h2 small { font-size: 13px; font-weight: 500; color: #9a9a9a; }
+.od-item { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; }
+.od-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; background: #151515; }
+.od-item b { display: block; font-size: 15px; } .od-item span { display: block; color: #a8a8a8; font-size: 13px; margin-top: 3px; } .od-item strong { display: block; margin-top: 6px; }
+.od-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.od-grid .full { grid-column: 1 / -1; }
+.od label { display: grid; gap: 6px; font-size: 13px; color: #bdbdbd; }
+.od input[type=text], .od input[type=tel], .od input[type=email], .od select { width: 100%; box-sizing: border-box; height: 46px; border-radius: 10px; border: 1px solid #333; background: #0d0d0d; color: #fff; padding: 0 12px; font: inherit; font-size: 15px; }
+.od input:focus, .od select:focus { outline: none; border-color: #fff; }
+.od-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.od-btn2 { height: 46px; padding: 0 14px; border-radius: 10px; border: 1px solid #555; background: #000; color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.od-same { display: flex !important; grid-auto-flow: column; align-items: center; gap: 6px; font-size: 13px; color: #cfcfcf; }
+.od-sum { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 14px; color: #c8c8c8; margin: 0; }
+.od-sum dd { margin: 0; text-align: right; } .od-sum .tot { color: #fff; font-size: 18px; font-weight: 800; padding-top: 10px; border-top: 1px solid #262626; }
+.od-sec.od-agree { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.od-agree a { color: #fff; }
+.od-agree label { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; color: #e8e8e8; font-size: 14px; }
+.od-agree input { width: 20px; height: 20px; margin: 0; accent-color: #fff; }
+.od-agree p { margin: -4px 0 0 32px; color: #8f8f8f; font-size: 12.5px; line-height: 1.55; }
+.od-agree .all { padding-bottom: 12px; border-bottom: 1px solid #262626; font-weight: 700; }
+.od-pay { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, #000 30%); }
+.od-pay .btn { max-width: 640px; margin: 0 auto; display: block; width: 100%; }
+.od-err { color: #ff9a9a; font-size: 13.5px; min-height: 1.2em; margin: 4px 0 0; }
+.od-tw { background: #fff; border-radius: 12px; overflow: hidden; color: #111; }
+.od-spin { width: 36px; height: 36px; border-radius: 50%; border: 3px solid #333; border-top-color: #fff; margin: 30vh auto; animation: odr 1s linear infinite; }
+@keyframes odr { to { transform: rotate(360deg); } }
+.od-center { text-align: center; padding-top: 18vh; } .od-center p { color: #bdbdbd; line-height: 1.7; } .od-center .btn { margin-top: 20px; }
+.od-post { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.7); display: grid; place-items: center; padding: 16px; }
+.od-post-in { position: relative; width: 100%; max-width: 480px; height: 70vh; background: #fff; border-radius: 12px; overflow: hidden; }
+.od-post-x { position: absolute; top: 6px; right: 8px; z-index: 2; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #000; color: #fff; font-size: 20px; cursor: pointer; }
+#od-post-box { width: 100%; height: 100%; }
+@media (max-width: 480px) { .od-grid { grid-template-columns: 1fr; } }

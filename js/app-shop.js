@@ -5,7 +5,7 @@
 import { CONFIG } from './config.js?v=31';
 import { fetchSheet, imageUrl, esc } from './data.js?v=31';
 import { lang } from './i18n.js?v=6';
-import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser } from './shop-pay.js?v=8';
+import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser, SHOP_SIM } from './shop-pay.js?v=9';
 let acctUser = null; // 로그인한 계정(소장 폼에 이메일 미리 채움)
 
 const SH = CONFIG.shop || {};
@@ -225,6 +225,12 @@ export function collectBannerHTML(cellId, href = 'collect.html') {
   return `<a class="sp-banner" href="${href}?cell=${encodeURIComponent(cellId)}"><span class="sp-bimgs">${ws.slice(0, 3).map((w) => `<img src="${esc(imgOf(w, 300))}" alt="" loading="lazy">`).join('')}</span><span><small>ARTMOS · COLLECT</small><b>${st('collectAt')}</b><em>${st('collectGo')} →</em></span></a>`;
 }
 export const findWork = (id) => works.find((w) => w.id === id);
+// 주문 페이지(order.html)용: 작품 한 점의 표시 정보
+export function workInfo(id) {
+  const w = findWork(id); if (!w) return null;
+  return { w, id: w.id, title: L(w, 'title'), artist: L(artistOf(w), 'name'), img: imgOf(w), size: sizeTxt(w), material: L(w, 'material'), year: w.year, price: w.price_krw, priceTxt: won(w.price_krw || 0), cell: w.cell || '' };
+}
+export const wonTxt = (n) => won(n);
 export const openWork = (sheet, id) => { const w = findWork(id); if (w) sheet.open(workSheet(w), 'work'); };
 export function setCellFilter(cellId) { F.cell = cellId || ''; }
 
@@ -273,7 +279,12 @@ export function shopAction(e, ctx) {
   if ((b = q('[data-buy]'))) {
     const w = wOf(b.dataset.buy); if (!w || !buyable(w)) return true;
     // 소장은 로그인한 회원만: 앱은 로그인 화면으로, 웹은 안내
-    currentUser().then((u) => { acctUser = u; if (needsLogin()) { toast(st('needLogin')); if (ctx.login) { sheet.close(); ctx.login(); } return; } sheet.open(buySheet(w), 'buy'); });
+    currentUser().then((u) => {
+      acctUser = u; if (needsLogin()) { toast(st('needLogin')); if (ctx.login) { sheet.close(); ctx.login(); } return; }
+      if (SHOP_SIM) { sheet.open(buySheet(w), 'buy'); return; } // 기기 안 흉내는 예전 시트 그대로
+      try { sessionStorage.setItem('nebula-shop-back', location.pathname.split('/').pop() || 'app.html'); } catch (e) {}
+      location.href = 'order.html?work=' + encodeURIComponent(w.id); // 한 화면짜리 주문/결제 페이지
+    });
     return true;
   }
   if ((b = q('[data-cert]'))) { const o = orders().find((x) => x.orderId === b.dataset.cert); if (o) sheet.open(certSheet(o), 'cert'); return true; }

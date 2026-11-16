@@ -66,12 +66,17 @@ begin
 end $$;
 
 -- 결제 시작: 작품을 30분 잡아 두고 주문을 만듦. 금액은 여기서 계산. 못 잡으면 null
+-- 같은 회원이 같은 작품으로 아직 유효한 대기 주문을 갖고 있으면 그 주문을 다시 씀(결제창을 닫았다가 다시 누른 경우)
 create or replace function public.hold_work(p_work text, p_order text, p_user uuid, p_cell text, p_buyer jsonb, p_test boolean)
 returns public.orders
 language plpgsql security definer set search_path = public as $$
 declare w public.works; o public.orders;
 begin
   perform release_holds();
+  update orders set buyer = p_buyer, hold_until = now() + interval '30 minutes'
+   where order_id = (select order_id from orders where user_id = p_user and work_id = p_work and status = 'pending' and hold_until > now() order by created_at desc limit 1)
+  returning * into o;
+  if o.order_id is not null then return o; end if;
   update works set
     edition_left = case when edition_left is null then null else edition_left - 1 end,
     status = case when edition_left is null or edition_left - 1 = 0 then 'reserved' else 'available' end,
@@ -96,13 +101,22 @@ begin
 end $$;
 
 -- 결제 승인 성공: 주문 paid, 작품 sold(에디션은 다 나가면 sold)
+-- 단, 테스트 키로 결제한 주문이 실제 작품(test_only=false)이면 작품은 되돌려 둠 → 테스트 결제로 실제 작품이 '소장됨'이 되지 않게
 create or replace function public.mark_paid(p_order text, p_key text, p_method text) returns void
 language plpgsql security definer set search_path = public as $$
-declare o public.orders;
+declare o public.orders; real_work boolean;
 begin
   update orders set status = 'paid', payment_key = p_key, method = p_method, paid_at = now()
    where order_id = p_order and status = 'confirming' returning * into o;
   if o.order_id is null then return; end if;
+  select not test_only into real_work from works where work_id = o.work_id;
+  if o.test and real_work then
+    update works set
+      edition_left = case when edition_left is null then null else edition_left + 1 end,
+      status = 'available', updated_at = now()
+    where work_id = o.work_id and status <> 'sold';
+    return;
+  end if;
   update works set status = case when edition_left is null or edition_left = 0 then 'sold' else 'available' end, updated_at = now()
    where work_id = o.work_id;
 end $$;

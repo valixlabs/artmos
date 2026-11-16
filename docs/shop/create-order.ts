@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
   const buyer = {
     name: clip(b.name, 40), phone: clip(b.phone, 20).replace(/[^\d-]/g, ''), email: clip(b.email, 80) || user.email,
     zip: clip(b.zip, 10), addr1: clip(b.addr1, 120), addr2: clip(b.addr2, 120), memo: clip(b.memo, 120), country: 'KR',
+    orderer: { name: clip(b.orderer?.name, 40) || clip(b.name, 40), phone: clip(b.orderer?.phone, 20).replace(/[^\d-]/g, '') || clip(b.phone, 20).replace(/[^\d-]/g, '') },
   };
   if (!body.work_id || !buyer.name || !/^01\d-?\d{3,4}-?\d{4}$/.test(buyer.phone) || !buyer.zip || !buyer.addr1) return json({ code: 'BAD_REQUEST' }, 400);
 
