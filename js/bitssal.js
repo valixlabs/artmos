@@ -5,7 +5,7 @@ import { sound } from './bitssal-sound.js?v=7';
 import { lang, tr, langSwitcher } from './i18n.js?v=6';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=4';
-import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=7';
+import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=8';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import * as MB from './membership.js?v=10';
 // 화면 문구 (읽기 → 체험 · 내레이션)
@@ -356,7 +356,7 @@ function applyFace(id) {
   let sc = R * (mobile ? 0.55 : 0.62), fx = CX, fy = mobile ? CY - R * 0.32 : CY - R * 0.05; const k = face.k;
   // 이야기 카드 위쪽의 얼굴 자리(.st-stage, 한 화면)에 얼굴을 그림 → 스크롤하면 카드와 함께 올라가고, 글 상자는 그 아래라 겹치지 않음
   const stage = mobile && faceCard ? faceCard.querySelector('.st-stage') : null;
-  if (stage) { const r = stage.getBoundingClientRect(); sc = Math.min(r.height * 0.36, mobile ? W * 0.42 : R * 0.75); fy = r.top + r.height / 2 - sc * 0.1; face.fy = fy; face.sc = sc; }
+  if (stage) { const r = stage.getBoundingClientRect(); sc = Math.min(r.height * 0.36, W * 0.42); fy = Math.min(r.top + r.height / 2, H * 0.42) - sc * 0.1; face.fy = fy; face.sc = sc; } // 화면 42% 높이에서 모이고, 얼굴 자리가 올라가면 함께 올라감
   else if (mobile && face.fy != null) { fy = face.fy; sc = face.sc; }
   if (mobile && face.lastFy != null && Math.abs(fy - face.lastFy) < 600) { const dy = fy - face.lastFy; for (let i = 1; i <= FN; i++) Y[i] += dy; } // 카드와 함께 그대로 따라 움직임
   face.lastFy = mobile ? fy : null;
@@ -367,6 +367,24 @@ function applyFace(id) {
 // 주먹밥
 function initBalls() { state.balls = Array.from({ length: 10 }, (_, k) => ({ a: (k / 10) * Math.PI * 2, r: 0.75, tr: 0.75, ta: (k / 10) * Math.PI * 2, size: 1 })); }
 initBalls();
+
+// ---------------- 휴대폰: 쌀알이 흘러가는 모양들 ----------------
+// 《빛쌀》 조형물(윗 접시 → 좁은 목 → 아래 그릇)을 쌀알로. 첫 화면에서 글 위쪽에 섬
+function sculpt(a = 1) {
+  const sc = R / 260, cy = H * 0.3;
+  for (let i = 0; i < 1300; i++) {
+    const u = (R1[i] + state.flowT * (0.5 + R3[i])) % 1; let x, y;
+    if (u < 0.25) { const an = R2[i] * 6.28, r = Math.sqrt(u / 0.25); x = Math.cos(an) * 130 * r; y = -230 + Math.sin(an) * 18 * r; }
+    else if (u < 0.75) { const v = (u - 0.25) / 0.5; x = lerp(120, 10, Math.min(1, v * 3)) * (R2[i] - 0.5) * 2; y = -220 + v * 380; }
+    else { const v = (u - 0.75) / 0.25, an = R2[i] * Math.PI; x = Math.cos(an + Math.PI) * 90 * Math.sqrt(R3[i]); y = 170 + Math.sin(an) * 30 * v; }
+    setT(i, CX + x * sc, cy + y * sc, a * (0.45 + 0.55 * R3[i]), 0);
+  }
+  for (let i = 1300; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.08, 0);
+}
+// 흩어진 쌀알: 화면 가득 옅게 떠다님 (모양과 모양 사이)
+function dust(t) { for (let i = 0; i < N; i++) setT(i, R1[i] * W + Math.sin(t * 0.17 + R3[i] * 6.28) * 18, R2[i] * H + Math.cos(t * 0.13 + R1[i] * 6.28) * 18, 0.06 + 0.14 * R3[i], 0); }
+// 장 표지 때 쌀알이 이루는 그 장의 모양 (체험의 첫 모습)
+const COVER_P = { life: 0.3, hunger: 0.08, demand: 0.45, spread: 0.6, erased: 0.4, mine: 0.6, truth: 0.4, share: 0.5, light: 0.6 };
 
 // ---------------- 장면별 목표 위치 ----------------
 function setT(i, x, y, a, c) { TX[i] = x; TY[i] = y; TA[i] = a; C[i] = c; }
@@ -683,12 +701,13 @@ function findStory() {
     sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => { const r = el.getBoundingClientRect(); if (r.bottom < b0 || r.top > b1) return; const d = Math.abs(r.top + r.height / 2 - innerHeight / 2); if (d < bdd) { bdd = d; bst = el; } });
     readCard = bst; faceCard = bst && bst.dataset.face ? bst : null; faceMax = 1; return;
   }
-  const H0 = innerHeight, band0 = H0 * 0.22, band1 = H0 * 0.78; let best = null, bd = 1e9, fc = null, fm = 1;
+  const H0 = innerHeight, band0 = H0 * 0.22, band1 = H0 * 0.78; let best = null, bd = 1e9, fc = null;
   sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => {
-    const st = el.querySelector('.st-stage'), br = (el.querySelector('.st-box') || el).getBoundingClientRect();
-    if (st && el.dataset.face) { const sr = st.getBoundingClientRect(), mid = (sr.top + sr.bottom) / 2; if (mid < H0 * 0.9 && mid > -H0 * 0.2 && br.top > H0 * 0.45) { fc = el; fm = Math.max(0, Math.min(1, (br.top - H0 * 0.45) / (H0 * 0.3))); } }
+    const r = el.getBoundingClientRect(), br = (el.querySelector('.st-box') || el).getBoundingClientRect();
+    if (el.dataset.face && r.top < H0 * 0.92 && br.bottom > H0 * 0.3) fc = el; // 얼굴 자리가 들어오면 모이고, 글까지 다 지나가면 흩어짐
     if (br.bottom < band0 || br.top > band1) return; const d = Math.abs(br.top + br.height / 2 - H0 / 2); if (d < bd) { bd = d; best = el; }
   });
+  const fm = 1;
   faceCard = fc; faceMax = fm; readCard = best;
 }
 let frameErr = 0;
@@ -711,23 +730,41 @@ function draw(now) {
     const nextTop = nx ? sr.top + (parseFloat(nx.style.top) || 0) : Infinity;
     pc.classList.toggle('docked', top < innerHeight * 0.72 && sr.bottom > innerHeight * 0.9 && nextTop > innerHeight * 0.9); // 다음 카드·다음 장이 보이기 전에 내려감
   });
-  sections[cur].querySelectorAll(':scope > .card.story, :scope > .card.chap-open').forEach((el) => { const r = el.getBoundingClientRect(); el.classList.toggle('past', el.classList.contains('chap-open') ? r.top + r.height / 2 < innerHeight * 0.32 : r.bottom < innerHeight * 0.3); });
+  sections[cur].querySelectorAll(':scope > .card.story, :scope > .card.chap-open').forEach((el) => { const r = el.getBoundingClientRect(); el.classList.toggle('past', el.classList.contains('chap-open') ? (() => { const b = (el.querySelector('b') || el).getBoundingClientRect(); return (b.top + b.bottom) / 2 < innerHeight * 0.32; })() : r.bottom < innerHeight * 0.3); });
   const reading = !!readCard || !!faceCard;
-    // 체험 카드가 올라오기 전(장 표지·얼굴·글·그 사이 빈 자리)에는 체험 그림·쌀알을 끔 → 얼굴 → 글 → 체험이 하나씩만 보이게
-  const secEl = sections[cur], pcard = secEl.querySelector(':scope > .card.play');
-  // 휴대폰(앱): 체험 그림은 체험 카드가 화면 아래에 붙어 있을 때만. 장 표지·글·인용·기록·영상·출처 위에는 그림을 띄우지 않음
-  const playing = !!secEl.querySelector(':scope > .card.play.docked');
-  const quiet = reading || (mobile && !playing && !(SCENES[cur].id === 'prologue' && !readCard));
+  const secEl = sections[cur];
+  // 휴대폰(앱): 쌀알이 꺼지지 않고 모양을 바꿔 가며 흐름 — 조형물 → 흩어짐 → 얼굴 → (글) → 흩어짐 → 장 모양 → 흩어짐 → 얼굴 … 체험 카드가 붙으면 체험
+  let mm = null;
+  if (mobile) {
+    const playing = !!secEl.querySelector(':scope > .card.play.docked');
+    let cover = null; secEl.querySelectorAll(':scope > .card.chap-open').forEach((el) => { const b = (el.querySelector('b') || el).getBoundingClientRect(), c = (b.top + b.bottom) / 2; if (c > innerHeight * 0.32 && c < innerHeight * 1.02) cover = c; });
+    const p0 = id === 'prologue' ? secEl.querySelector(':scope > .card:not(.story)') : null, p0r = p0 && p0.getBoundingClientRect();
+    mm = cover != null ? 'cover' : faceCard ? 'face' : playing ? 'play' : p0r && p0r.bottom > innerHeight * 0.12 ? 'intro' : 'dust';
+    // 조형물·장 모양은 아래 글(제목)과 함께 위로 올라감 → 글이 모양 위로 겹쳐 오지 않게
+    state.offY = mm === 'cover' ? Math.min(0, cover - innerHeight * 0.76) : mm === 'intro' ? Math.min(0, p0r.top - innerHeight * 0.58) : 0;
+  }
+  const quiet = mobile ? mm !== 'play' : reading;
   hold = quiet || !!secEl.querySelector(':scope > .card.play.locked'); state.readK = Math.max(0, Math.min(1, (state.readK || 0) + (quiet ? dt * 2.5 : -dt * 1.6)));
   document.body.classList.toggle('phase-read', quiet);
-  // 장 표지가 화면 가운데 있으면 쌀알·장면 그림을 거의 꺼서 제목만 보이게
-  const opening = !reading && [...sections[cur].querySelectorAll(':scope > .card.chap-open')].some((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.45; });
+  // 장 표지가 화면 가운데 있으면 (PC) 쌀알·장면 그림을 거의 꺼서 제목만 보이게 · 휴대폰은 장 모양을 쌀알로 보여 줌
+  const opening = !mobile && !reading && [...secEl.querySelectorAll(':scope > .card.chap-open')].some((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.45; });
   state.openK = Math.max(0, Math.min(1, (state.openK || 0) + (opening ? dt * 2.5 : -dt * 1.5)));
   document.body.classList.toggle('phase-open', opening);
+  // 휴대폰: 장면 선 그림(밥상 테두리 등)은 체험 때 또렷이, 장 표지 때 은은히, 나머지는 끔
+  state.bdK = mobile ? state.bdK == null ? 0 : state.bdK + ((mm === 'play' ? 1 : mm === 'cover' ? 0.45 : 0) - state.bdK) * Math.min(1, dt * 3) : null;
   narr.follow(readCard);
   const pp = playProgress(cur, p);
   state.freeze = false; // 밤 장면에서만 켜짐 (다른 장으로 넘어가면 풀림)
-  TARGETS[id](pp);
+  if (!mobile || mm === 'play') TARGETS[id](pp);
+  else if (mm === 'cover' && COVER_P[id] != null) TARGETS[id](COVER_P[id]);
+  else if (mm === 'intro') sculpt(1);
+  else dust(t);
+  if (mobile) { // 모양을 글과 함께 바로 옮김 (따라오느라 늦지 않게)
+    const oy = state.offY || 0, d = state.lastOff == null || !(mm === 'cover' || mm === 'intro') ? 0 : oy - state.lastOff;
+    if (oy) for (let i = 0; i < N; i++) TY[i] += oy;
+    if (d) for (let i = 0; i < N; i++) Y[i] += d;
+    state.lastOff = mm === 'cover' || mm === 'intro' ? oy : null;
+  }
   applyFace(id);
   document.body.dataset.scene = id;
   // HUD 가시성
@@ -735,14 +772,14 @@ function draw(now) {
   hud.count.classList.remove('on'); // 이야기 장면에선 숫자를 띄우지 않음
   hud.year.classList.toggle('on', id === 'boundary');
   hud.depth.classList.toggle('on', id === 'mine');
-  glass.classList.toggle('on', id === 'prologue' && state.entered);
-  glass.style.opacity = id === 'prologue' ? seg(p, 0.2, 0.55) * (state.entered ? 0.9 : 0.5) * (1 - face.k) : 0;
+  glass.classList.toggle('on', !mobile && id === 'prologue' && state.entered); // 휴대폰은 유리 선 대신 쌀알 조형물
+  glass.style.opacity = !mobile && id === 'prologue' ? seg(p, 0.2, 0.55) * (state.entered ? 0.9 : 0.5) * (1 - face.k) : 0;
   document.body.classList.toggle('facing', face.k > 0.3);
   [...prog.children].forEach((b, i) => b.classList.toggle('on', i <= cur));
   prog.children[cur].querySelector('i').style.width = Math.round(p * 100) + '%';
 
   if (!state.ar) { g.fillStyle = id === 'mine' ? '#020202' : '#050505'; g.fillRect(0, 0, W, H); }
-  g.globalAlpha = 1 - Math.max(0.97 * state.readK, 0.95 * state.openK); drawBackdrop(id, pp, t); g.globalAlpha = 1; // 읽는 동안 장면 그림은 뒤로 물러남
+  g.globalAlpha = mobile ? state.bdK : 1 - Math.max(0.97 * state.readK, 0.95 * state.openK); if (g.globalAlpha > 0.01) { g.save(); if (mobile && state.offY) g.translate(0, state.offY); drawBackdrop(id, mm === 'cover' ? COVER_P[id] ?? pp : pp, t); g.restore(); } g.globalAlpha = 1; // 읽는 동안 장면 그림은 뒤로 물러남
   const wander = TOUCH && !ptr.in; // 터치: 누르지 않을 땐 손전등이 천천히 바닥을 훑음
   const torch = id === 'mine' && !hold && (ptr.in || TOUCH) ? state.torch || 0 : 0, tx = wander ? CX + Math.sin(t * 0.5) * R * 0.7 : ptr.x, ty = wander ? CY + R * 0.62 + Math.sin(t * 0.9) * R * 0.08 : ptr.y;
   // 모바일: 기울이면 쌀알이 낮은 쪽으로 쏠리고(밥상·굶주림 장면에선 그릇에서 쏟아짐), 흔들면 떨림. 광산·진실규명 장에서는 쓰지 않음
@@ -793,19 +830,17 @@ function draw(now) {
   if (state.ar) { g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, 0, W, H); }
   for (let i = 0; i < N; i++) {
     const fg = face.k > 0.02 && i > 0 && i <= FN;
-    if (mobile && !fg && state.readK > 0.97) { X[i] = TX[i]; Y[i] = TY[i]; } // 가려진 동안 제자리로 → 체험이 열릴 때 쌀알이 어지럽게 날아오지 않게
     X[i] += (TX[i] - X[i]) * ease; Y[i] += (TY[i] - Y[i]) * ease; A[i] += (TA[i] - A[i]) * 0.08;
     if (A[i] < 0.01) continue;
     if (face.k > 0.3 && i > 0 && i <= FN) { const d = ((TROT[i] - ROT[i]) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2; ROT[i] += d * 0.12; }
     else if (!state.freeze) ROT[i] += (R3[i] - 0.5) * 0.01;
-    let al = A[i] * (1 - 0.98 * Math.max(state.openK, !mobile ? 0 : fg ? 0 : state.readK)); // 휴대폰: 얼굴 쌀알만 남기고 끔
-    if (mobile && fg) { const kj = Math.max(0, Math.min(1, face.k * 1.7 - ((i - 1) / FN) * 0.7)); al *= kj * kj * Math.max(0.05, 1 - Math.hypot(TX[i] - X[i], TY[i] - Y[i]) / 90); } // 얼굴 쌀알은 제자리에 닿을수록 드러나고, 얼굴이 사라질 땐 흩어지지 않고 그 자리에서 꺼짐
+    let al = A[i] * (1 - 0.98 * state.openK);
     if (torch > 0) { const d = Math.hypot(X[i] - tx, Y[i] - ty); al *= lerp(1, d < 150 ? 1.25 - d / 300 : 0.12, torch); }
     if (al < 0.01) continue;
     const k = 0.4 + R1[i], jx = sh ? (Math.random() - 0.5) * sh * 16 : 0, jy = sh ? (Math.random() - 0.5) * sh * 16 : 0;
     grain(X[i] + ox * k + jx, Y[i] + oy * k + jy, ROT[i] + jx * 0.1, Math.min(1, al), COLORS[C[i]], i === 0 && id === 'prologue' ? 3 : 1);
   }
-  if (id === 'prologue' && (!mobile || state.readK < 0.5)) { // 첫 쌀알의 빛
+  if (id === 'prologue' && !mobile) { // 첫 쌀알의 빛
     const hg = g.createRadialGradient(X[0], Y[0], 0, X[0], Y[0], 120); hg.addColorStop(0, 'rgba(255,240,210,.22)'); hg.addColorStop(1, 'rgba(255,240,210,0)'); g.fillStyle = hg; g.fillRect(X[0] - 120, Y[0] - 120, 240, 240);
   }
   if (torch > 0) { const tg = g.createRadialGradient(tx, ty, 0, tx, ty, 170); tg.addColorStop(0, `rgba(255,236,200,${0.1 * torch})`); tg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = tg; g.fillRect(tx - 170, ty - 170, 340, 340); }
