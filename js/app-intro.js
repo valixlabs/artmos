@@ -21,6 +21,13 @@
   const C = COPY[L] || COPY.ko;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || (() => { try { return localStorage.getItem('valix-motion') === 'reduce'; } catch (e) { return false; } })();
   const soundOn = (() => { try { return localStorage.getItem('xpace-sound') !== 'off'; } catch (e) { return true; } })();
+  // 전체 인트로는 처음 설치했을 때와 마지막으로 본 지 하루가 지났을 때만. 그 사이에는 로고만 잠깐. (?intro=full / ?intro=short 로 시험)
+  const KEY = 'valix-intro-at', DAY = 864e5;
+  const brief = (() => {
+    const q = new URLSearchParams(location.search).get('intro'); if (q === 'full') return false; if (q === 'short') return true;
+    let last = 0; try { last = +localStorage.getItem(KEY) || 0; } catch (e) {}
+    return !!last && Date.now() - last >= 0 && Date.now() - last < DAY;
+  })();
   const T = { art: 300, cosmos: 650, scatter: 1850, join: 1900, hit: 2600, copy: 3200, end: 3950 }; // ms (꾹 누르기가 끝난 순간부터)
   const HOLD = 1500, RELEASE = 650, TAIL = 1200; // 꾹 누르는 시간 / 떼면 식는 시간 / 연출 끝난 뒤 머무는 시간(ms)
 
@@ -51,6 +58,9 @@
   .ai .hint span{display:inline-block;font-size:clamp(13px,3.7vw,15px);letter-spacing:.16em;color:#fff;opacity:0;animation:aiHint 1s .5s ease-out forwards,aiBreath 3.2s 1.6s ease-in-out infinite}
   .ai.press .hint,.ai.run .hint{opacity:0}
   .ai .by{position:absolute;left:0;right:0;text-align:center;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);font-size:11px;letter-spacing:.3em;color:#fff;opacity:.85;pointer-events:none}
+  .ai.brief .live,.ai.brief .stage{transition:none}
+  .ai.brief .ch{transform:none;transition:opacity .55s}
+  .ai.brief canvas,.ai.brief .copy{display:none}
   .ai.rm .live,.ai.rm .stage{transition:none}
   .ai.rm .hint span{animation:none;opacity:.85}
   @keyframes aiHint{to{opacity:.85}}
@@ -58,8 +68,8 @@
   @keyframes aiFlash{0%{opacity:0;transform:scale(.2)}16%{opacity:1;transform:scale(.7)}to{opacity:0;transform:scale(1.9)}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  const el = document.createElement('div'); el.className = 'ai' + (reduce ? ' rm' : ''); el.dataset.phase = 'idle';
-  el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', 'ARTMOS — ' + C[1]);
+  const el = document.createElement('div'); el.className = 'ai' + (reduce ? ' rm' : '') + (brief ? ' brief' : ''); el.dataset.phase = 'idle';
+  if (brief) el.setAttribute('aria-label', 'ARTMOS'); else { el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', 'ARTMOS — ' + C[1]); }
   const span = (t, cls = '') => `<span class="ch ${cls}" data-c="${t}">${t}</span>`;
   el.innerHTML = `<canvas></canvas>
     <div class="stage">
@@ -106,7 +116,7 @@
       else nz[gen - IR_N * 2] = Math.random() * 2 - 1;
     }
   }
-  if (soundOn) { const step = () => { if (closing) return; if (gen >= TOTAL) { setTimeout(() => { if (phase === 'idle') audioBuild(); }, 150); return; } genTo(gen + 14000); if (window.requestIdleCallback) requestIdleCallback(step, { timeout: 250 }); else setTimeout(step, 40); }; setTimeout(step, 300); }
+  if (soundOn && !brief) { const step = () => { if (closing) return; if (gen >= TOTAL) { setTimeout(() => { if (phase === 'idle') audioBuild(); }, 150); return; } genTo(gen + 14000); if (window.requestIdleCallback) requestIdleCallback(step, { timeout: 250 }); else setTimeout(step, 40); }; setTimeout(step, 300); }
   function audioBuild() { // 소리 장치(잔향·압축기)를 만들어 둠. 대기 중에 미리 해 두면(멈춰 있는 상태) 터치 순간에 끊기지 않음
     if (!soundOn || ac) return;
     try {
@@ -204,6 +214,7 @@
     }, 720);
   }
   function commit(now) { // 링이 다 참 → 연출 시작
+    try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
     setPhase('run'); el.classList.remove('press'); el.classList.add('run'); tRun = now; pressed = false; held.clear(); p = 1;
     try { navigator.vibrate && navigator.vibrate(25); } catch (e) {}
     droneStop(0.25);
@@ -280,5 +291,11 @@
       const u = tr / 650, R = 50 + 320 * easeOut(u); cx.globalAlpha = (1 - u) * 0.85; cx.drawImage(spr, mx - R, my - R, 2 * R, 2 * R); cx.globalAlpha = 1;
     }
   }
-  raf = requestAnimationFrame(frame);
+  if (brief) { // 평소: 검은 화면에 ARTMOS가 잠깐 떴다가 바로 앱으로 (누를 것 없음)
+    setPhase('run'); el.classList.add('run'); p = 1;
+    $$('.live .x').forEach((x) => x.remove()); $('.live .gap')?.remove();
+    $('.live').classList.add('big');
+    requestAnimationFrame(() => requestAnimationFrame(() => $$('.live .ch').forEach((x) => x.classList.add('on'))));
+    setTimeout(finish, 1000);
+  } else raf = requestAnimationFrame(frame);
 })();

@@ -13,7 +13,7 @@ import { createAppLanding } from './app-landing.js?v=2';
 import { createMotionPreference } from './app-preferences.js?v=2';
 import { createAppDiscover } from './app-discover.js?v=3';
 import { createExhibitShare } from './app-share.js?v=2';
-import { APP_COPY } from './app-copy.js?v=1';
+import { APP_COPY } from './app-copy.js?v=2';
 import * as MB from './membership.js?v=10';
 import * as SHOP from './app-shop.js?v=13';
 import * as AU from './auth.js?v=8';
@@ -431,6 +431,7 @@ const screens = {
       <section class="sec list"><button class="row" data-membership><b>${MB.mt('title')}</b><span class="v">${MB.isMember() ? MB.mt('active') : MB.ENABLED ? MB.mt('start') : '›'}</span></button></section>
       <section class="sec"><div class="sec-h"><h2 class="h20">${t('언어')}</h2></div><div class="chips">${LANGS.map((l) => `<button data-lang="${l.id}" class="${l.id === lang ? 'on' : ''}">${l.name}</button>`).join('')}</div></section>
       <section class="sec"><button class="nb-preference" data-motion role="switch" aria-checked="${motionQuery.matches}" ${motionQuery.systemReduced ? 'disabled' : ''}><span><b>${t('모션 줄이기')}</b><small>${t(motionQuery.systemReduced ? '시스템에서 모션 감소를 사용 중이에요.' : '카드 기울기와 장식 애니메이션을 줄여요.')}</small></span><i class="nb-switch" aria-hidden="true"></i></button></section>
+      <section class="sec list"><button class="row" data-intro-replay><b>${t('인트로 다시 보기')}</b><span class="v">›</span></button></section>
       <section class="sec"><div class="sec-h"><h2 class="h20">${t('체험 권한')}</h2></div><p class="small">${t('기울기·흔들기·마이크·카메라·위치는 전시 안에서 체험할 때만 쓰고, 기기 밖으로 저장하거나 보내지 않아요.')}</p></section>
       <section class="sec list"><button class="row" data-clear><b>${t('관람 기록 지우기')}</b></button><div class="row"><b>${t('버전')}</b><span class="v">ARTMOS ${VERSION}</span></div></section>`;
   },
@@ -625,6 +626,7 @@ function onAction(e) {
   if ((b = q('[data-gotab]'))) { go(b.dataset.gotab); return true; }
   if (q('[data-search]')) { discover.open('all', true); return true; }
   if (q('[data-saved]')) { discover.open('liked'); return true; }
+  if (q('[data-intro-replay]')) { try { localStorage.removeItem('valix-intro-at'); } catch (e) {} location.reload(); return true; } // 다음에 켤 때가 아니라 지금 바로 전체 인트로
   if (q('[data-motion]')) { motionQuery.setReduced(!motionQuery.requested); syncPreferenceControls(); return true; }
   if ((b = q('[data-jump]'))) { const el = document.getElementById(b.dataset.jump); if (el) { el.scrollIntoView({ block: 'start', behavior: motionQuery.matches ? 'auto' : 'smooth' }); let touched = false; const stop = () => { touched = true; }; ['touchstart', 'wheel'].forEach((ev) => addEventListener(ev, stop, { once: true, passive: true })); [500, 1100].forEach((ms) => setTimeout(() => { if (!touched && Math.abs(el.getBoundingClientRect().top - 20) > 12) el.scrollIntoView({ block: 'start', behavior: 'auto' }); }, ms)); } return true; } // 화면 밖 섹션을 늦게 그려도 정확히 도착
   if (q('[data-noti]')) { notiSheet(); return true; }
