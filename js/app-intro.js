@@ -25,7 +25,8 @@
   .ai{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#fff;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;transition:opacity .7s ease}
   .ai.out{opacity:0;pointer-events:none}
   .ai canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-  .ai .stage{position:absolute;left:0;right:0;top:calc(47% - 70px);width:100%;height:140px;display:flex;align-items:center;justify-content:center}
+  .ai .stage{position:absolute;left:0;right:0;top:calc(50% - 70px);width:100%;height:140px;display:flex;align-items:center;justify-content:center;transition:top 1s cubic-bezier(.3,.7,.2,1)}
+  .ai.copyon .stage{top:calc(50% - 170px)}
   @font-face{font-family:'ARTMOS Michroma';src:url('assets/fonts/michroma-latin-400.woff2') format('woff2');font-display:block}
   .ai .word{position:relative;display:flex;align-items:center;font-family:'ARTMOS Michroma','Michroma',sans-serif;font-weight:400;font-size:clamp(22px,7vw,56px);letter-spacing:.18em;white-space:nowrap;-webkit-text-stroke:.055em currentColor}
   .ai .live{transform:scale(.58);transition:transform 1.3s cubic-bezier(.3,.7,.2,1)}
@@ -39,11 +40,11 @@
   .ai .ch.lit{color:#fff;text-shadow:0 0 20px rgba(255,255,255,.8)}
   .ai .flash{position:absolute;left:50%;top:50%;width:340px;height:340px;margin:-170px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.45) 0%,rgba(255,255,255,.12) 26%,rgba(255,255,255,0) 62%);opacity:0;pointer-events:none}
   .ai .flash.on{animation:aiFlash 1.2s ease-out forwards}
-  .ai .copy{position:absolute;left:0;right:0;top:calc(47% + 84px);text-align:center;padding:0 28px;opacity:0;transform:translateY(8px);transition:opacity .9s,transform .9s}
+  .ai .copy{position:absolute;left:0;right:0;top:calc(50% - 16px);text-align:center;padding:0 28px;opacity:0;transform:translateY(8px);transition:opacity .9s,transform .9s}
   .ai.copyon .copy{opacity:1;transform:none}
   .ai .copy b{display:block;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;font-weight:300;font-size:clamp(17px,4.8vw,22px);line-height:1.5;color:#e9e9ee;font-weight:400;letter-spacing:.02em}
   .ai .copy small{display:block;margin-top:10px;font-size:12.5px;letter-spacing:.14em;color:#9aa1bd}
-  .ai .enter{position:absolute;z-index:2;top:calc(47% + 190px);left:50%;margin-left:-80px;width:160px;padding:13px 30px;border-radius:999px;border:1px solid #fff;color:#fff;font-size:15px;letter-spacing:.12em;background:#000;opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s,background .2s;font-family:inherit;outline:none;-webkit-tap-highlight-color:transparent}
+  .ai .enter{position:absolute;z-index:2;top:calc(50% + 90px);left:50%;margin-left:-80px;width:160px;padding:13px 30px;border-radius:999px;border:1px solid #fff;color:#fff;font-size:15px;letter-spacing:.12em;background:#000;opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s,background .2s;font-family:inherit;outline:none;-webkit-tap-highlight-color:transparent}
   .ai .enter.show{opacity:1;transform:none}
   .ai .enter:active{background:rgba(255,255,255,.14)}
   .ai .enter:focus,.ai .enter:focus-visible{outline:none;box-shadow:none}
@@ -82,7 +83,7 @@
   let t0 = performance.now(), raf = 0, lt = t0;
   function frame(now) {
     const t = now - t0, dt = Math.min(0.05, (now - lt) / 1000); lt = now; cx.clearRect(0, 0, W, H);
-    const mx = W / 2, my = H * 0.47, M = Math.max(W, H), Rf = M * 0.1;
+    const mx = W / 2, my = H / 2, M = Math.max(W, H), Rf = M * 0.1;
     const ramp = t < T.hit ? Math.pow(t / T.hit, 2) : 1 - Math.min(1, (t - T.hit) / 1400) * 0.65;
     const sp = 0.2 + 1.2 * ramp, fade = Math.min(1, t / 700), swirl = t * 0.00015;
     cx.lineCap = 'round';
