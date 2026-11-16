@@ -448,7 +448,10 @@ function allLinks() {
   return out;
 }
 const isNewCell = (c) => { const s = startOf(c), n = new Date(); return isOpen(c) && s.getFullYear() === n.getFullYear() && s.getMonth() === n.getMonth(); };
-const tvPoster = (c, extra = '') => `<span class="tv-poster${isOpen(c) ? '' : ' soon'}"><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false">${isNewCell(c) ? '<em class="tv-new">NEW</em>' : !isOpen(c) ? `<em class="tv-new soon">${esc(ht('공개 예정'))}</em>` : ''}<span class="tv-pt"><small>${esc(c.code || '')}</small><b>${esc(name(c))}</b></span>${extra}</span>`;
+// 전시 포스터·로고 (시트에 poster·logo 칸이 있으면 그게 우선)
+const POSTERS = { c005: { poster: 'assets/posters/c005-poster.webp', thumb: 'assets/posters/c005-poster-s.webp', logo: 'assets/posters/c005-logo.webp' } };
+const artOf = (c) => { const d = POSTERS[c.id] || {}; return { poster: c.poster || d.poster || '', thumb: c.poster || d.thumb || d.poster || '', logo: c.logo || d.logo || '' }; };
+const tvPoster = (c, extra = '') => `<span class="tv-poster${isOpen(c) ? '' : ' soon'}${artOf(c).thumb ? ' has-art' : ''}">${artOf(c).thumb ? `<img class="tv-art" src="${esc(artOf(c).thumb)}" loading="lazy" decoding="async" alt="" draggable="false">` : `<img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false">`}${isNewCell(c) ? '<em class="tv-new">NEW</em>' : !isOpen(c) ? `<em class="tv-new soon">${esc(ht('공개 예정'))}</em>` : ''}<span class="tv-pt"><small>${esc(c.code || '')}</small><b>${esc(name(c))}</b></span>${extra}</span>`;
 const rowH = (title, more) => `<div class="tv-rh"><h2>${esc(title)}</h2>${more ? `<button ${more}>${esc(ht('더보기'))}</button>` : ''}</div>`;
 const ytCard = (l) => { const id = ytId(l.url); return `<button class="tv-yt" data-yt="${id}" data-ytt="${esc(l.title)}"><span class="tv-yt-th"><img loading="lazy" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" decoding="async"><i></i></span><b>${esc(l.title)}</b><small>${esc(l.source || '')}</small></button>`; };
 const rdCard = (l) => `<a class="tv-rd" href="${esc(l.url)}" target="_blank" rel="noopener"><span><b>${esc(l.title)}</b><small>${esc(l.source || '')}${l.c ? ' · ' + esc(name(l.c)) : ''}</small></span><i>↗</i></a>`;
@@ -480,11 +483,16 @@ function homeHTML() {
   const p = me(), seen = Object.entries(hist()).map(([id, x]) => [cells.find((c) => c.id === id), x]).filter(([c]) => c && isOpen(c)).sort((a, b) => (b[1].last || 0) - (a[1].last || 0));
   const soon = cells.filter((c) => c.status === 'coming');
   return `<div class="tv-home">${top}
-    <section class="tv-hero" aria-label="${esc(ht('이번 달 행성'))}"><div class="tv-hero-track">${heroList.map((c) => `
+    <section class="tv-hero" aria-label="${esc(ht('이번 달 행성'))}"><div class="tv-hero-track">${heroList.map((c) => { const A = artOf(c); return A.poster ? `
+      <button class="tv-hcard tv-hposter" data-detail="${esc(c.id)}" aria-label="${esc(name(c))}">
+        <img class="tv-hp-img" src="${esc(A.poster)}" decoding="async" alt="" draggable="false">
+        <span class="tv-hp-shade"></span>
+        <span class="tv-hp-copy">${A.logo ? `<img class="tv-hp-logo" src="${esc(A.logo)}" decoding="async" alt="${esc(name(c))}" draggable="false">` : `<b class="tv-hp-title">${esc(name(c))}</b>`}<i>${esc(playOf(c).q || c.subtitle || '')}</i></span>
+      </button>` : `
       <button class="tv-hcard" data-detail="${esc(c.id)}" style="--c:${esc(c.color || '#b7b7b7')}">
         <span class="tv-hstage"><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"></span>
         <span class="tv-htext"><small>${esc(c.code || '')}${c.artist ? ' · ' + esc(c.artist) : ''}</small><b>${esc(name(c))}</b><i>${esc(c.subtitle || playOf(c).q || '')}</i></span>
-      </button>`).join('')}</div>
+      </button>`; }).join('')}</div>
       ${heroList.length > 1 ? `<div class="tv-dots">${heroList.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</section>
     <section class="tv-circles">${CIRC.map(([a, k, d]) => `<button ${a}><span><svg viewBox="0 0 24 24">${d}</svg></span><b>${esc(ht(k))}</b></button>`).join('')}</section>
     ${rank.length ? `<section class="tv-sec">${rowH(ht('지금 열린 행성 TOP') + ' ' + rank.length)}<div class="tv-row tv-rank">${rank.map((c, i) => `<button class="tv-rk" data-detail="${esc(c.id)}"><em>${i + 1}</em>${tvPoster(c)}</button>`).join('')}</div></section>` : ''}
@@ -498,6 +506,15 @@ function homeHTML() {
 function bindHero() {
   const track = view.querySelector('.tv-hero-track'); if (!track) return;
   const dots = [...view.querySelectorAll('.tv-dots i')];
+  // 카드가 가운데 오면 로고·설명이 차례로 떠오름 (떠나면 다시 숨겨 다음에 또 떠오름)
+  const cards = [...track.querySelectorAll('.tv-hcard')];
+  if (motionQuery.matches || !('IntersectionObserver' in window)) cards.forEach((card) => card.classList.add('in'));
+  else {
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.intersectionRatio >= .7) e.target.classList.add('in'); else if (e.intersectionRatio < .25) e.target.classList.remove('in');
+    }), { root: track, threshold: [0, .25, .7, 1] });
+    cards.forEach((card) => io.observe(card));
+  }
   track.addEventListener('scroll', () => {
     const w = track.firstElementChild ? track.firstElementChild.offsetWidth + 12 : 1, i = Math.round(track.scrollLeft / w);
     dots.forEach((d, j) => d.classList.toggle('on', j === i));

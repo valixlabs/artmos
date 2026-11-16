@@ -118,3 +118,24 @@
   .tv-hcard { width: 400px; } .tv-card { width: 140px; } .tv-rk { width: 186px; } .tv-cont { width: 190px; } .tv-yt { width: 260px; }
   .tv-hero-track { padding: 0 60px; scroll-padding: 0 60px; }
 }
+
+/* ── 큰 카드: 3:4 세로, 포스터가 있으면 포스터 + 로고·설명이 차례로 떠오름 ── */
+.tv-hcard { aspect-ratio: 3 / 4; }
+.tv-hcard:not(.tv-hposter) .tv-hstage { flex: 1; aspect-ratio: auto; }
+.tv-hposter { display: block; background: #000; }
+.tv-hp-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; transform: scale(1.06); transition: transform 1.6s cubic-bezier(.2,.7,.2,1); }
+.tv-hposter.in .tv-hp-img { transform: scale(1); }
+.tv-hp-shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 42%, rgba(0,0,0,.55) 64%, rgba(0,0,0,.92) 100%); }
+.tv-hp-copy { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 26px 30px; text-align: center; }
+.tv-hp-logo { width: 62%; max-width: 250px; height: auto; filter: drop-shadow(0 2px 14px rgba(0,0,0,.7)); }
+.tv-hp-title { font-size: 34px; font-weight: 800; }
+.tv-hp-copy i { font-style: normal; font-size: 15px; line-height: 1.6; color: #e6e6e6; white-space: pre-line; text-shadow: 0 1px 8px rgba(0,0,0,.8); }
+.tv-hp-logo, .tv-hp-title, .tv-hp-copy i { opacity: 0; transform: translateY(26px); }
+.tv-hposter.in :is(.tv-hp-logo, .tv-hp-title) { animation: tvRise .9s cubic-bezier(.2,.8,.2,1) .25s both; }
+.tv-hposter.in .tv-hp-copy i { animation: tvRise .9s cubic-bezier(.2,.8,.2,1) .75s both; }
+@keyframes tvRise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tv-hp-logo, .tv-hp-title, .tv-hp-copy i { opacity: 1; transform: none; animation: none !important; } .tv-hp-img { transform: none; } }
+.artmos-calm .tv-hp-logo, .artmos-calm .tv-hp-title, .artmos-calm .tv-hp-copy i { opacity: 1; transform: none; animation: none !important; }
+
+/* 포스터가 있는 전시는 줄에서도 포스터로 */
+.tv-poster.has-art .tv-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; aspect-ratio: auto; left: 0; top: 0; }
