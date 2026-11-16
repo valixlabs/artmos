@@ -26,7 +26,7 @@ export const CONFIG = {
   //      시크릿 키는 절대 여기에 넣지 말 것(서버 환경 변수). 시험은 ?shoptest=1. 설명 docs/shop/README.md
   // shippingKrw: 국내 배송비(작품가에 더해 결제). 해외 배송은 문의로. seller: 판매자 정보(전자상거래법 표시, 대괄호는 채울 것)
   shop: { enabled: true, sheetTab: 'artworks', inquiryEmail: '', showSamples: true,
-    pay: { enabled: false, provider: 'toss', clientKey: '', api: '' },
+    pay: { enabled: false, provider: 'toss', clientKey: 'test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm', api: 'https://tyuvosvhmvmlbbinhehz.supabase.co/functions/v1' },
     shippingKrw: 0,
     seller: { name: '주식회사 밸릭스랩', ceo: '대표 김승수', bizNo: '사업자등록번호 877-86-03639', mailOrderNo: '[통신판매업 신고번호]', address: '전남광주통합특별시 동구 중앙로 358, 2층 292-13호(계림동, 금호계림주상복합)', contact: '[고객센터 연락처]' } },
   // 로그인·회원가입(Supabase Auth): 카카오·Apple·구글 + 이메일. 두 값을 채우면 켜짐(anon 키는 공개돼도 되는 키, 서비스 키는 절대 넣지 말 것)

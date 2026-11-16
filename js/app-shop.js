@@ -2,10 +2,10 @@
 // 지금은 '문의' 방식만(결제 없음). 실물 작품은 애플·구글 인앱결제 대상이 아니라 나중에 일반 결제(토스페이먼츠 등)를 붙일 수 있음.
 // 작품 데이터: cells 시트의 'artworks' 탭(work_id 칸이 있어야 함) → 없으면 data/artworks.json. 칸 설명은 docs/shop/README.md
 // 저장·팔로우·문의 기록은 이 기기(localStorage nebula-shop-*)에만.
-import { CONFIG } from './config.js?v=29';
+import { CONFIG } from './config.js?v=30';
 import { fetchSheet, imageUrl, esc } from './data.js?v=31';
 import { lang } from './i18n.js?v=6';
-import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser } from './shop-pay.js?v=7';
+import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser } from './shop-pay.js?v=8';
 let acctUser = null; // 로그인한 계정(소장 폼에 이메일 미리 채움)
 
 const SH = CONFIG.shop || {};
@@ -311,9 +311,14 @@ async function buySubmit(e, f, { toast, sheet, login }) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email)) { err.textContent = st('badEmail'); return true; }
   if (!['c1', 'c2', 'c3'].every((k) => f[k].checked)) { err.textContent = st('needAgree'); return true; }
   err.textContent = ''; btn.disabled = true; const label = btn.textContent; btn.textContent = st('paying');
-  try { await checkout(w, buyer, { artistName: L(artistOf(w), 'name'), lang }); }
+  // 결제위젯 키면 폼 아래에 결제수단을 그리고 폼은 접음(주문은 이미 만들어져 30분 잡혀 있음)
+  const mount = document.createElement('div'); mount.className = 'sp-twmount'; f.after(mount);
+  try {
+    const r = await checkout(w, buyer, { artistName: L(artistOf(w), 'name'), lang, mount, payLabel: st('payNow', { p: won(w.price_krw + SHIPPING_KRW) }) });
+    if (r && r.widget) { f.hidden = true; mount.scrollIntoView({ block: 'start', behavior: 'smooth' }); } else mount.remove();
+  }
   catch (x) {
-    btn.disabled = false; btn.textContent = label;
+    mount.remove(); btn.disabled = false; btn.textContent = label;
     const m = x && x.code === 'LOGIN_REQUIRED' ? st('needLogin') : x && x.code === 'NOT_AVAILABLE' ? st('taken') : st('payFail');
     err.textContent = m; toast(m);
     if (x && x.code === 'LOGIN_REQUIRED' && login) { sheet.close(); login(); }

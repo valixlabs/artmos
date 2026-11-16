@@ -209,3 +209,7 @@
 .vx-onboard { overflow-y: auto; }
 .au-row { flex-direction: row !important; align-items: center; }
 .au-row .link { width: auto !important; display: inline !important; padding: 0 !important; height: auto !important; }
+
+/* 토스 결제위젯(흰 바탕 위젯이라 둥근 흰 상자에 담음) */
+.sp-twmount { display: grid; gap: 14px; padding: 4px 0 24px; }
+.tw-box { background: #fff; border-radius: 16px; overflow: hidden; color: #111; }

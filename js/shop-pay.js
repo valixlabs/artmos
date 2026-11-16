@@ -7,7 +7,7 @@
 //  ?shoptest=1    → 서버·결제창 없이 이 기기에서만 흉내(로그인 없이도, 예시 작품도)
 //  ?shoptest=toss → 실제 서버 + 토스 '테스트' 결제창(돈이 나가지 않음). 로그인 필요, clientKey가 test_ck_일 때만
 // 소장(결제)은 로그인한 회원만(2026-11-16 소유자 결정). 주문은 계정에 묶여 서버 orders 표에 남음.
-import { CONFIG } from './config.js?v=29';
+import { CONFIG } from './config.js?v=30';
 import { cachedUser, currentUser, accessToken, AUTH_ON } from './auth.js?v=7';
 
 const SH = CONFIG.shop || {}, PAY = SH.pay || {};
@@ -15,6 +15,7 @@ const qMode = new URLSearchParams(location.search).get('shoptest');
 const MODE = qMode != null ? (qMode === 'toss' ? 'toss' : '1') : (() => { try { return sessionStorage.getItem('nebula-shoptest') || ''; } catch (e) { return ''; } })();
 if (MODE) { try { sessionStorage.setItem('nebula-shoptest', MODE); } catch (e) {} }
 const TEST_KEY = /^test_/.test(PAY.clientKey || '');
+const WIDGET = /^(test|live)_gck_/.test(PAY.clientKey || ''); // 결제위젯 키면 위젯, ck면 결제창
 export const SHOP_SIM = MODE === '1';                        // 기기 안 흉내
 export const TOSS_TEST = MODE === 'toss' && TEST_KEY;          // 토스 테스트 결제창
 export const SHOP_TEST = SHOP_SIM || TOSS_TEST || (!!PAY.enabled && TEST_KEY); // 화면에 '시험 모드' 표시
@@ -48,7 +49,8 @@ function loadToss() {
 const rid = () => 'N' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 8).toUpperCase(); // 6~64자, 영문·숫자만
 
 // 결제 시작. buyer = { name, phone, email, zip, addr1, addr2, memo }
-export async function checkout(work, buyer, { artistName, lang }) {
+// mount: 결제위젯 키일 때 결제수단을 그릴 칸(화면 쪽에서 넘김), payLabel: 그 아래 결제 버튼 글자
+export async function checkout(work, buyer, { artistName, lang, mount, payLabel }) {
   try { sessionStorage.setItem('nebula-shop-back', location.pathname.split('/').pop() || 'app.html'); } catch (e) {}
   const record = { test: SHOP_TEST || undefined, work_id: work.id, title: work.title, artist: artistName, cell: work.cell || '', at: Date.now(), status: 'pending' };
   if (SHOP_SIM) { // 서버·결제창 없이 흉내: 바로 성공 페이지로
@@ -60,14 +62,26 @@ export async function checkout(work, buyer, { artistName, lang }) {
   // ① 주문 만들기: 금액은 서버가 작품 표에서 계산해서 돌려줌(화면 금액을 믿지 않음)
   const o = await api('/create-order', { work_id: work.id, cell: work.cell || null, buyer, lang });
   saveOrder({ ...record, orderId: o.orderId, amount: o.amount, currency: 'KRW', buyer: { name: buyer.name }, test: o.test || undefined });
-  // ② 토스 결제창 (성공하면 successUrl 로 paymentKey·orderId·amount 가 붙어 돌아옴)
-  const Toss = await loadToss();
-  const payment = Toss(PAY.clientKey).payment({ customerKey: o.customerKey || Toss.ANONYMOUS });
-  await payment.requestPayment({
-    method: 'CARD', amount: { currency: 'KRW', value: o.amount }, orderId: o.orderId, orderName: o.orderName,
-    successUrl: `${back()}?result=success`, failUrl: `${back()}?result=fail`,
+  // ② 토스 결제 (성공하면 successUrl 로 paymentKey·orderId·amount 가 붙어 돌아옴)
+  const Toss = await loadToss(), tp = Toss(PAY.clientKey);
+  const req = {
+    orderId: o.orderId, orderName: o.orderName, successUrl: `${back()}?result=success`, failUrl: `${back()}?result=fail`,
     customerName: buyer.name, customerEmail: buyer.email, customerMobilePhone: buyer.phone.replace(/\D/g, ''),
-  });
+  };
+  if (WIDGET) { // 결제위젯 키(…_gck_…): 화면 안에 결제수단·약관을 그리고, 그 아래 버튼으로 결제
+    if (!mount) throw Object.assign(new Error('mount'), { code: 'NO_MOUNT' });
+    mount.innerHTML = `<div class="tw-box"><div id="tw-methods"></div><div id="tw-agree"></div></div><p class="sp-err" role="alert"></p><button class="btn black" type="button" data-twpay>${payLabel || '결제하기'}</button>`;
+    const w = tp.widgets({ customerKey: o.customerKey || Toss.ANONYMOUS });
+    await w.setAmount({ currency: 'KRW', value: o.amount });
+    await Promise.all([w.renderPaymentMethods({ selector: '#tw-methods', variantKey: 'DEFAULT' }), w.renderAgreement({ selector: '#tw-agree', variantKey: 'AGREEMENT' })]);
+    const btn = mount.querySelector('[data-twpay]'), err = mount.querySelector('.sp-err');
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; err.textContent = '';
+      try { await w.requestPayment(req); } catch (x) { err.textContent = (x && x.message) || ''; } finally { btn.disabled = false; }
+    });
+    return { widget: true, orderId: o.orderId };
+  }
+  await tp.payment({ customerKey: o.customerKey || Toss.ANONYMOUS }).requestPayment({ method: 'CARD', amount: { currency: 'KRW', value: o.amount }, ...req });
 }
 // ③ checkout.html 에서 부름: 서버가 승인하고 금액을 확인
 export async function confirm({ paymentKey, orderId, amount }) {

@@ -1,10 +1,10 @@
 // ARTMOS 주문 만들기 (Supabase Edge Function `create-order`)
 // 로그인한 회원만. 화면이 보낸 work_id로 작품을 30분 잡아 두고, 금액은 서버 표(works)에서 계산해 돌려준다.
-// 화면이 보낸 금액은 쓰지 않음. 환경 변수: TOSS_SECRET_KEY(test_sk_… / live_sk_…, 테스트 여부 판단에만 씀), ALLOW_ORIGIN(선택)
+// 화면이 보낸 금액은 쓰지 않음. 배포 때 'Verify JWT'는 꺼도 됨(함수 안에서 로그인 토큰을 직접 확인). 환경 변수: TOSS_SECRET_KEY(test_sk_… / live_sk_…, 테스트 여부 판단에만 씀), ALLOW_ORIGIN(선택)
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!;
-const db = createClient(URL_, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const db = createClient(URL_, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? (() => { try { return Object.values(JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}'))[0] as string; } catch { return ''; } })());
 const ORIGINS = (Deno.env.get('ALLOW_ORIGIN') ?? 'https://valixlabs.github.io').split(',');
 const cors = (req: Request) => {
   const o = req.headers.get('origin') ?? '';

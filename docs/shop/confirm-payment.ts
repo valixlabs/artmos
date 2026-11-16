@@ -4,7 +4,7 @@
 // 승인 전에는 카드에서 돈이 나가지 않음 → 여기서 거절하면 결제는 자동으로 취소됨.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? (() => { try { return Object.values(JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}'))[0] as string; } catch { return ''; } })());
 const ORIGINS = (Deno.env.get('ALLOW_ORIGIN') ?? 'https://valixlabs.github.io').split(',');
 const cors = (req: Request) => {
   const o = req.headers.get('origin') ?? '';
