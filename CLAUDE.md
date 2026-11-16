@@ -114,3 +114,11 @@
 - 아래 탭 4개: **홈·플레이·컬렉트·마이**(리워드 탭 없앰, 오른쪽 둥근 바로 입장 버튼도 숨김). 탭 막대는 화면 폭 전체의 평평한 검은 막대(`css/app-home.css`).
 - 홈(`homeHTML()` in `js/app.js`): ARTMOS 글자 로고 + 검색·알림 → 위 분류 **홈·전시·영상·기사·매거진**(`homeCat`, 위에 붙어 다님) → 큰 카드(이번 달 행성, 옆 카드가 살짝 보이게 넘김) → 동그란 바로가기 8개(전체 행성·플레이·컬렉트·매거진·좋아요·최근 본·지난 호·검색) → **지금 열린 행성 TOP**(큰 숫자+포스터) → **○○님이 보던 전시**(재생 버튼·진행 막대, 머문 시간/읽는 시간) → 함께 보기(유튜브) → 함께 읽기(기사) → 곧 착륙할 행성. 포스터는 행성 그림 2:3, 이번 달 연 전시는 NEW.
 - 분류 '전시'=모든 전시 3열, '영상'·'기사'=모든 월간 호 링크, '매거진'=예전 월간 매거진 화면 그대로(`magazineHTML`). 리워드 화면 코드는 지움(항해 리포트·스탬프 기록은 마이에 남음).
+
+## 작품 소장 결제 — 테스트 모드 연결 (2026-11-16)
+- Supabase: `works`·`orders` 표와 함수 실행 완료(`docs/shop/schema.sql`), Edge Function `create-order`·`confirm-payment` 배포(Verify JWT 끔 — 함수 안에서 로그인 토큰 확인), Secret `TOSS_SECRET_KEY` = 토스 **문서 공개 견본 결제위젯 키**(test_gsk_docs). 같은 프로젝트에 실수로 생긴 빈 함수 `bright-service`가 있음(지워도 됨).
+- `config.shop.pay`: clientKey = 견본 결제위젯 키(`test_gck_docs_…`), api = `https://tyuvosvhmvmlbbinhehz.supabase.co/functions/v1`, enabled false. **`?shoptest=toss`로 들어올 때만** 토스 테스트 결제가 열림. 결제위젯 키(`_gck_`)면 소장 폼 아래에 결제수단 위젯을 그림, `_ck_`면 결제창.
+- 소장은 **로그인 필수**. 정식 오픈 전 할 일: 법인에 전자상거래 소매업 추가·통신판매업 신고, 토스 계약 후 우리 계정 키로 교체(시크릿 키는 Supabase Secrets에만), `enabled: true`.
+- **장승효(a-jangsh) 디지털판화 12점** 실제 판매 작품(작가 판매 계약 있음, 소유자 확인): `data/artworks.json` + Supabase `works`(`w-jangsh-01`~`12`, 100,000원, 배송비 0). 사진은 beyondflower.art/img/art1~12.webp를 그대로 씀. 에디션 수량 미정(지금은 한 점씩 — 한 번 팔리면 sold). `shop.showSamples: false`.
+- 사업자: 주식회사 밸릭스랩(VALIX LAB), 대표 김승수, 877-86-03639. 환불 정책 `refund.html`. 고객센터 연락처·통신판매업 신고번호·개인정보 보호책임자는 아직 빈칸.
+

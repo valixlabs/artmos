@@ -2,7 +2,7 @@
 // config.auth.supabaseUrl · supabaseAnonKey 를 채우면 실제로 동작. 비어 있으면 '곧 열려요' 안내 후 둘러보기.
 // ?authtest=1 → 이 기기에서만 로그인·가입을 흉내 냄(실제 계정 아님). 설정·순서: docs/auth/README.md
 // 비밀번호는 이 코드에서 저장하지 않음(Supabase가 암호화해 보관). 개인정보 동의 기록은 서버 profiles 표에.
-import { CONFIG } from './config.js?v=30';
+import { CONFIG } from './config.js?v=31';
 import { lang } from './i18n.js?v=6';
 
 const A = CONFIG.auth || {};
