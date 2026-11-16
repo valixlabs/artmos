@@ -1,4 +1,4 @@
-// Landing keeps the existing astronaut/planet artwork, with a cancellable lifecycle.
+// 전시 들어갈 때 착륙 화면 — 흑백 링 로딩(행성·우주인 없음), 취소 가능한 생명주기.
 export function createAppLanding({ planetBitmap, hasRing, name, translate: t, motionQuery, onFinished, onRetry }) {
   const element = document.querySelector('#landing'), canvas = document.querySelector('#land-cv');
   const ctx = canvas.getContext('2d');
@@ -14,25 +14,6 @@ export function createAppLanding({ planetBitmap, hasRing, name, translate: t, mo
     width = innerWidth; height = innerHeight;
     canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  function astronaut(x, y, scale, angle) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.scale(scale, scale);
-    ctx.fillStyle = '#ececec'; ctx.strokeStyle = '#626262'; ctx.lineWidth = 3;
-    const rect = (a, b, w, h, r) => { ctx.beginPath(); ctx.roundRect(a, b, w, h, r); ctx.fill(); ctx.stroke(); };
-    rect(-34, -10, 68, 80, 20); rect(-58, 0, 26, 58, 13); rect(32, -20, 26, 58, 13);
-    rect(-30, 62, 24, 46, 12); rect(6, 62, 24, 46, 12);
-    ctx.fillStyle = '#d8d8d8'; ctx.beginPath(); ctx.roundRect(-30, 10, 60, 40, 10); ctx.fill();
-    ctx.fillStyle = '#ececec'; ctx.beginPath(); ctx.arc(0, -46, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#232323'; ctx.beginPath(); ctx.ellipse(0, -44, 28, 22, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(217,217,217,.8)'; ctx.beginPath(); ctx.ellipse(-10, -52, 8, 5, -.5, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  }
-  function surface(x, y, radius) {
-    const bitmap = planetBitmap(cell), ratio = hasRing(cell) ? .30 : .38, size = radius / ratio;
-    if (bitmap) { ctx.drawImage(bitmap, x - size / 2, y - size / 2, size, size); return; }
-    const gradient = ctx.createRadialGradient(x - radius * .35, y - radius * .35, radius * .1, x, y, radius);
-    gradient.addColorStop(0, cell.color || '#b7b7b7'); gradient.addColorStop(1, '#0d0d0d');
-    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
   }
   function finish() {
     if (!cell || element.classList.contains('out')) return;
@@ -50,23 +31,20 @@ export function createAppLanding({ planetBitmap, hasRing, name, translate: t, mo
     progress += (target - progress) * .20;
     if (target === 1 && progress > .995) progress = 1;
     const eased = calm ? 0 : progress * progress * (3 - 2 * progress);
-    ctx.fillStyle = '#060606'; ctx.fillRect(0, 0, width, height);
-    const cx = width / 2, cy = height * .4;
+    // 흑백·심플(2026-11-16): 검은 화면, 흰 별이 살짝 퍼지고, 가운데 얇은 링이 차오름 (행성·우주인 없음)
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, width, height);
+    const cx = width / 2, cy = height * .42, R = Math.min(width, height) * .11;
     for (const star of stars) {
-      const k = 1 + eased * 1.6 * star.depth;
-      ctx.fillStyle = `rgba(255,255,255,${.3 + .35 * star.depth / 2.3})`;
-      ctx.fillRect(cx + (star.x - cx) * k, cy + (star.y - cy) * k, star.depth * .9, star.depth * .9);
+      const k = 1 + eased * .7 * star.depth;
+      ctx.fillStyle = `rgba(255,255,255,${.18 + .3 * star.depth / 2.3})`;
+      ctx.fillRect(cx + (star.x - cx) * k, cy + (star.y - cy) * k, star.depth * .7, star.depth * .7);
     }
-    const radius = Math.min(width, height) * .16 + eased * eased * Math.max(width, height) * 1.1;
-    ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = cell.color || '#b7b7b7'; ctx.beginPath(); ctx.arc(cx, cy, radius * 1.12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    surface(cx, cy, radius);
-    const waiting = !loaded && progress > .8 && !calm, orbit = waiting ? now / 1400 : 0;
-    const ax = waiting ? cx + Math.cos(orbit) * radius * 1.35 : cx - width * .25 * (1 - eased);
-    const ay = waiting ? cy + Math.sin(orbit) * radius * .5 : height * .78 - (height * .78 - cy) * eased;
-    const scale = Math.min(width, height) / 600 * (waiting ? .35 : 1.1 * (1 - eased * .92));
-    if (scale > .03) astronaut(ax, ay, scale, calm ? -.35 : -.35 + Math.sin(now / 600) * .08 + eased * .8);
-    if (!calm && progress > .88) { ctx.fillStyle = `rgba(255,236,190,${(progress - .88) / .12})`; ctx.fillRect(0, 0, width, height); }
-    element.classList.toggle('bright', !calm && progress > .93);
+    ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    const waiting = !loaded && progress > .8 && !calm;
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#fff'; ctx.beginPath();
+    if (waiting) { const a = now / 520; ctx.arc(cx, cy, R, a, a + Math.PI * 1.6); } else ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(.002, progress));
+    ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, cy, 2.2 + 1.6 * eased, 0, Math.PI * 2); ctx.fill();
     const nextPercent = Math.round(progress * 100);
     if (nextPercent !== percent) { percent = nextPercent; state.textContent = calm ? t('착륙하는 중') : `${t('대기권 진입')} ${percent}%`; }
     if (loaded && (calm || progress >= 1)) finish();
