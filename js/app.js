@@ -15,8 +15,8 @@ import { createAppDiscover } from './app-discover.js?v=3';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=1';
 import * as MB from './membership.js?v=10';
-import * as SHOP from './app-shop.js?v=8';
-import * as AU from './auth.js?v=6';
+import * as SHOP from './app-shop.js?v=9';
+import * as AU from './auth.js?v=7';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
 
@@ -584,7 +584,7 @@ function onAction(e) {
   const q = (selector) => { const candidate = e.target.closest(selector); return candidate && e.currentTarget.contains(candidate) ? candidate : null; };
   const byId = (id) => cells.find((x) => x.id === id);
   let b;
-  if (SHOP.shopAction(e, { sheet, toast, refresh: shopRefresh })) return true;
+  if (SHOP.shopAction(e, { sheet, toast, refresh: shopRefresh, login: () => showOB('login') })) return true;
   if (q('[data-membership]')) { sheet.open(MB.membershipHTML(), 'membership'); return true; }
   if (q('[data-mb-buy], [data-mb-restore], [data-mb-reset]')) { MB.handleMembershipClick(e, { notify: toast, refresh: () => { if (sheet.isOpen) sheet.open(MB.membershipHTML(), 'membership'); if (tab === 'my') go('my', true); } }); return true; }
   if ((b = q('[data-land]'))) { const c = byId(b.dataset.land); sheet.close({ restoreFocus: false }); openExhibit(c); return true; }
@@ -657,7 +657,7 @@ function onAction(e) {
   return false;
 }
 view.addEventListener('click', onAction);
-sheet.el.addEventListener('submit', (e) => SHOP.shopSubmit(e, { sheet, toast, refresh: shopRefresh }));
+sheet.el.addEventListener('submit', (e) => SHOP.shopSubmit(e, { sheet, toast, refresh: shopRefresh, login: () => showOB('login') }));
 // 컬렉트(아트 판매): 작품 목록은 뒤에서 받고, 받으면 보고 있는 탭만 다시 그림
 function shopRefresh(name) { if (tab === name && !view.hidden) go(name, true); }
 { const lab = tabsEl.querySelector('[data-tab="shop"] span'); if (lab) lab.textContent = SHOP.st('tab'); }

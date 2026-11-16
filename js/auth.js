@@ -2,7 +2,7 @@
 // config.auth.supabaseUrl · supabaseAnonKey 를 채우면 실제로 동작. 비어 있으면 '곧 열려요' 안내 후 둘러보기.
 // ?authtest=1 → 이 기기에서만 로그인·가입을 흉내 냄(실제 계정 아님). 설정·순서: docs/auth/README.md
 // 비밀번호는 이 코드에서 저장하지 않음(Supabase가 암호화해 보관). 개인정보 동의 기록은 서버 profiles 표에.
-import { CONFIG } from './config.js?v=27';
+import { CONFIG } from './config.js?v=28';
 import { lang } from './i18n.js?v=6';
 
 const A = CONFIG.auth || {};
@@ -81,6 +81,8 @@ const emit = () => listeners.forEach((f) => f());
 let cached = null;
 export async function currentUser() { if (!AUTH_ON) return null; try { cached = await P.user(); } catch (e) { cached = null; } return cached; }
 export const cachedUser = () => cached;
+// 서버 함수(결제 등)에 보낼 로그인 토큰. 로그인 안 했거나 시험 모드면 null
+export async function accessToken() { if (!AUTH_ON || AUTH_TEST) return null; try { const c = await supa(); const { data } = await c.auth.getSession(); return (data && data.session && data.session.access_token) || null; } catch (e) { return null; } }
 
 // ---------- 항해명(닉네임): 다른 사람과 겹치지 않게 ----------
 // 서버가 있으면 profiles.nickname(대소문자·띄어쓰기 무시 유일)으로 확인·저장. 로그인 안 한 둘러보기는 기기 안에만(겹침 확인 불가).

@@ -1,6 +1,6 @@
 // 결제창에서 돌아오는 페이지 (토스페이먼츠 successUrl / failUrl)
 // 성공: 서버에 승인 요청(서버가 주문 금액과 비교) → 주문 완료 표시. 실패: 사유 표시 + 다시 시도.
-import { confirm, orders } from './shop-pay.js?v=6';
+import { confirm, orders } from './shop-pay.js?v=7';
 import { lang } from './i18n.js?v=6';
 import { esc } from './data.js?v=31';
 

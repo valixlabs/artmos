@@ -1,6 +1,6 @@
 // 웹 '컬렉트' 페이지 (collect.html) — 앱의 컬렉트 탭과 같은 화면·같은 소장 흐름을 웹에서도.
 // ?cell=c005 → 그 전시의 작품만, ?work=w001 → 작품 상세를 바로 엶, #orders → 소장 내역(결제 후 돌아올 때)
-import * as SHOP from './app-shop.js?v=8';
+import * as SHOP from './app-shop.js?v=9';
 import { createAppSheet } from './app-sheet.js?v=2';
 import { loadLocalData } from './data.js?v=31';
 import { lang } from './i18n.js?v=6';
@@ -19,13 +19,15 @@ function render() {
 }
 function refresh() { const y = scrollY; render(); scrollTo(0, y); }
 function onClick(e) {
-  if (SHOP.shopAction(e, { sheet, toast, refresh })) return;
+  if (SHOP.shopAction(e, { sheet, toast, refresh, login })) return;
   const d = e.target.closest('[data-detail]'); // 작품 상세의 '관련 전시 보기' → 웹 전시 페이지로
   if (d && e.currentTarget.contains(d)) location.href = cellUrl(d.dataset.detail);
 }
 view.addEventListener('click', onClick);
 sheet.el.addEventListener('click', onClick);
-sheet.el.addEventListener('submit', (e) => SHOP.shopSubmit(e, { sheet, toast, refresh }));
+sheet.el.addEventListener('submit', (e) => SHOP.shopSubmit(e, { sheet, toast, refresh, login }));
+// 웹 컬렉트에는 로그인 화면이 없어서 앱 화면(app.html)의 로그인으로 보냄
+function login() { setTimeout(() => { location.href = 'app.html'; }, 900); }
 
 SHOP.setCellFilter(q.get('cell'));
 await SHOP.loadShop();
