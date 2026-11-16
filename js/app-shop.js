@@ -42,7 +42,7 @@ export function loadShop() {
   if (ready) return ready;
   ready = (async () => {
     let j = {};
-    try { j = await (await fetch('data/artworks.json?v=1', { cache: 'no-cache' })).json(); } catch (e) {}
+    try { j = await (await fetch('data/artworks.json?v=2', { cache: 'no-cache' })).json(); } catch (e) {}
     let ws = j.works || [], as = j.artists || [];
     if (SH.sheetTab) {
       try { // 시트에 artworks 탭이 없으면 구글이 첫 탭을 돌려주므로 work_id 칸으로 확인
