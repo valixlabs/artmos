@@ -147,7 +147,8 @@
 .vx #land-title { font-size: 17px; font-weight: 600; color: #fff; }
 .vx #land-state { color: #8a8a8a; font-variant-numeric: tabular-nums; }
 .vx .land-brand { position: absolute; left: 0; right: 0; bottom: calc(var(--sab) + 86px); margin: 0; text-align: center; font-size: 13px; letter-spacing: .32em; color: #fff; opacity: .85; transition: color .25s; }
-.vx .vx-landing.bright :is(.land-brand, #land-title) { color: #000; }
-.vx .vx-landing.bright :is(#land-code, #land-state) { color: #555; }
+.vx .vx-landing { background: var(--ld-bg, #000); }
+.vx .vx-landing :is(.land-brand, #land-title) { color: var(--ld-ink, #fff); transition: none; }
+.vx .vx-landing :is(#land-code, #land-state) { color: var(--ld-ink, #fff); opacity: .6; }
 .vx .vx-landing.bright .vx-close { background: rgba(255,255,255,.7); border-color: rgba(0,0,0,.2); } .vx .vx-landing.bright .vx-close svg { stroke: #000; }
 .vx .vx-landing.out { transition: opacity .45s ease; }
