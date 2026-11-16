@@ -13,7 +13,7 @@
     const n = (navigator.language || 'ko').slice(0, 2).toLowerCase(); return ok(n) ? n : 'ko';
   })();
   const COPY = { // [카피, 꾹 누르기 안내]
-    ko: ['세상의 예술을 가까이 만나는 공간', '예술의 우주로 들어갈 준비됐으면, 꾹 누르기'],
+    ko: ['세상의 예술을 가까이 만나는 공간', '예술의 우주로 들어갈 준비됐으면 꾹 누르기'],
     en: ['A space to meet the world’s art up close', 'Ready to enter the world of art? Press and hold'],
     zh: ['近距离遇见世界艺术的空间', '准备好进入艺术宇宙了，就长按'],
     ja: ['世界のアートに、もっと近くで出会える場所', 'アートの宇宙へ行く準備ができたら、長押し'],
