@@ -81,7 +81,8 @@
   const cv = $('canvas'), cx = cv.getContext('2d', { alpha: false });
   let dpr = Math.min(devicePixelRatio || 1, 1.5), W = 0, H = 0;
   const size = () => { W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cx.setTransform(dpr, 0, 0, dpr, 0, 0); };
-  size(); const onResize = () => size(); addEventListener('resize', onResize);
+  size(); const onResize = () => size(); addEventListener('resize', onResize); visualViewport?.addEventListener('resize', onResize);
+  // 화면 크기가 늦게 정해지거나(글꼴·CSS 늦게 도착, 주소창 접힘) resize가 안 오는 브라우저가 있어, 매 프레임 크기가 달라졌는지 보고 다시 맞춤 — 안 하면 별·링이 찌그러져 보임
   const spr = document.createElement('canvas'); spr.width = spr.height = 128; // 번지는 빛 그림 한 장(여러 번 재사용)
   { const g = spr.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.55)'); gr.addColorStop(.6, 'rgba(255,255,255,.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }
   const NS_MAX = 220, NB = 6, COL = ['255,255,255', '255,255,255'];
@@ -198,7 +199,7 @@
   function finish() {
     if (closing) return; closing = true; el.classList.add('out');
     setTimeout(() => {
-      cancelAnimationFrame(raf); el.remove(); st.remove(); removeEventListener('resize', onResize); removeEventListener('blur', onHide); document.removeEventListener('visibilitychange', onHide); droneStop();
+      cancelAnimationFrame(raf); el.remove(); st.remove(); removeEventListener('resize', onResize); visualViewport?.removeEventListener('resize', onResize); removeEventListener('blur', onHide); document.removeEventListener('visibilitychange', onHide); droneStop();
       if (ac && ac.state !== 'closed') setTimeout(() => ac.close().catch(() => {}), 4000);
     }, 720);
   }
@@ -231,6 +232,7 @@
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
+    if (cv.clientWidth !== W || cv.clientHeight !== H) size();
     if (!t0) t0 = now; const dt = Math.min(0.05, (now - (lt || now)) / 1000); lt = now;
     if (qN < 70) { qN++; if (qN > 20) qAcc += dt; if (qN === 70 && qAcc / 50 > 0.026 && ns > 110) { ns = 110; if (dpr > 1) { dpr = 1; size(); } } } // 느린 기기: 별 수·해상도 자동으로 낮춤
     let e = 0;
