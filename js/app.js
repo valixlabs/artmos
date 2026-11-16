@@ -7,15 +7,15 @@ import { hasRing } from './planets.js?v=4';
 import { planetSrc, planetKey, onPlanet, planetBitmap, warm } from './planet-store.js?v=2';
 import { videoHTML, mountVideos, playVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor } from './sensors.js?v=4';
-import { createAppSky } from './app-sky.js?v=2';
+import { createAppSky } from './app-sky.js?v=3';
 import { createAppSheet } from './app-sheet.js?v=2';
-import { createAppLanding } from './app-landing.js?v=1';
+import { createAppLanding } from './app-landing.js?v=2';
 import { createMotionPreference } from './app-preferences.js?v=2';
 import { createAppDiscover } from './app-discover.js?v=3';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=1';
-import * as MB from './membership.js?v=9';
-import * as SHOP from './app-shop.js?v=7';
+import * as MB from './membership.js?v=10';
+import * as SHOP from './app-shop.js?v=8';
 import * as AU from './auth.js?v=6';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
@@ -76,7 +76,7 @@ const name = (c) => String(c.title || '').replace(/^\s*(?:(?:CELL|X|N|A)\s*-?\s*
 const href = (c) => c.url || `cell.html?id=${encodeURIComponent(c.id)}`;
 const isOpen = (c) => c.status === 'open';
 const ringFx = (c) => ['prism', 'trio', 'stars'].includes(c.fx);
-const poster = (c, cls = '') => `<span class="poster ${cls}" style="--c:${esc(c.color || '#9db8ff')}"><img class="pl" data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"><span class="pc">${esc(c.code || '')}</span><span class="pt">${esc(name(c))}</span></span>`;
+const poster = (c, cls = '') => `<span class="poster ${cls}" style="--c:${esc(c.color || '#b7b7b7')}"><img class="pl" data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"><span class="pc">${esc(c.code || '')}</span><span class="pt">${esc(name(c))}</span></span>`;
 const kindTag = (c) => c.isGroup ? `<span class="tag t3">${t('기획전')}</span>` : c.url ? `<span class="tag t1">${t('단독전')}</span>` : `<span class="tag t2">${t('전시')}</span>`;
 const featured = () => { const o = cells.filter(isOpen); return o[o.length - 1] || cells[0]; };
 
@@ -92,7 +92,7 @@ const playOf = (c) => { const p = PLAYS[c.id]; const l = p ? (p[lang] || p.ko) :
 /* ---------- 첫 실행: 소개 → 로그인 → 닉네임 ---------- */
 const ob = $('#onboard');
 function wall() {
-  const list = cells.length ? cells : [{ color: '#9db8ff', title: 'ARTMOS' }];
+  const list = cells.length ? cells : [{ color: '#b7b7b7', title: 'ARTMOS' }];
   const row = (k) => `<div class="row">${Array.from({ length: 9 }, (_, i) => poster(list[(i + k) % list.length])).join('')}</div>`;
   return `<div class="ob-wall"><div class="rows">${row(0)}${row(1)}${row(2)}</div></div>`;
 }
@@ -212,7 +212,7 @@ function toggleLike(id) {
   document.querySelectorAll('[data-saved] span').forEach((count) => { count.textContent = list.length; });
   return on;
 }
-const heart = (on) => `<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" ${on ? 'fill="#ef4a4a" stroke="#ef4a4a"' : ''}/></svg>`;
+const heart = (on) => `<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" ${on ? 'fill="#fff" stroke="#fff"' : ''}/></svg>`;
 const unread = () => store.get('valix-noti', 0) < vol();
 function notiSheet() {
   const open = cells.filter(isOpen).slice().reverse(), mon = monday(Date.now());
@@ -234,7 +234,7 @@ function detailSheet(c) {
   if (!c) return;
   const p = playOf(c), liked = isLiked(c.id);
   const el = sheet.open(`
-    <div class="dt-stage" style="--c:${esc(c.color || '#9db8ff')}"><span class="dt-orbit"><i></i></span><img class="dt-pl" data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt=""></div>
+    <div class="dt-stage" style="--c:${esc(c.color || '#b7b7b7')}"><span class="dt-orbit"><i></i></span><img class="dt-pl" data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt=""></div>
     <div class="dt-body">
       <p class="dt-code">${esc(c.code)} ${kindTag(c)}${MB.badge(c)}</p>${MB.passLine(c) ? `<p class="dt-pass">${esc(MB.passLine(c))}</p>` : ''}
       <h2>${esc(name(c))}</h2>
@@ -304,7 +304,7 @@ const screens = {
     const pub = monthDate(k);
     const quote = pullQuote(f);
     return `
-      <section class="mag-cover" style="--c:${esc(f.color || '#9db8ff')}" data-tiltzone>
+      <section class="mag-cover" style="--c:${esc(f.color || '#b7b7b7')}" data-tiltzone>
         <div class="mc-top">
           <button class="mc-mast nb-brand" data-vols aria-label="ARTMOS · ${t('지난 호')}"><img class="nb-brand-mark" src="assets/artmos-mark.svg" alt=""/><span><b class="nb-brand-word">ARTMOS</b><small class="nb-brand-caption">MONTHLY PLANET · No.${n}</small></span></button>
           <div class="icons"><button data-search aria-label="${t('전시 검색')}">${searchIcon}</button>${bell()}</div>
@@ -341,7 +341,7 @@ const screens = {
       </section>
 
       ${issue.map((c, i) => { const q = pullQuote(c), p = playOf(c); return `
-      <article class="mag-art" id="art-${esc(c.id)}" style="--c:${esc(c.color || '#9db8ff')}">
+      <article class="mag-art" id="art-${esc(c.id)}" style="--c:${esc(c.color || '#b7b7b7')}">
         <p class="mag-label">${String(i + 1).padStart(2, '0')} · ${KICK[Math.min(i, KICK.length - 1)]}</p>
         <button class="art-visual" data-detail="${esc(c.id)}" data-tiltcard><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" data-depth="16"><span class="art-code">${esc(c.code)}</span><span class="art-gloss" data-gloss></span></button>
         <h2 class="art-title">${esc(name(c))}</h2>
@@ -354,7 +354,7 @@ const screens = {
         <div class="art-cta"><button class="like${isLiked(c.id) ? ' on' : ''}" data-like="${esc(c.id)}" aria-label="${t('좋아요')}" aria-pressed="${isLiked(c.id)}">${heart(isLiked(c.id))}</button><button class="btn black" data-open="${esc(c.id)}">${t('이 행성에 착륙하기')} →</button></div>
       </article>`; }).join('')}
 
-      <section class="mag-sec mag-quote" id="mag-quote" style="--c:${esc(f.color || '#9db8ff')}">
+      <section class="mag-sec mag-quote" id="mag-quote" style="--c:${esc(f.color || '#b7b7b7')}">
         <p class="mag-label">${t('이번 주의 문장')}</p>
         ${quote ? `<blockquote>${esc(quote.body)}</blockquote><p class="q-src">${esc(quote.caption || name(f))}</p>` : `<blockquote>${esc(f.summary || f.subtitle || '')}</blockquote>`}
       </section>
@@ -379,7 +379,7 @@ const screens = {
     const wk = (Date.now() - monday(Date.now())) / (7 * DAY);
     return `<header class="page-h"><div><small class="nb-page-kicker">ARTMOS · EXPERIENCE</small><h1>${t('플레이')}</h1></div><div class="icons">${bell()}</div></header>
       <div class="plays">${open.map((c) => { const p = playOf(c); return `
-        <div class="play" style="--c:${esc(c.color || '#9db8ff')}">
+        <div class="play" style="--c:${esc(c.color || '#b7b7b7')}">
           <button class="art" data-detail="${esc(c.id)}" aria-label="${esc(name(c) + ' · ' + t('체험 방법'))}"><img class="pl" data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"><span class="timer" data-left="${esc(c.id)}">${left(c)}</span></button>
           <div class="body"><p class="who">${esc(c.code)} · ${esc(c.artist || '')}</p><h3>${br(p.q)}</h3><p class="how">${esc(p.how)}</p>
             <div class="bar"><i style="--w:${Math.round(wk * 100)}%"></i></div>
@@ -390,7 +390,7 @@ const screens = {
     const { startW, curW, weekHas, streak } = streakInfo();
     const base = Math.floor(curW / 6) * 6;
     const books = Array.from({ length: 6 }, (_, i) => { const w = base + i, hit = weekHas(w), c = hit && cells.find((x) => x.id === hit.id);
-      return `<div class="book${hit ? ' done' : ''}${w === curW ? ' now' : ''}" style="--c:${esc((c && c.color) || '#8a3a3a')};--i:${i}"><i>${hit ? `<b>Vol. ${vol() - (curW - w)}</b>` : ''}</i><span>${t('n주차', w + 1)}</span></div>`; }).join('');
+      return `<div class="book${hit ? ' done' : ''}${w === curW ? ' now' : ''}" style="--c:${esc((c && c.color) || '#4b4b4b')};--i:${i}"><i>${hit ? `<b>Vol. ${vol() - (curW - w)}</b>` : ''}</i><span>${t('n주차', w + 1)}</span></div>`; }).join('');
     const v = visits(), thisWeek = [...new Set(v.filter((x) => monday(x.at).getTime() === monday(Date.now()).getTime() && cells.some((cell) => cell.id === x.id)).map((x) => x.id))];
     return `<header class="page-h"><div><small class="nb-page-kicker">ARTMOS · VOYAGE</small><h1>${t('리워드')}</h1></div><button class="txt" data-guide>${t('참여 안내')}</button></header>
       <section class="nb-week-card"><div><small>${t('이번 주의 궤도')}</small><strong>${Math.min(3, thisWeek.length)}<em> / 3</em></strong></div><p>${t(thisWeek.length >= 3 ? '이번 주 스탬프 완성!' : '목표까지 {n}곳').replace('{n}', Math.max(0, 3 - thisWeek.length))}</p><div class="nb-week-track"><i style="--w:${Math.min(100, thisWeek.length / 3 * 100)}%"></i></div></section>
@@ -408,7 +408,7 @@ const screens = {
     const seen = Object.entries(h).filter(([id]) => cells.some((c) => c.id === id)).sort((a, b) => b[1].last - a[1].last);
     const total = seen.reduce((s, [, x]) => s + (x.time || 0), 0), lk = likes().map((id) => cells.find((c) => c.id === id)).filter(Boolean);
     const { streak } = streakInfo();
-    const avatar = `<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="30" cy="25" r="15"/><rect x="21" y="19" width="18" height="12" rx="6" fill="#1c2240" stroke="none"/><path d="M24 22c1.5-1 3-1 4 0" stroke="#ffd68c"/><path d="M10 58c2-9 10-14 20-14s18 5 20 14"/></svg>`;
+    const avatar = `<svg viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="30" cy="25" r="15"/><rect x="21" y="19" width="18" height="12" rx="6" fill="#232323" stroke="none"/><path d="M24 22c1.5-1 3-1 4 0" stroke="#d9d9d9"/><path d="M10 58c2-9 10-14 20-14s18 5 20 14"/></svg>`;
     return `<header class="page-h"><div><small class="nb-page-kicker">ARTMOS · MY ORBIT</small><h1>${t('내 궤도')}</h1></div><div class="icons">${clock}</div></header>
       <div class="me"><span class="avatar">${avatar}</span><div><b>${esc(p.nick)}</b><p class="mesub">${new Date(p.since).toLocaleDateString(lang)} ${t('탑승')} · ${seen.length}${t('곳 착륙')}</p><button data-rename>${t('이름 바꾸기')} ›</button></div></div>
       <section class="sec"><div class="sec-h"><h2 class="h20">${t('나의 기록')}</h2></div>

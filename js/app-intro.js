@@ -84,7 +84,7 @@
   size(); const onResize = () => size(); addEventListener('resize', onResize);
   const spr = document.createElement('canvas'); spr.width = spr.height = 128; // 번지는 빛 그림 한 장(여러 번 재사용)
   { const g = spr.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.55)'); gr.addColorStop(.6, 'rgba(255,255,255,.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); }
-  const NS_MAX = 220, NB = 6, COL = ['205,225,255', '255,236,200'];
+  const NS_MAX = 220, NB = 6, COL = ['255,255,255', '255,255,255'];
   let ns = NS_MAX; const S = [];
   const star = (z) => ({ a: Math.random() * 6.283, d: 0.05 + Math.pow(Math.random(), 0.7) * 0.95, z, c: Math.random() < 0.75 ? 0 : 1 });
   for (let i = 0; i < NS_MAX; i++) S.push(star(0.05 + Math.random() * 0.95));

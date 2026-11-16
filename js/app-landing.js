@@ -17,21 +17,21 @@ export function createAppLanding({ planetBitmap, hasRing, name, translate: t, mo
   }
   function astronaut(x, y, scale, angle) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.scale(scale, scale);
-    ctx.fillStyle = '#e9ecf5'; ctx.strokeStyle = '#5a6280'; ctx.lineWidth = 3;
+    ctx.fillStyle = '#ececec'; ctx.strokeStyle = '#626262'; ctx.lineWidth = 3;
     const rect = (a, b, w, h, r) => { ctx.beginPath(); ctx.roundRect(a, b, w, h, r); ctx.fill(); ctx.stroke(); };
     rect(-34, -10, 68, 80, 20); rect(-58, 0, 26, 58, 13); rect(32, -20, 26, 58, 13);
     rect(-30, 62, 24, 46, 12); rect(6, 62, 24, 46, 12);
-    ctx.fillStyle = '#d3d8e8'; ctx.beginPath(); ctx.roundRect(-30, 10, 60, 40, 10); ctx.fill();
-    ctx.fillStyle = '#e9ecf5'; ctx.beginPath(); ctx.arc(0, -46, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#1c2240'; ctx.beginPath(); ctx.ellipse(0, -44, 28, 22, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,214,140,.8)'; ctx.beginPath(); ctx.ellipse(-10, -52, 8, 5, -.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d8d8d8'; ctx.beginPath(); ctx.roundRect(-30, 10, 60, 40, 10); ctx.fill();
+    ctx.fillStyle = '#ececec'; ctx.beginPath(); ctx.arc(0, -46, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#232323'; ctx.beginPath(); ctx.ellipse(0, -44, 28, 22, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(217,217,217,.8)'; ctx.beginPath(); ctx.ellipse(-10, -52, 8, 5, -.5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
   function surface(x, y, radius) {
     const bitmap = planetBitmap(cell), ratio = hasRing(cell) ? .30 : .38, size = radius / ratio;
     if (bitmap) { ctx.drawImage(bitmap, x - size / 2, y - size / 2, size, size); return; }
     const gradient = ctx.createRadialGradient(x - radius * .35, y - radius * .35, radius * .1, x, y, radius);
-    gradient.addColorStop(0, cell.color || '#9db8ff'); gradient.addColorStop(1, '#0b0c18');
+    gradient.addColorStop(0, cell.color || '#b7b7b7'); gradient.addColorStop(1, '#0d0d0d');
     ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
   }
   function finish() {
@@ -50,7 +50,7 @@ export function createAppLanding({ planetBitmap, hasRing, name, translate: t, mo
     progress += (target - progress) * .20;
     if (target === 1 && progress > .995) progress = 1;
     const eased = calm ? 0 : progress * progress * (3 - 2 * progress);
-    ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#060606'; ctx.fillRect(0, 0, width, height);
     const cx = width / 2, cy = height * .4;
     for (const star of stars) {
       const k = 1 + eased * 1.6 * star.depth;
@@ -58,7 +58,7 @@ export function createAppLanding({ planetBitmap, hasRing, name, translate: t, mo
       ctx.fillRect(cx + (star.x - cx) * k, cy + (star.y - cy) * k, star.depth * .9, star.depth * .9);
     }
     const radius = Math.min(width, height) * .16 + eased * eased * Math.max(width, height) * 1.1;
-    ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = cell.color || '#9db8ff'; ctx.beginPath(); ctx.arc(cx, cy, radius * 1.12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = cell.color || '#b7b7b7'; ctx.beginPath(); ctx.arc(cx, cy, radius * 1.12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     surface(cx, cy, radius);
     const waiting = !loaded && progress > .8 && !calm, orbit = waiting ? now / 1400 : 0;
     const ax = waiting ? cx + Math.cos(orbit) * radius * 1.35 : cx - width * .25 * (1 - eased);

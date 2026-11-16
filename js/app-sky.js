@@ -19,7 +19,7 @@ export function createAppSky({ sensor, motionQuery, getTilt }) {
       x: width / 2 + (Math.random() - .5) * diagonal,
       y: height / 2 + (Math.random() - .5) * diagonal,
       depth: Math.random() ** 2, phase: Math.random() * Math.PI * 2,
-      color: Math.random() < .15 ? 'rgb(255,226,180)' : Math.random() < .3 ? 'rgb(190,205,255)' : 'rgb(255,255,255)',
+      color: Math.random() < .15 ? 'rgb(229,229,229)' : Math.random() < .3 ? 'rgb(205,205,205)' : 'rgb(255,255,255)',
     })).sort((a, b) => (a.color < b.color ? -1 : a.color > b.color ? 1 : 0));
     if (enabled && !document.hidden) { draw(0); schedule(); }
   }

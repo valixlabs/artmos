@@ -104,3 +104,8 @@
 - 나중에 옮길 수 있는 것: 좋아요·관람 기록·스탬프(지금은 기기 안 localStorage) → Supabase로 옮기면 폰을 바꿔도 이어짐.
 - 지금 Supabase에서 실제로 돌아가는 것은 회원(이메일 로그인·profiles·항해명 중복 확인)뿐. 결제·소장·멤버십·계정 삭제는 설계도만 있음.
 - 켜기 전 준비: 사업자, 약관·개인정보 법률 검토, 빛쌀 작가 수익 배분 정리, 유료 본문 서버 이전. 그 전에는 `paywall.enabled`·`shop.pay.enabled`를 켜지 않음.
+## 흑백 톤 (2026-11-16 소유자 결정)
+- **검은 바탕 + 흰 글자, 심플하게.** 범위는 **앱 화면·웹 메뉴만**(`app.html`·`collect.html`·`checkout.html`·홈 메뉴 `css/home.css`, 앱 인트로 별빛). 파랑·보라·민트·금빛 같은 색을 모두 같은 밝기의 회색으로 바꿈(`tools/mono.py`: `python3 tools/mono.py 파일…`). 좋아요 하트는 흰색.
+- **그대로 두는 것**: 전시 작품 안(빛쌀 쌀알·산사·전시 페이지 블록 — `css/style.css`·`bitssal.css`·`sansa.css`·`refinement.css`는 안 바꿈), 행성 그림, 작품 이미지, 카카오(노랑)·구글 로그인 버튼 색(브랜드 규정).
+- `css/refinement-mono.css`: 전시와 같이 쓰는 `refinement.css`의 색 부분만 흑백으로 덮는 파일(앱·컬렉트에서만 불러옴). refinement.css 색을 바꾸면 이것도 다시 만들 것.
+- 새 화면·버튼을 만들 때 색은 흰색·회색·검정만. 강조는 굵기·크기·테두리로.

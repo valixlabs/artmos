@@ -1,0 +1,29 @@
+/* 앱·컬렉트 흑백 톤: refinement.css의 색 있는 부분만 흑백으로 덮음 (자동 생성, tools/mono). 전시 페이지에는 불러오지 않음 */
+body.artmos-refined{--ref-line: rgba(232,232,232,.18);--ref-focus: #d3d3d3}
+:where(.artmos-refined) :where(button, a, input, textarea, summary){-webkit-tap-highlight-color: rgba(211,211,211,.16)}
+:where(.artmos-refined) .lang-list{box-shadow: 0 18px 48px rgba(0,0,0,.35)}
+:where(.artmos-refined) :where(.snd-gate .g-s, .sg-off){color: #c1c1c1}
+:where(.artmos-refined) .snd-gate .g-n{color: #ababab}
+.cell-page.artmos-refined{--muted: #aeaeae}
+.cell-page .topbar{background: linear-gradient(180deg, rgba(6,6,6,.88), rgba(6,6,6,0))}
+.cell-page :where(.b-text p, .q-head p, .b-piano p, .ch-text p){color: #e1e1e1}
+.cell-page :where(.next, .rec-card, .fact, .bd-summary){box-shadow: inset 0 1px 0 rgba(255,255,255,.025)}
+.vx.artmos-refined{--tx2: #b8b8b8;--tx3: #a4a4a4}
+.vx .mag-label{border-bottom-color: rgba(232,232,232,.4)}
+.vx :where(.art-body, .mag-letter p){color: #dedede}
+.vx .vx-tabs .pill{border-color: rgba(232,232,232,.22);background: rgba(19,19,19,.88)}
+.vx .sheet{border-top-color: rgba(232,232,232,.24)}
+.bs-page.artmos-refined{--muted: #ababab;--ref-line: rgba(248,248,248,.2);--ref-focus: #f1f1f1}
+.bs-page .card.story{border-color: rgba(218,218,218,.26);box-shadow: 0 20px 48px rgba(0,0,0,.3)}
+.bs-page .bs-credits p{color: #c7c7c7}
+.bs-page .chap-flash b{text-shadow: 0 3px 24px rgba(0,0,0,.7)}
+.sansa.artmos-refined{--ref-line: rgba(241,241,241,.24);--ref-focus: #e3e3e3;--tx2: #c8c8c8}
+.sansa .hud-bot{box-shadow: 0 8px 32px rgba(0,0,0,.2)}
+.sansa .g-credit{color: #b0b0b0}
+.sansa .how .cr{color: #b0b0b0}
+@media (hover: hover) and (pointer: fine){.cell-page .next:hover{box-shadow: 0 12px 40px rgba(0,0,0,.2)}
+.vx :where(.card, .gcard):hover .poster{border-color: #c4c4c4}
+.vx :where(.rd, .toc button, .nrow, .vrow, .list .row):hover{background-color: rgba(211,211,211,.045)}
+.vx .icons button:hover, .sansa .ic:hover{background-color: rgba(255,255,255,.08)}
+.vx :where(.mc-read, .btn.line, .like, .vx-close):hover{border-color: #d3d3d3}
+.sansa :where(.chant, .z-out, .hud-bot button):hover{background-color: rgba(196,196,196,.13)}}
