@@ -3,7 +3,7 @@
 // 결제·주문 기록(entitlements·orders)은 전자상거래법 보관 기간(5년) 동안 user_id 를 지운 채 남김 → 표 설계에서 on delete set null 로 바꿀 것.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-const cors = { 'Access-Control-Allow-Origin': Deno.env.get('ALLOW_ORIGIN') ?? 'https://vailixlab.github.io', 'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info' };
+const cors = { 'Access-Control-Allow-Origin': Deno.env.get('ALLOW_ORIGIN') ?? 'https://valixlabs.github.io', 'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info' };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
