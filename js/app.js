@@ -726,6 +726,7 @@ function closeExhibit(fromPop = false) {
   go(tab, true);
 }
 $('#close').addEventListener('click', () => closeExhibit());
+addEventListener('message', (e) => { if (e.source === frame.contentWindow && e.data && e.data.type === 'artmos:close-exhibit') closeExhibit(); }); // 전시 안 '전시 행성 나가기'
 $('#land-cancel').addEventListener('click', () => closeExhibit());
 addEventListener('popstate', () => {
   if (waitingForBack) {

@@ -5,8 +5,9 @@ import { sound } from './bitssal-sound.js?v=7';
 import { lang, tr, langSwitcher } from './i18n.js?v=6';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=4';
-import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=8';
+import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=9';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
+import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
 import * as MB from './membership.js?v=10';
 // 화면 문구 (읽기 → 체험 · 내레이션)
 const LX = ({
@@ -44,7 +45,7 @@ const CREDITS = `<footer class="bs-credits"><div>
   <p>${tr('역사 서술: ')}${SRC1}(jinsil.go.kr/KoreanWar/30.do), ${SRC2}(jinsil.go.kr/KoreanWar/36.do)</p>
   <p>${tr('밥상·약도·광산 통로 장면은 이해를 돕기 위한 일러스트이며 실제 장소나 인물을 재현하지 않습니다. ‘전시 문안’으로 표시된 문장은 창작 문안으로, 희생자나 유족의 실제 발언이 아닙니다.')}</p>
   <p>${tr('작품: 진시영 · 김동선, 《빛쌀》, 2026 · 기획: ARTMOS (VALIX LAB)')}</p>
-  <a class="bs-back" href="./">${tr('← ARTMOS 행성계로 돌아가기')}</a></div></footer>`;
+  <a class="bs-back" href="./">${({ en: '← Leave this exhibition planet', zh: '← 离开展览行星', ja: '← 展示の惑星を出る' })[lang] || '← 전시 행성 나가기'}</a></div></footer>`;
 
 // ---------------- DOM 구성 ----------------
 const story = document.getElementById('story');
@@ -65,8 +66,9 @@ function relayout() {
       // 장 표지 → 이야기, 이야기 → 체험 사이는 한 화면 가까이 띄워서 서로 겹쳐 보이지 않게
       // 다른 종류로 넘어갈 때는 넉넉히 띄움 → 한 화면에 한 가지만
       const P = (k) => prev && prev.classList.contains(k), C = (k) => c.classList.contains(k);
-      const extra = !prev ? 0 : P('chap-open') ? innerHeight * 0.55 : P('story') && !C('story') ? innerHeight * 0.9 : P('play') ? innerHeight * 0.6 : C('story') ? innerHeight * 0.6 : C('play') && innerWidth < 820 ? innerHeight * 0.6 : 0; // 휴대폰: 체험 카드 앞은 넉넉히 → 앞의 글이 사라진 뒤 체험 그림이 나옴
-      const top = Math.max(+c.dataset.at * base, y + extra); c.style.top = `${Math.round(top)}px`; y = top + c.offsetHeight + gap; prev = c;
+      const extra = !prev ? 0 : P('chap-open') ? innerHeight * (innerWidth < 820 ? 0.9 : 0.55) : P('story') && !C('story') ? innerHeight * 0.9 : P('play') ? innerHeight * 0.6 : C('story') ? innerHeight * 0.6 : C('play') && innerWidth < 820 ? innerHeight * 0.6 : 0;
+      const extra2 = innerWidth < 820 && prev && C('story') && !P('chap-open') && !P('story') ? Math.max(extra, innerHeight * 0.9) : extra; // 휴대폰: 다른 글 뒤 이야기 앞도 넉넉히(모양이 보일 자리) // 휴대폰: 체험 카드 앞은 넉넉히 → 앞의 글이 사라진 뒤 체험 그림이 나옴
+      const top = Math.max(+c.dataset.at * base, y + extra2); c.style.top = `${Math.round(top)}px`; y = top + c.offsetHeight + gap; prev = c;
     });
     sc.style.height = `${Math.round(Math.max(base, y + innerHeight * (sc.querySelector(':scope > .card.play') ? 1.1 : 0.7)))}px`; // 체험 뒤에도 한 화면 가까이 머물 자리
   });
@@ -317,7 +319,7 @@ function showTip(title, text, el) {
 const BOWLS = UI.family.map((t, k) => ({ t: fmt(UI.bowlOf, { n: t }), a: (k / 10) * Math.PI * 2 - Math.PI / 2 })); // 열 식구의 그릇
 const bowlPos = (k) => ({ x: CX + Math.cos(BOWLS[k].a) * R * 0.85, y: CY + Math.sin(BOWLS[k].a) * R * 0.62 });
 // 쌀독 (굶주림 장면, 왼쪽) — 털 때마다 나오는 쌀이 줄어듦
-const jarPos = () => ({ x: CX, y: CY + R * 0.05 }); const JAR_S = () => (mobile ? 1.5 : 2); // 상 한가운데 큰 쌀독
+const jarPos = () => ({ x: CX, y: mobile ? CY - R * 0.1 : CY + R * 0.05 }); const JAR_S = () => (mobile ? Math.min(2.6, R / 60) : 2); // 상 한가운데 큰 쌀독
 const JAR_YIELD = [6, 5, 4, 3, 3, 2, 2, 1, 1, 1, 0];
 function jarShake() {
   const n = JAR_YIELD[Math.min(state.jar, JAR_YIELD.length - 1)]; state.jar++;
@@ -342,7 +344,7 @@ const face = { kind: null, k: 0, col: 0, pts: null };
 const FN = 1000;
 function wantFace(id) {
   if (id === 'light' && state.brotherLight) return { kind: 'brother', col: 3 };
-  if (id === 'street' && state.dawn) return { kind: 'brother', col: 0, max: 0.92 };
+  if (id === 'street' && state.dawn && !mobile) return { kind: 'brother', col: 0, max: 0.92 };
   return faceCard ? { kind: faceCard.dataset.face, col: 0, max: faceMax } : null; // 얼굴은 얼굴 자리에만, 글이 올라오면 사라짐
 }
 function applyFace(id) {
@@ -369,22 +371,113 @@ function initBalls() { state.balls = Array.from({ length: 10 }, (_, k) => ({ a: 
 initBalls();
 
 // ---------------- 휴대폰: 쌀알이 흘러가는 모양들 ----------------
-// 《빛쌀》 조형물(윗 접시 → 좁은 목 → 아래 그릇)을 쌀알로. 첫 화면에서 글 위쪽에 섬
+// 유리 조형물 테두리의 반폭 (조형물 좌표, y -250~260) — 쌀알이 테두리 밖으로 나가지 않게
+const GLASS = (() => { const q = (p0, p1, p2, t) => { const u = 1 - t; return [u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]]; }; const pts = [[140, -250]];
+  for (let k = 0; k <= 20; k++) pts.push(q([140, -226], [20, -150], [12, -100], k / 20)); pts.push([14, 120]);
+  for (let k = 1; k <= 20; k++) pts.push(q([14, 120], [100, 150], [100, 175], k / 20));
+  for (let k = 1; k <= 20; k++) pts.push(q([100, 175], [50, 217], [0, 217], k / 20)); return pts; })();
+function glassW(y) { for (let k = 1; k < GLASS.length; k++) { const [x0, y0] = GLASS[k - 1], [x1, y1] = GLASS[k]; if (y <= y1) return y1 === y0 ? Math.min(x0, x1) : x0 + (x1 - x0) * Math.max(0, (y - y0) / (y1 - y0)); } return 0; }
+// 《빛쌀》 조형물(윗 접시 → 좁은 목 → 아래 그릇)을 쌀알로. 첫 화면에서 상단 머리와 아래 글 사이에 맞춰 섬
 function sculpt(a = 1) {
-  const sc = R / 260, cy = H * 0.3;
+  const top = (document.querySelector('.bs-progress')?.getBoundingClientRect().bottom || 70) + 28;
+  const p0 = sections[0].querySelector(':scope > .card:not(.story)'), bottom = (p0 ? p0.getBoundingClientRect().top - (state.offY || 0) : H * 0.6) - 24;
+  const sc = Math.max(0.2, Math.min(R / 260, (bottom - top) / 470)), cy = top + 250 * sc;
   for (let i = 0; i < 1300; i++) {
     const u = (R1[i] + state.flowT * (0.5 + R3[i])) % 1; let x, y;
     if (u < 0.25) { const an = R2[i] * 6.28, r = Math.sqrt(u / 0.25); x = Math.cos(an) * 130 * r; y = -230 + Math.sin(an) * 18 * r; }
     else if (u < 0.75) { const v = (u - 0.25) / 0.5; x = lerp(120, 10, Math.min(1, v * 3)) * (R2[i] - 0.5) * 2; y = -220 + v * 380; }
     else { const v = (u - 0.75) / 0.25, an = R2[i] * Math.PI; x = Math.cos(an + Math.PI) * 90 * Math.sqrt(R3[i]); y = 170 + Math.sin(an) * 30 * v; }
+    const hw = glassW(y) * 0.86; x = Math.max(-hw, Math.min(hw, x));
     setT(i, CX + x * sc, cy + y * sc, a * (0.45 + 0.55 * R3[i]), 0);
   }
-  for (let i = 1300; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.08, 0);
+  for (let i = 1300; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.05, 0);
 }
 // 흩어진 쌀알: 화면 가득 옅게 떠다님 (모양과 모양 사이)
-function dust(t) { for (let i = 0; i < N; i++) setT(i, R1[i] * W + Math.sin(t * 0.17 + R3[i] * 6.28) * 18, R2[i] * H + Math.cos(t * 0.13 + R1[i] * 6.28) * 18, 0.06 + 0.14 * R3[i], 0); }
-// 장 표지 때 쌀알이 이루는 그 장의 모양 (체험의 첫 모습)
-const COVER_P = { life: 0.3, hunger: 0.08, demand: 0.45, spread: 0.6, erased: 0.4, mine: 0.6, truth: 0.4, share: 0.5, light: 0.6 };
+function dust(t, a = 1) { for (let i = 0; i < N; i++) setT(i, R1[i] * W + Math.sin(t * 0.17 + R3[i] * 6.28) * 18, R2[i] * H + Math.cos(t * 0.13 + R1[i] * 6.28) * 18, (0.05 + 0.13 * R3[i]) * a, 0); }
+// 장 제목이 지나간 뒤 쌀알이 이루는 그 장의 모양 → 이 모양이 그대로 얼굴로 바뀜
+const SHAPE_OF = { life: 'table', hunger: 'jar', demand: 'grain', street: 'lamp', spread: 'map', erased: 'police', boundary: 'shoes', mine: 'bowl', truth: 'seven', share: 'riceball', light: 'flame' };
+function formShape(name, t) {
+  if (name === 'map') { TARGETS.spread(0.6); return; }
+  const pts = name === 'seven' ? inkPoints('seven', 220, 220, [{ text: '7', size: 210, weight: 800, x: 110, y: 116, align: 'center' }], 900) : shapePoints(name, 900);
+  if (!pts) { dust(t); return; }
+  const S = Math.min(W * 0.4, H * 0.24), cy = H * 0.42;
+  setT(0, R1[0] * W, R2[0] * H, 0, 0);
+  for (let j = 0; j < pts.length; j++) { const q = pts[j], i = j + 1; setT(i, CX + q.x * S, cy + q.y * S, 0.6 + 0.4 * R3[i], 0); TROT[i] = q.r; }
+  for (let i = pts.length + 1; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.04, 0);
+}
+
+// ---------------- 휴대폰 체험 (밥 푸기 · 쌀독 털기 · 문서 후 불기) ----------------
+const potPos = () => ({ x: CX, y: CY + R * 0.02 });
+function scoop() {
+  const k = state.bowls.findIndex((v) => v < 1); if (k < 0) return;
+  const was = Math.round(state.bowls[k] * 40); state.bowls[k] = Math.min(1, state.bowls[k] + 1 / 3 + 0.001); const now = Math.round(state.bowls[k] * 40);
+  state.scoops = (state.scoops || 0) + 1; state.scoopT = performance.now();
+  const pp = potPos(); for (let j = was; j < now; j++) { const i = 260 + k * 40 + j; X[i] = pp.x + (Math.random() - 0.5) * R * 0.3; Y[i] = pp.y - R * 0.12; A[i] = 1; } // 솥에서 떠서 그릇으로 날아감
+  sound.rattle(0.3); sensor.vibrate(14);
+  if (state.bowls[k] >= 1) { const done = state.bowls.filter((v) => v >= 1).length; document.querySelectorAll('.bowl-n').forEach((n) => (n.textContent = done)); sound.ping(done === 10 ? 'bowlsDone' : 'bowl'); sensor.vibrate(done === 10 ? [30, 50, 30, 50, 80] : 18); if (done === 10) showTip(UI.bowlsDone, UI.bowlsDoneT, { getBoundingClientRect: () => ({ left: CX - 120, top: CY - R * 0.2 }) }); }
+}
+// 주걱질: 폰을 앞으로 숙였다가 다시 들어 올리면(또는 반대로) 한 번 뜸
+function watchScoop(now) {
+  const v = sensor.tiltY, sc = state.scp || (state.scp = { h: [] }); sc.h.push([now, v]); while (sc.h.length && now - sc.h[0][0] > 900) sc.h.shift();
+  if (now - (sc.last || 0) < 650 || sc.h.length < 6) return;
+  let mn = Infinity, mx = -Infinity, mnI = 0, mxI = 0; sc.h.forEach(([, vv], k) => { if (vv < mn) { mn = vv; mnI = k; } if (vv > mx) { mx = vv; mxI = k; } });
+  const first = sc.h[0][1], ext = Math.abs(mn - first) > Math.abs(mx - first) ? mnI : mxI, extV = sc.h[ext][1];
+  if (mx - mn > 0.42 && ext > 1 && ext < sc.h.length - 2 && Math.abs(v - extV) > 0.3) { sc.last = now; sc.h = []; scoop(); }
+}
+const MOB = {
+  life() {
+    const pp = potPos(), left = Math.max(0, 1 - (state.scoops || 0) / 32);
+    for (let i = 0; i < 260; i++) { const a = R2[i] * 6.28, rr = Math.sqrt(R3[i]); const on = R1[i] < 0.2 + 0.8 * left; setT(i, pp.x + Math.cos(a) * R * 0.27 * rr, pp.y - R * 0.04 + Math.sin(a) * R * 0.07 * rr - (1 - rr) * R * 0.08 * left, on ? 0.9 : 0, 0); }
+    for (let b = 0; b < 10; b++) { const q = bowlPos(b), n = Math.round(state.bowls[b] * 40); for (let j = 0; j < 40; j++) { const i = 260 + b * 40 + j, ang = R2[i] * 6.28, rr = Math.sqrt(R3[i]) * 18; setT(i, q.x + Math.cos(ang) * rr, q.y - 5 + Math.sin(ang) * rr * 0.45 - (1 - Math.sqrt(R3[i])) * 7, j < n ? 1 : 0, j < n ? 3 : 0); } }
+    for (let i = 660; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.03, 0);
+  },
+  hunger() {
+    const jp = jarPos(), s0 = JAR_S(), fill = 1 - (state.jarOut / 40) * 0.92;
+    for (let i = 0; i < 320; i++) { const y = 34 - R2[i] * 58 * fill, w = 34 * Math.sqrt(Math.max(0, 1 - ((y - 6) / 32) ** 2)); setT(i, jp.x + (R1[i] * 2 - 1) * w * s0, jp.y + y * s0, 0.85, 0); }
+    const out = Math.min(280, state.jarOut * 7);
+    for (let j = 0; j < 280; j++) { const i = 320 + j; setT(i, jp.x + (R1[i] - 0.5) * R * 1.7 * Math.sqrt(R3[i]), jp.y + 46 * s0 + R2[i] * 12, j < out ? 0.9 : 0, j < out ? 3 : 0); }
+    for (let i = 600; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.03, 0);
+  },
+  erased() {
+    const pts = docPts(), S = docS();
+    for (let i = 0; i < 900; i++) {
+      const q = pts[i], x = CX + q.x * S, y = CY + q.y * S;
+      if (ptr.in && ptrDown && Math.hypot(ptr.x - x, ptr.y - y) < 60) state.rub[i] = Math.min(1, state.rub[i] + 0.1);
+      const rb = state.rub[i]; setT(i, x + (R1[i] - 0.5) * S * 0.28 * (1 - rb), y + (R2[i] - 0.5) * S * 0.22 * (1 - rb), 0.2 + 0.8 * rb, rb > 0.5 ? 0 : 1); TROT[i] = q.r;
+    }
+    for (let i = 900; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.03, 0);
+  },
+};
+// 체포영장 같은 옛 문서 (일러스트, 실제 문서를 재현하지 않음)
+const docS = () => Math.min(W * 0.5, H * 0.27);
+const docPts = () => inkPoints('warrant', 240, 320, [
+  { text: '체 포 영 장', size: 34, weight: 800, x: 120, y: 44, align: 'center' },
+  { text: '성  명 :  ○ ○ ○', size: 17, x: 22, y: 108 }, { text: '주  소 :  대구부 ○○동', size: 17, x: 22, y: 146 },
+  { text: '사  유 :  ………………', size: 17, x: 22, y: 184 }, { text: '1947년  ○월  ○일', size: 16, x: 218, y: 240, align: 'right' },
+], 900, (g) => { g.lineWidth = 3; g.beginPath(); g.arc(186, 284, 22, 0, 6.283); g.stroke(); g.font = "800 22px 'Nanum Myeongjo',serif"; g.textAlign = 'center'; g.fillText('印', 186, 285); g.lineWidth = 1.5; [126, 164, 202].forEach((y) => { g.beginPath(); g.moveTo(22, y); g.lineTo(218, y); g.stroke(); }); });
+function drawMobBackdrop(id, t) {
+  g.lineWidth = 1.2;
+  if (id === 'life') {
+    g.strokeStyle = 'rgba(255,248,230,.12)'; g.beginPath(); g.ellipse(CX, CY, R * 1.12, R * 0.82, 0, 0, 6.283); g.stroke();
+    BOWLS.forEach((b, k) => { const q = bowlPos(k); g.strokeStyle = state.bowls[k] >= 1 ? 'rgba(255,214,150,.7)' : 'rgba(255,248,230,.35)'; g.beginPath(); g.ellipse(q.x, q.y, 26, 14, 0, 0, 6.283); g.stroke(); g.beginPath(); g.ellipse(q.x, q.y + 4, 18, 9, 0, 0, Math.PI); g.stroke(); });
+    const pp = potPos(); g.strokeStyle = 'rgba(255,248,230,.45)'; // 솥
+    g.beginPath(); g.ellipse(pp.x, pp.y, R * 0.3, R * 0.09, 0, 0, 6.283); g.stroke(); g.beginPath(); g.ellipse(pp.x, pp.y + R * 0.02, R * 0.3, R * 0.24, 0, 0, Math.PI); g.stroke();
+    [-1, 1].forEach((sg) => { g.beginPath(); g.moveTo(pp.x + sg * R * 0.3, pp.y + R * 0.02); g.lineTo(pp.x + sg * R * 0.38, pp.y); g.stroke(); });
+    // 주걱: 폰 기울기를 따라 움직이고, 뜰 때 솥 위로 들림
+    const lift = Math.max(0, 1 - (performance.now() - (state.scoopT || 0)) / 500), ang = (sensor.on ? sensor.tiltY : Math.sin(t)) * 0.7 - 0.5;
+    g.save(); g.translate(pp.x + R * 0.12, pp.y - R * 0.18 - lift * R * 0.2); g.rotate(ang); g.strokeStyle = 'rgba(255,248,230,.75)';
+    g.beginPath(); g.ellipse(0, 0, R * 0.07, R * 0.1, 0, 0, 6.283); g.stroke(); g.beginPath(); g.moveTo(0, -R * 0.1); g.lineTo(0, -R * 0.42); g.stroke(); g.restore();
+  }
+  if (id === 'hunger') {
+    const jp = jarPos(), s0 = JAR_S(), wob = Math.max(0, 1 - (performance.now() - (state.jarShakeT || 0)) / 400) * Math.sin(t * 40) * 0.08;
+    g.save(); g.translate(jp.x, jp.y); g.scale(s0, s0); g.rotate(wob * 2.5); g.lineWidth = 1.4 / s0; g.strokeStyle = 'rgba(255,248,230,.55)';
+    g.beginPath(); g.moveTo(-18, -34); g.quadraticCurveTo(-44, -18, -38, 10); g.quadraticCurveTo(-30, 36, 0, 38); g.quadraticCurveTo(30, 36, 38, 10); g.quadraticCurveTo(44, -18, 18, -34); g.closePath(); g.stroke();
+    g.beginPath(); g.ellipse(0, -34, 18, 5, 0, 0, 6.283); g.stroke(); g.restore();
+    g.strokeStyle = 'rgba(255,248,230,.12)'; g.beginPath(); g.moveTo(CX - R * 1.05, jp.y + 52 * s0); g.lineTo(CX + R * 1.05, jp.y + 52 * s0); g.stroke();
+  }
+  if (id === 'erased') { const S = docS(); g.strokeStyle = 'rgba(255,248,230,.18)'; g.strokeRect(CX - 0.82 * S, CY - 1.08 * S, 1.64 * S, 2.16 * S); }
+  g.lineWidth = 1;
+}
 
 // ---------------- 장면별 목표 위치 ----------------
 function setT(i, x, y, a, c) { TX[i] = x; TY[i] = y; TA[i] = a; C[i] = c; }
@@ -407,6 +500,7 @@ const TARGETS = {
       if (u < 0.25) { const a = R2[i] * 6.28, r = Math.sqrt(u / 0.25); x = Math.cos(a) * 130 * r; y = -230 + Math.sin(a) * 18 * r; }
       else if (u < 0.75) { const v = (u - 0.25) / 0.5; const w = lerp(120, 10, Math.min(1, v * 3)) * (R2[i] - 0.5) * 2; x = w; y = -220 + v * 380; }
       else { const v = (u - 0.75) / 0.25, a = R2[i] * Math.PI; x = Math.cos(a + Math.PI) * 90 * Math.sqrt(R3[i]); y = 170 + Math.sin(a) * 30 * v; }
+      { const hw = glassW(y) * 0.86; x = Math.max(-hw, Math.min(hw, x)); } // 유리 테두리 밖으로 나가지 않게
       setT(i, CX + x * sc, CY + y * sc, 0.35 + 0.65 * (state.carK === (u < 0.2 ? 0 : u < 0.5 ? 1 : u < 0.75 ? 2 : 3) ? 1 : 0.4), state.carK === 3 && u >= 0.75 ? 3 : 0);
     }
     hideAll(900);
@@ -673,7 +767,7 @@ function drawBackdrop(id, p, t) {
   }
   if (id === 'light') {
     const gr = g.createRadialGradient(CX, CY, 0, CX, CY, R * 1.4); gr.addColorStop(0, 'rgba(255,240,215,.08)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
-    state.memories.forEach((m, k) => { const x = CX + Math.cos(k * 2.4) * R * 0.9, y = CY - R * 0.9 - ((t * 8 + k * 40) % (H * 0.3)); const gg = g.createRadialGradient(x, y, 0, x, y, 18); gg.addColorStop(0, 'rgba(255,250,235,.95)'); gg.addColorStop(1, 'rgba(255,250,235,0)'); g.fillStyle = gg; g.beginPath(); g.arc(x, y, 18, 0, 6.283); g.fill(); m._x = x; m._y = y; });
+    if (false) state.memories.forEach((m, k) => { const x = CX + Math.cos(k * 2.4) * R * 0.9, y = CY - R * 0.9 - ((t * 8 + k * 40) % (H * 0.3)); const gg = g.createRadialGradient(x, y, 0, x, y, 18); gg.addColorStop(0, 'rgba(255,250,235,.95)'); gg.addColorStop(1, 'rgba(255,250,235,0)'); g.fillStyle = gg; g.beginPath(); g.arc(x, y, 18, 0, 6.283); g.fill(); m._x = x; m._y = y; });
   }
 }
 
@@ -737,11 +831,15 @@ function draw(now) {
   let mm = null;
   if (mobile) {
     const playing = !!secEl.querySelector(':scope > .card.play.docked');
-    let cover = null; secEl.querySelectorAll(':scope > .card.chap-open').forEach((el) => { const b = (el.querySelector('b') || el).getBoundingClientRect(), c = (b.top + b.bottom) / 2; if (c > innerHeight * 0.32 && c < innerHeight * 1.02) cover = c; });
+    // 장 제목 → (제목이 지나가면) 그 장의 모양 → 그 모양이 얼굴로 → 글 → 흩어짐 → 체험
+    let titleOn = false, passed = false;
+    secEl.querySelectorAll(':scope > .card.chap-open').forEach((el) => { const b = (el.querySelector('b') || el).getBoundingClientRect(), c = (b.top + b.bottom) / 2; if (c > innerHeight * 0.32 && c < innerHeight * 1.02) titleOn = true; else if (c <= innerHeight * 0.32) passed = true; });
+    const st0 = secEl.querySelector(':scope > .card.story'), st1 = st0 && st0.dataset.face ? st0 : null, storyAhead = !!st0 && st0.getBoundingClientRect().top > innerHeight * (st1 ? 0.92 : 0.86); // 얼굴 없는 이야기는 글이 올라올 때까지 모양 유지
     const p0 = id === 'prologue' ? secEl.querySelector(':scope > .card:not(.story)') : null, p0r = p0 && p0.getBoundingClientRect();
-    mm = cover != null ? 'cover' : faceCard ? 'face' : playing ? 'play' : p0r && p0r.bottom > innerHeight * 0.12 ? 'intro' : 'dust';
-    // 조형물·장 모양은 아래 글(제목)과 함께 위로 올라감 → 글이 모양 위로 겹쳐 오지 않게
-    state.offY = mm === 'cover' ? Math.min(0, cover - innerHeight * 0.76) : mm === 'intro' ? Math.min(0, p0r.top - innerHeight * 0.58) : 0;
+    const textOn = [...secEl.querySelectorAll(':scope > .card:not(.story):not(.chap-open):not(.play)')].some((el) => { const r = el.getBoundingClientRect(); return r.bottom > innerHeight * 0.12 && r.top < innerHeight * 0.88; }); // 그 밖의 글(예: '4년 뒤')이 보이면 모양을 띄우지 않음
+    mm = titleOn ? 'title' : faceCard ? 'face' : playing ? 'play' : passed && storyAhead && !textOn && SHAPE_OF[id] ? 'shape' : p0r && p0r.bottom > innerHeight * 0.12 ? 'intro' : 'dust';
+    state.faceFromShape = mm === 'face' && faceCard === st1 && passed && !!SHAPE_OF[id];
+    state.offY = mm === 'intro' ? Math.min(0, p0r.top - innerHeight * 0.6) : 0;
   }
   const quiet = mobile ? mm !== 'play' : reading;
   hold = quiet || !!secEl.querySelector(':scope > .card.play.locked'); state.readK = Math.max(0, Math.min(1, (state.readK || 0) + (quiet ? dt * 2.5 : -dt * 1.6)));
@@ -751,19 +849,20 @@ function draw(now) {
   state.openK = Math.max(0, Math.min(1, (state.openK || 0) + (opening ? dt * 2.5 : -dt * 1.5)));
   document.body.classList.toggle('phase-open', opening);
   // 휴대폰: 장면 선 그림(밥상 테두리 등)은 체험 때 또렷이, 장 표지 때 은은히, 나머지는 끔
-  state.bdK = mobile ? state.bdK == null ? 0 : state.bdK + ((mm === 'play' ? 1 : mm === 'cover' ? 0.45 : 0) - state.bdK) * Math.min(1, dt * 3) : null;
+  state.bdK = mobile ? state.bdK == null ? 0 : state.bdK + ((mm === 'play' ? 1 : 0) - state.bdK) * Math.min(1, dt * 3) : null;
   narr.follow(readCard);
   const pp = playProgress(cur, p);
   state.freeze = false; // 밤 장면에서만 켜짐 (다른 장으로 넘어가면 풀림)
-  if (!mobile || mm === 'play') TARGETS[id](pp);
-  else if (mm === 'cover' && COVER_P[id] != null) TARGETS[id](COVER_P[id]);
+  if (!mobile) TARGETS[id](pp);
+  else if (mm === 'play') { if (MOB[id]) MOB[id](); else TARGETS[id](pp); if (id === 'life' && !hold && sensor.on) watchScoop(now); }
+  else if (mm === 'shape' || state.faceFromShape) formShape(SHAPE_OF[id], t); // 얼굴은 이 모양에서 바로 모임
   else if (mm === 'intro') sculpt(1);
-  else dust(t);
+  else dust(t, readCard ? 0.6 : 1);
   if (mobile) { // 모양을 글과 함께 바로 옮김 (따라오느라 늦지 않게)
-    const oy = state.offY || 0, d = state.lastOff == null || !(mm === 'cover' || mm === 'intro') ? 0 : oy - state.lastOff;
+    const oy = state.offY || 0, d = state.lastOff == null || mm !== 'intro' ? 0 : oy - state.lastOff;
     if (oy) for (let i = 0; i < N; i++) TY[i] += oy;
     if (d) for (let i = 0; i < N; i++) Y[i] += d;
-    state.lastOff = mm === 'cover' || mm === 'intro' ? oy : null;
+    state.lastOff = mm === 'intro' ? oy : null;
   }
   applyFace(id);
   document.body.dataset.scene = id;
@@ -779,15 +878,15 @@ function draw(now) {
   prog.children[cur].querySelector('i').style.width = Math.round(p * 100) + '%';
 
   if (!state.ar) { g.fillStyle = id === 'mine' ? '#020202' : '#050505'; g.fillRect(0, 0, W, H); }
-  g.globalAlpha = mobile ? state.bdK : 1 - Math.max(0.97 * state.readK, 0.95 * state.openK); if (g.globalAlpha > 0.01) { g.save(); if (mobile && state.offY) g.translate(0, state.offY); drawBackdrop(id, mm === 'cover' ? COVER_P[id] ?? pp : pp, t); g.restore(); } g.globalAlpha = 1; // 읽는 동안 장면 그림은 뒤로 물러남
+  g.globalAlpha = mobile ? state.bdK : 1 - Math.max(0.97 * state.readK, 0.95 * state.openK); if (g.globalAlpha > 0.01) { g.save(); if (mobile && state.offY) g.translate(0, state.offY); if (mobile && (id === 'life' || id === 'hunger' || id === 'erased')) drawMobBackdrop(id, t); else drawBackdrop(id, pp, t); g.restore(); } g.globalAlpha = 1; // 읽는 동안 장면 그림은 뒤로 물러남
   const wander = TOUCH && !ptr.in; // 터치: 누르지 않을 땐 손전등이 천천히 바닥을 훑음
   const torch = id === 'mine' && !hold && (ptr.in || TOUCH) ? state.torch || 0 : 0, tx = wander ? CX + Math.sin(t * 0.5) * R * 0.7 : ptr.x, ty = wander ? CY + R * 0.62 + Math.sin(t * 0.9) * R * 0.08 : ptr.y;
   // 모바일: 기울이면 쌀알이 낮은 쪽으로 쏠리고(밥상·굶주림 장면에선 그릇에서 쏟아짐), 흔들면 떨림. 광산·진실규명 장에서는 쓰지 않음
-  const calm = hold || id === 'boundary' || id === 'mine' || id === 'truth';
+  const calm = hold || id === 'boundary' || id === 'mine' || id === 'truth' || (mobile && (id === 'work' || id === 'life' || id === 'erased'));
   const gx = IS_MOBILE && sensor.on && !calm ? sensor.tiltX : 0, gy = IS_MOBILE && sensor.on && !calm ? sensor.tiltY : 0, sh = IS_MOBILE && !calm ? sensor.shake : 0;
   // 밥상: 폰을 기울인 쪽(어느 방향이든) 그릇으로 위에서 쌀이 쏟아짐 · PC·터치는 그릇을 누르고 있으면 담김
   state.pour = -1;
-  if (id === 'life' && !hold) {
+  if (id === 'life' && !hold && !mobile) {
     let k = -1, rate = 0;
     if (IS_MOBILE && sensor.on) { const tx = sensor.tiltX, ty = sensor.tiltY, mag = Math.hypot(tx, ty); if (mag > 0.22) { let bd = -2; BOWLS.forEach((b, j) => { const q = bowlPos(j), dx = q.x - CX, dy = q.y - CY, d = (dx * tx + dy * ty) / (Math.hypot(dx, dy) * mag); if (d > bd) { bd = d; k = j; } }); rate = Math.min(1, mag * 1.6); } }
     if (k < 0 && ptrDown) BOWLS.forEach((b, j) => { const q = bowlPos(j); if (Math.hypot(ptr.x - q.x, ptr.y - q.y) < 52) { k = j; rate = 1; } });
@@ -832,7 +931,7 @@ function draw(now) {
     const fg = face.k > 0.02 && i > 0 && i <= FN;
     X[i] += (TX[i] - X[i]) * ease; Y[i] += (TY[i] - Y[i]) * ease; A[i] += (TA[i] - A[i]) * 0.08;
     if (A[i] < 0.01) continue;
-    if (face.k > 0.3 && i > 0 && i <= FN) { const d = ((TROT[i] - ROT[i]) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2; ROT[i] += d * 0.12; }
+    if ((face.k > 0.3 || (mobile && mm === 'shape')) && i > 0 && i <= FN) { const d = ((TROT[i] - ROT[i]) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2; ROT[i] += d * 0.12; }
     else if (!state.freeze) ROT[i] += (R3[i] - 0.5) * 0.01;
     let al = A[i] * (1 - 0.98 * state.openK);
     if (torch > 0) { const d = Math.hypot(X[i] - tx, Y[i] - ty); al *= lerp(1, d < 150 ? 1.25 - d / 300 : 0.12, torch); }
@@ -903,9 +1002,31 @@ document.querySelectorAll('.mem-f').forEach((f) => {
     e.preventDefault(); const text = ta.value.trim().slice(0, 120); if (!text) return ta.focus();
     state.memories.push({ text }); sound.ping('memory'); try { localStorage.setItem('xpace-bitssal-v2', JSON.stringify(state.memories.slice(-20).map((m) => ({ text: m.text })))); } catch (e2) {}
     ta.value = ''; n.textContent = '0 / 120';
-    f.parentElement.querySelector('.note').textContent = tr('당신의 문장이 빛이 되어 떠올랐습니다. 빛 위에 커서를 올리면 다시 볼 수 있어요. (이 브라우저에만 저장)');
+    memRise(text, ta.getBoundingClientRect());
+    f.parentElement.querySelector('.note').textContent = (({ en: 'Your sentence rose like small lights. (Saved only in this browser)', zh: '你的句子像灯火一样升了起来。（只保存在此浏览器中）', ja: 'あなたの言葉が灯りのように浮かびました。（このブラウザにだけ保存）' })[lang] || '당신의 문장이 불빛처럼 떠올랐습니다. (이 브라우저에만 저장)');
   });
 });
+
+// 기억을 위한 한 문장: 남기면 글자 하나하나가 불빛처럼 떠올라 빛 장면 하늘에 머묾
+const memSky = document.createElement('div'); memSky.className = 'mem-sky'; memSky.setAttribute('aria-hidden', 'true'); document.body.appendChild(memSky);
+function memLine(text, k) {
+  const el = document.createElement('div'); el.className = 'mem-line'; el.style.top = `${14 + (k % 5) * 9}%`;
+  el.innerHTML = [...text].map((ch) => `<span><i>${esc(ch)}</i></span>`).join(''); memSky.appendChild(el);
+  while (memSky.children.length > 5) memSky.firstChild.remove();
+  return el;
+}
+function memRise(text, from) {
+  const el = memLine(text, state.memories.length - 1), spans = [...el.children];
+  memSky.classList.add('rising'); setTimeout(() => memSky.classList.remove('rising'), 6000);
+  const fx = from.left + from.width / 2, fy = from.top + from.height / 2;
+  spans.forEach((sp, k) => { const r = sp.getBoundingClientRect(); sp.style.setProperty('--dx', `${fx - (r.left + r.width / 2) + (Math.random() - 0.5) * 60}px`); sp.style.setProperty('--dy', `${fy - (r.top + r.height / 2)}px`); sp.style.transitionDelay = `${k * 70}ms`; sp.querySelector('i').style.animationDelay = `${-Math.random() * 4}s`; });
+  el.getBoundingClientRect(); requestAnimationFrame(() => el.classList.add('go'));
+}
+state.memories.slice(-5).forEach((m, k) => { const el = memLine(m.text, k); el.querySelectorAll('i').forEach((i) => (i.style.animationDelay = `${-Math.random() * 4}s`)); el.classList.add('go'); });
+// 마지막 '전시 행성 나가기': 앱 안이면 앱에 닫아 달라고 알림, 웹이면 홈으로
+document.querySelectorAll('.bs-back').forEach((a) => a.addEventListener('click', (e) => { if (window !== window.top) { e.preventDefault(); try { window.parent.postMessage({ type: 'artmos:close-exhibit' }, '*'); } catch (err) {} setTimeout(() => (location.href = './'), 600); } }));
+// 밥 푸기(휴대폰): 솥을 누르면 한 번 뜸 (센서가 없거나 꺼졌을 때)
+addEventListener('pointerdown', (e) => { if (!mobile || SCENES[cur].id !== 'life' || hold || e.target.closest('.card, .bs-top, .bs-menu')) return; const pp = potPos(); if (Math.hypot(e.clientX - pp.x, e.clientY - pp.y) < R * 0.42) scoop(); });
 
 // 시작
 document.fonts.ready.catch(() => {}).then(() => { document.querySelector('.bs-loader').classList.add('done'); autoSound(); requestAnimationFrame(frame); });

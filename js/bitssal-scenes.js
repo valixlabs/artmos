@@ -33,6 +33,10 @@ const T = {
       light: () => '<p class="try">어둠 어디든 <b>눌러서</b> 작은 빛을 켜 보세요. 폰을 <b>하늘로 들어 올리면</b> 빛이 더 높이 떠오릅니다. 빛이 열 개 모이면, 오빠가 돌아오는 길이 보입니다.</p><p class="legend share">켜진 빛 <b class="lamp-n">0</b></p>',
       mine: (m, touch) => `<p class="chap">바닥 없는 어둠</p><p>스크롤할수록 깊이 내려갑니다. 관람객이 무언가를 떨어뜨리는 조작은 없습니다.</p><p class="try">${touch ? '어둠 속에서는 <b>누른 곳이 손전등처럼</b> 밝아집니다.' : '어둠 속에서는 <b>커서가 손전등</b>이 됩니다.'}</p>`,
     },
+    mia: { // 휴대폰(앱) 체험 문구
+      life: (tail) => `<p class="try">폰을 <b>주걱처럼</b> 쥐고, <b>앞으로 숙였다가 들어 올려</b> 밥을 떠 보세요. 솥에서 뜬 밥이 그릇에 담깁니다.</p><p>가운데 <b>솥을 눌러도</b> 밥을 풀 수 있어요. 열 식구의 밥을 차려 보세요.</p>${tail}`,
+      erased: (btn) => `<p class="try">먼지 쌓인 문서에 <b>후~ 숨을 불어</b> 보세요. 먼지가 걷히며 오래된 문서가 드러납니다. <b>손가락으로 문질러도</b> 됩니다.</p>${btn}<p class="note">문서는 이해를 돕기 위한 일러스트입니다.</p>`,
+    },
     mob: { geo: '내가 있는 곳에서 대구까지 거리 보기', geoNote: '위치는 거리 계산에만 쓰이고 저장·전송되지 않습니다.', mic: '후 불어 빛 띄우기 (마이크)', ar: '카메라로 내 공간에 빛 남기기', arNote: '카메라 영상은 이 화면에서만 보이고 저장·전송되지 않습니다.', bow: '잠시 폰을 엎어 두고 묵념해 보세요. 소리가 잦아듭니다.' },
     rec: {
       hunger: ['1946년 여름', '미군정의 「미곡수집령」으로 쌀이 거두어졌다. 귀환 동포가 늘고 5월 콜레라, 6월 수해가 겹쳐 굶주림이 깊어졌다.'],
@@ -80,6 +84,10 @@ const T = {
       share: (m) => `${m ? '<p class="try"><b>Turn your phone slowly like a steering wheel</b> and the ring of rice balls turns with it, passing them along.</p>' : ''}<p><b>Drag the ring to turn it</b>, or click a rice ball to pass it to the next person.</p><p class="legend share">Rice balls shared <b class="share-n">0</b></p>`,
       light: () => '<p class="try"><b>Tap</b> anywhere in the dark to light a small lamp. <b>Raise your phone toward the sky</b> and the lights rise higher. When ten lights gather, the road my brother comes home on appears.</p><p class="legend share">Lights lit <b class="lamp-n">0</b></p>',
       mine: (m, touch) => `<p class="chap">Darkness without a floor</p><p>The more you scroll, the deeper you go. There is no action in which the viewer drops anything.</p><p class="try">${touch ? 'In the dark, <b>wherever you tap lights up like a flashlight</b>.' : 'In the dark, <b>your cursor becomes a flashlight</b>.'}</p>`,
+    },
+    mia: {
+      life: (tail) => `<p class="try">Hold your phone <b>like a rice paddle</b>: <b>dip it forward, then lift it up</b> to scoop. Rice from the pot goes into a bowl.</p><p>You can also <b>tap the pot</b> in the middle to scoop. Set the table for ten.</p>${tail}`,
+      erased: (btn) => `<p class="try"><b>Blow gently</b> on the dusty document. As the dust lifts, an old document appears. You can also <b>rub it with your finger</b>.</p>${btn}<p class="note">The document is an illustration to aid understanding.</p>`,
     },
     mob: { geo: 'See the distance from where I am to Daegu', geoNote: 'Your location is used only to calculate the distance and is not stored or sent.', mic: 'Blow to lift a light (microphone)', ar: 'Leave a light in my space with the camera', arNote: 'The camera image is shown only on this screen and is not stored or sent.', bow: 'Lay your phone face down for a moment of silence. The sound will fade.' },
     rec: {
@@ -129,6 +137,10 @@ const T = {
       light: () => '<p class="try">在黑暗中任意处<b>点击</b>，点亮小小的光。把手机<b>举向天空</b>，光会升得更高。十盏光聚齐时，就能看见哥哥回家的路。</p><p class="legend share">点亮的光 <b class="lamp-n">0</b></p>',
       mine: (m, touch) => `<p class="chap">没有底的黑暗</p><p>越往下滚动，就走得越深。这里没有让观众丢下任何东西的操作。</p><p class="try">${touch ? '在黑暗中，<b>你点的地方会像手电筒一样亮起</b>。' : '在黑暗中，<b>光标会变成手电筒</b>。'}</p>`,
     },
+    mia: {
+      life: (tail) => `<p class="try">把手机<b>像饭勺一样</b>握住，<b>往前一倾再抬起来</b>，把饭舀出来。锅里舀起的饭会盛进碗里。</p><p><b>点一下中间的锅</b>也可以盛饭。为十口人摆好饭吧。</p>${tail}`,
+      erased: (btn) => `<p class="try">对着积满灰尘的文件<b>轻轻吹一口气</b>。灰尘散开，一份旧文件会显现出来。也可以<b>用手指擦一擦</b>。</p>${btn}<p class="note">文件是帮助理解的插图。</p>`,
+    },
     mob: { geo: '查看我所在的位置到大邱的距离', geoNote: '位置仅用于计算距离，不会被保存或发送。', mic: '吹一口气让光升起（麦克风）', ar: '用相机在我的空间留下光', arNote: '相机画面只显示在此屏幕上，不会被保存或发送。', bow: '把手机朝下放一会儿，默哀片刻。声音会渐渐减弱。' },
     rec: {
       hunger: ['1946年夏', '美军政厅以《米谷收集令》征收大米。归国同胞增多，又逢5月霍乱、6月水灾，饥饿愈发严重。'],
@@ -177,6 +189,10 @@ const T = {
       light: () => '<p class="try">暗闇のどこでも<b>押して</b>小さな光をともしてください。スマホを<b>空へ持ち上げると</b>光がもっと高く昇ります。光が十集まると、兄が帰ってくる道が見えてきます。</p><p class="legend share">ともった光 <b class="lamp-n">0</b></p>',
       mine: (m, touch) => `<p class="chap">底のない闇</p><p>スクロールするほど深く降りていきます。観覧者が何かを落とすような操作はありません。</p><p class="try">${touch ? '闇の中では、<b>タップした場所が懐中電灯</b>のように明るくなります。' : '闇の中では、<b>カーソルが懐中電灯</b>になります。'}</p>`,
     },
+    mia: {
+      life: (tail) => `<p class="try">スマホを<b>しゃもじのように</b>持ち、<b>前に傾けてからすくい上げて</b>みてください。お釜からすくったご飯が茶碗によそわれます。</p><p>真ん中の<b>お釜を押して</b>もよそえます。十人分のご飯を並べてみましょう。</p>${tail}`,
+      erased: (btn) => `<p class="try">ほこりをかぶった書類に<b>そっと息を吹きかけて</b>みてください。ほこりが払われ、古い書類が現れます。<b>指でこすって</b>もかまいません。</p>${btn}<p class="note">書類は理解を助けるためのイラストです。</p>`,
+    },
     mob: { geo: '今いる場所から大邱までの距離を見る', geoNote: '位置は距離の計算にだけ使い、保存・送信しません。', mic: '息を吹いて光を浮かべる（マイク）', ar: 'カメラで自分の空間に光を残す', arNote: 'カメラ映像はこの画面にだけ表示され、保存・送信されません。', bow: 'しばらくスマホを伏せて、黙祷してみてください。音が静まります。' },
     rec: {
       hunger: ['1946年夏', '米軍政の「米穀収集令」で米が取り立てられた。帰国同胞が増え、5月のコレラと6月の水害が重なって、飢えが深まった。'],
@@ -207,7 +223,14 @@ export function buildScenes({ lang, IS_MOBILE: M, TOUCH, PH, VD, photo, vid, SRC
   const L = T[lang] || T.ko, SY = STORY[lang] || STORY.ko;
   const story = (id, k, at) => { const s = SY[id][k]; const chap = (T.ko.chap[id] ? `${T.ko.chap[id]} · ` : '') + (L.titles[id] || ''); return { at, kind: 'story', chap: id === 'prologue' ? '' : chap, head: L.heads[id][k], who: s.who, html: s.html, face: FACES[id][k], first: id === 'prologue' }; };
   const rec = (id, at, src, tone) => { const r = L.rec[id]; return { at, kind: 'record', title: r[0], html: `<p>${r[1]}</p>${r[2] ? `<p class="quiet">${r[2]}</p>` : ''}`, src, tone }; };
-  const ia = (id, at) => ({ at, play: true, html: L.ia[id](M, TOUCH) });
+  const mobIa = (id, html) => { // 휴대폰(앱): 밥 푸기 · 쌀독만 털기 · 문서 후 불기
+    if (!M) return html;
+    if (id === 'life') return L.mia.life((html.match(/<p class="legend[^]*$/) || [''])[0]);
+    if (id === 'hunger') return html.replace(/<\/p><p>[^]*?<\/p><p class="legend/, '</p><p class="legend');
+    if (id === 'erased') return L.mia.erased((html.match(/<button[^]*?<\/button>/) || [''])[0]);
+    return html;
+  };
+  const ia = (id, at) => ({ at, play: true, html: mobIa(id, L.ia[id](M, TOUCH)) });
   // 장 여는 표지: 화면 가운데 번호·제목만 (다른 그림과 겹치지 않게 카드 흐름 안에 둠)
   const open = (id) => ({ at: 0, kind: 'open', num: T.ko.chap[id] || '', title: L.titles[id] || '' });
   const mobBtn = (cls, label, note) => (M ? `<button class="act-btn ${cls}">${label}</button>${note ? `<p class="note">${note}</p>` : ''}` : '');
@@ -223,10 +246,10 @@ export function buildScenes({ lang, IS_MOBILE: M, TOUCH, PH, VD, photo, vid, SRC
     { id: 'spread', part: 1, h: 200, cards: [open('spread'), story('spread', 0, 0.06), ...(M ? [{ at: 0.55, play: true, html: `${mobBtn('geo-btn', L.mob.geo)}<p class="geo-out"></p><p class="note">${L.mob.geoNote}</p>` }] : [])] },
     { id: 'erased', part: 1, h: 220, cards: [open('erased'), story('erased', 0, 0.05), ia('erased', 0.5)] },
     { id: 'boundary', part: 1, h: 240, cards: [open('boundary'), { at: 0.04, html: L.bTitle }, story('boundary', 0, 0.26), { at: 0.7, kind: 'choice', html: L.choice[0], summary: L.choice[1] }] },
-    { id: 'mine', part: 1, h: 400, cards: [open('mine'), story('mine', 0, 0.05), { at: 0.4, play: true, html: L.ia.mine(M, TOUCH) }, { at: 0.86, html: L.mineEnd + (M ? `<p class="try center">${L.mob.bow}</p>` : '') }] },
+    { id: 'mine', part: 1, h: 400, cards: [open('mine'), story('mine', 0, 0.05), ...(M ? [] : [{ at: 0.4, play: true, html: L.ia.mine(M, TOUCH) }]), { at: 0.86, html: L.mineEnd + (M ? `<p class="try center">${L.mob.bow}</p>` : '') }] },
     { id: 'truth', part: 1, h: 340, cards: [open('truth'), story('truth', 0, 0.04), ia('truth', 0.36), story('truth', 1, 0.64)] },
-    { id: 'share', part: 1, h: 240, cards: [open('share'), story('share', 0, 0.05), ia('share', 0.48), { at: 0.76, html: L.quote }] },
-    { id: 'light', part: 1, h: 340, cards: [open('light'), story('light', 0, 0.04), { at: 0.3, play: true, html: L.ia.light() + mobBtn('mic-btn', L.mob.mic) + mobBtn('ar-btn', L.mob.ar, L.mob.arNote) }, { at: 0.55, kind: 'input' }, { at: 0.86, html: L.end }] },
+    { id: 'share', part: 1, h: 240, cards: [open('share'), story('share', 0, 0.05), ...(M ? [] : [ia('share', 0.48)]), { at: 0.76, html: L.quote }] },
+    { id: 'light', part: 1, h: 340, cards: [open('light'), story('light', 0, 0.04), { at: 0.3, play: true, html: L.ia.light() }, { at: 0.55, kind: 'input' }, { at: 0.86, html: L.end }] },
     { id: 'work', part: 2, h: 420, cards: [{ at: 0.03, html: L.part2 }, { at: 0.16, html: L.work0 }, ...(M ? [{ at: 0.2, play: true, html: `<p class="try">${L.workTilt}</p>` }] : []), { at: 0.3, kind: 'carousel', items: L.workItems.map(([t, d], k) => ({ id: PH[k], t, d })) }, { at: 0.52, ...vid(VD.main, L.workVid[1], L.workVid[0]) }, V('acc', VD.acc, 0.66), V('dark', VD.dark, 0.78), V('light', VD.light, 0.9)] },
     { id: 'records', part: 2, h: 420, cards: [{ at: 0.03, html: L.recIntro }, ...['hunger', 'demand', 'street', 'spread', 'erased', 'mine', 'truth'].map((k, i) => { const r = L.rec[k]; return { at: 0.14 + i * 0.11, kind: 'record', title: r[0], html: `<p>${r[1]}</p>`, src: ['mine', 'truth'].includes(k) ? SRC2 : SRC1 }; }), { at: 0.94, html: `<p class="note">${L.recNote}</p>` }] },
     { id: 'archive', part: 2, h: 270, cards: [{ at: 0.06, kind: 'archive' }] },
