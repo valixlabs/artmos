@@ -753,7 +753,10 @@ addEventListener('popstate', () => {
     if (next) openExhibit(next);
   } else closeExhibit(true);
 });
+// 전시 틀(iframe) 안에서는 아이폰 상태 표시줄 높이가 0으로 보여서, 앱이 잰 값을 전시에 알려 줌 (빛쌀 상단 바 위치)
+const safeTop = () => { const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;top:0;height:0;padding-top:env(safe-area-inset-top);visibility:hidden'; document.body.appendChild(pr); const v = parseFloat(getComputedStyle(pr).paddingTop) || 0; pr.remove(); return v; };
 frame.addEventListener('load', () => {
+  try { const st = safeTop(); if (st > 0) frame.contentWindow.postMessage({ type: 'artmos:safe', top: st }, '*'); } catch (e) {}
   if (!current) return;
   let path = '', full = '';
   try { full = frame.contentWindow.location.href; path = frame.contentWindow.location.pathname; } catch (e) { full = 'cross-origin'; } // 앱 틀 안: 전시가 웹 주소라 안을 못 읽음 → 열린 것으로 봄(나가기는 postMessage)

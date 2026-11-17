@@ -9,6 +9,15 @@ import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=11';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
 import * as MB from './membership.js?v=15';
+// 앱 안(전시 틀 iframe)에서는 아이폰이 상태 표시줄 높이(safe-area)를 0으로 줌 → 상단 바가 시계 줄과 겹침. 기기 화면 높이로 어림해 채움
+{ const inApp = (() => { try { return window.parent !== window && (sessionStorage.getItem('artmos-in-app') === '1' || /[?&]app=1(?:&|$)/.test(location.search)); } catch (e) { return false; } })();
+  const setSat = (px) => document.documentElement.style.setProperty('--sat', `${Math.round(px)}px`);
+  if (inApp && /iPhone|iPod/.test(navigator.userAgent)) {
+    const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;top:0;height:0;padding-top:env(safe-area-inset-top);visibility:hidden'; document.body.appendChild(pr);
+    const env = parseFloat(getComputedStyle(pr).paddingTop) || 0; pr.remove();
+    if (env < 1) { const h = Math.max(screen.height, screen.width); setSat(h >= 852 ? 59 : h >= 812 ? 47 : 20); } // 다이내믹 아일랜드 59 · 노치 47 · 홈 버튼 20
+  }
+  addEventListener('message', (e) => { const d = e.data; if (d && d.type === 'artmos:safe' && typeof d.top === 'number' && d.top > 0) setSat(d.top); }); } // 앱이 정확한 값을 보내 주면 그걸 씀
 // 화면 문구 (읽기 → 체험 · 내레이션)
 const LX = ({
   ko: { play: '체험', wait: '위의 이야기를 다 읽으면 체험이 열려요', next: '이야기를 다 읽으면, 아래에서 직접 해 볼 수 있어요.', narr: '내레이션', listen: '듣기', stop: '멈춤', chapter: '장' },

@@ -460,3 +460,12 @@ body[data-scene="light"] .mem-sky, .mem-sky.rising { opacity: 1; }
   body.top-hide .bs-progress { transform: translateY(calc(-100% - 90px)); opacity: 0; pointer-events: none; }
 }
 @media (max-width: 819px) and (prefers-reduced-motion: reduce) { .bs-top, .bs-progress { transition: opacity .2s; } }
+/* 상단 바 자리 = 상태 표시줄(시계·배터리) 아래 (2026-11-18). 앱 안 전시 틀(iframe)에서는 아이폰이 이 높이를 0으로 주어서
+   상단 바가 시계 줄 밑으로 올라갔음 → --sat에 높이를 넣어 씀(웹에선 그대로 env 값, 앱 안에선 bitssal.js가 채움) */
+:root { --sat: env(safe-area-inset-top, 0px); }
+html body.bs-page .bs-top { padding-top: max(10px, var(--sat)); }
+html body.bs-page .bs-progress { top: calc(var(--sat) + 64px); }
+html body.bs-page .bs-menu { top: calc(var(--sat) + 108px); }
+html body.bs-page :where(.hud-clock, .hud-count, .hud-depth) { top: calc(var(--sat) + 116px); }
+html body.bs-page .lb-x { top: max(10px, var(--sat)); }
+@media (max-width: 819px) { html body.bs-page .bs-top { padding-top: max(12px, var(--sat)); } }
