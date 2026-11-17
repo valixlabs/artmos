@@ -18,7 +18,8 @@ export const CONFIG = {
   // 유료화(멤버십) — 실제 결제를 붙이기 전까지 enabled: false (모든 전시 공개, 멤버십 화면은 '준비 중')
   // paid: 유료 전시 id 목록(시트 cells 의 paid 칸으로도 지정 가능), previewBlocks: 무료로 보여 줄 블록 수
   // 권리 정리 전에는 어떤 전시도 유료로 지정하지 말 것. 구성 설명: docs/paid/README.md
-  // 닫힌 전시(2026-11-17 소유자): 권리 정리 전이라 앱·웹 어디에도 보이지 않게. 시트에 있어도 숨김. 다시 열려면 여기서 빼기
+  // 닫힌 전시(2026-11-17 소유자): 권리 정리 전이라 앱·웹 어디에도 보이지 않게. 시트에 있어도 숨김.
+  // ★ 실제로는 data/remote.json 의 closed 가 우선(앱 안에 넣어 둔 이 파일은 앱을 다시 내야 바뀌므로). 여기는 그 파일을 못 받을 때의 기본값
   closed: ['c004', 'c006'], // c004 async(류이치 사카모토 가상 기획), c006 산사(조계종 협의 전)
   paywall: { enabled: false, paid: ['c005'], previewBlocks: 3 }, // 유료 지정: c005 빛쌀(진시영·김동선, 작가 계약 완료). enabled가 false면 아무것도 잠기지 않음
   // 온라인 아트 판매(앱 '컬렉트' 탭) — 작품은 data/artworks.json, 또는 cells 시트에 'artworks' 탭을 만들면 그게 우선

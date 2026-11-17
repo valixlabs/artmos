@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js?v=36';
+import { CONFIG } from './config.js?v=37';
 import { lang, tr } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';
 
@@ -99,11 +99,23 @@ async function loadLiveData() {
   return prepareData(cells, blocks, source, translations);
 }
 
-// 닫힌 전시(config.closed)는 목록·번호·월간 호 어디에도 넣지 않음
-export const isClosed = (id) => (CONFIG.closed || []).includes(id);
+// 웹에서 바로 읽는 설정(data/remote.json): 앱 틀이 앱 안에 들어 있어도 여기만 고치면 앱에도 바로 반영
+// 받기 전·실패하면 지난번에 받은 값, 그것도 없으면 config.js 값
+const readRemote = () => { try { return JSON.parse(localStorage.getItem('artmos-remote') || 'null'); } catch (e) { return null; } };
+export let REMOTE = readRemote() || {};
+let remotePromise;
+export function loadRemote() {
+  if (!remotePromise) remotePromise = fetchBody(web('data/remote.json?t=' + Date.now()), 'json', 4000, 'remote').then((r) => {
+    REMOTE = r || {}; try { localStorage.setItem('artmos-remote', JSON.stringify(REMOTE)); } catch (e) {} return REMOTE;
+  }).catch(() => REMOTE);
+  return remotePromise;
+}
+// 닫힌 전시(data/remote.json의 closed, 없으면 config.closed)는 목록·번호·월간 호 어디에도 넣지 않음
+export const isClosed = (id) => (Array.isArray(REMOTE.closed) ? REMOTE.closed : CONFIG.closed || []).includes(id);
 
 // 메모된 원본에 제목·그룹 역참조가 섞이지 않도록 행을 복사한 뒤 공통 처리
 async function prepareData(cellRows, blockRows, source, translations) {
+  await loadRemote();
   let cells = cellRows.map((c) => ({ ...c }))
     .filter((c) => c.id && c.status !== 'hidden' && !isClosed(c.id))
     .sort((a, b) => Number(a.order) - Number(b.order));
