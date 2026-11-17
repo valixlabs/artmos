@@ -672,7 +672,7 @@ function onAction(e) {
   if ((b = q('[data-acct]'))) {
     const k = b.dataset.acct;
     if (k === 'login') showOB('login');
-    else if (k === 'logout') AU.signOut().then(() => { toast(AU.at('loggedOut')); showOB('login'); }); // 로그아웃하면 로그인 화면으로
+    else if (k === 'logout') AU.signOut().then(() => { try { localStorage.removeItem('valix-intro-at'); } catch (e) {} location.reload(); }); // 로그아웃하면 인트로부터 다시(로그인 전에는 늘 인트로)
     else if (k === 'delete') sheet.open(AU.deleteConfirmHTML(), 'confirm');
     else if (k === 'delete-go') { b.disabled = true; AU.deleteAccount().then(() => { sheet.close(); store.set('valix-onboarded', false); store.set('valix-me', null); toast(AU.at('deleted')); showOB('login'); }).catch(() => { b.disabled = false; toast(AU.at('eNet')); }); }
     return true;

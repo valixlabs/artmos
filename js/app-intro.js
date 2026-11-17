@@ -21,10 +21,13 @@
   const C = COPY[L] || COPY.ko;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || (() => { try { return localStorage.getItem('valix-motion') === 'reduce'; } catch (e) { return false; } })();
   const soundOn = (() => { try { return localStorage.getItem('xpace-sound') !== 'off'; } catch (e) { return true; } })();
-  // 전체 인트로는 처음 설치했을 때와 마지막으로 본 지 하루가 지났을 때만. 그 사이에는 로고만 잠깐. (?intro=full / ?intro=short 로 시험)
+  // 전체 인트로는 로그인 전(늘), 로그인한 뒤에는 처음이거나 마지막으로 본 지 하루가 지났을 때만. 그 사이에는 로고만 잠깐. (?intro=full / ?intro=short 로 시험)
   const KEY = 'valix-intro-at', DAY = 864e5;
   const brief = (() => {
     const q = new URLSearchParams(location.search).get('intro'); if (q === 'full') return false; if (q === 'short') return true;
+    if (/[?&#](code|access_token|error_description)=/.test(location.search + location.hash)) return true; // 소셜 로그인에서 돌아온 중간 화면: 다시 길게 보여주지 않음
+    const loggedIn = (() => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^sb-.+-auth-token$/.test(k)) { const v = JSON.parse(localStorage.getItem(k) || 'null'); if (v && (v.access_token || v.currentSession)) return true; } } } catch (e) {} return false; })();
+    if (!loggedIn) return false; // 로그인 전에는 늘 전체 인트로(둘러보기 포함)
     let last = 0; try { last = +localStorage.getItem(KEY) || 0; } catch (e) {}
     return !!last && Date.now() - last >= 0 && Date.now() - last < DAY;
   })();
