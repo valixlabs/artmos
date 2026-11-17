@@ -70,9 +70,9 @@
 
 /* 순위: 큰 숫자 + 포스터 */
 .tv-rank { gap: 4px; }
-.tv-rk { flex: none; display: flex; align-items: flex-end; width: calc(31vw + 46px); max-width: 196px; }
-.tv-rk em { flex: none; width: 46px; margin-right: -6px; font-style: italic; font-weight: 900; font-size: 84px; line-height: .8; letter-spacing: -.06em; color: #fff; text-align: right; position: relative; z-index: 1; -webkit-text-stroke: 0; }
-.tv-rk .tv-poster { flex: 1; }
+.tv-rk { flex: none; display: flex; align-items: flex-end; gap: 6px; } /* 2026-11-18: 숫자가 포스터·제목을 덮지 않게 나란히 */
+.tv-rk > em { flex: none; width: auto; min-width: 34px; margin-right: 0; padding-right: .06em; font-style: italic; font-weight: 900; font-size: 64px; line-height: .8; letter-spacing: -.06em; color: #fff; text-align: right; position: relative; z-index: 1; -webkit-text-stroke: 0; }
+.tv-rk .tv-poster { flex: none; width: 31vw; max-width: 150px; }
 
 /* 보던 전시: 재생 버튼 + 진행 막대 */
 .tv-cont { width: 44vw; max-width: 200px; }
@@ -115,7 +115,7 @@
 
 .vx .tv-home button:active { transform: scale(.98); }
 @media (min-width: 700px) {
-  .tv-hcard { width: 400px; } .tv-card { width: 140px; } .tv-rk { width: 186px; } .tv-cont { width: 190px; } .tv-yt { width: 260px; }
+  .tv-hcard { width: 400px; } .tv-card { width: 140px; } .tv-rk .tv-poster { width: 140px; } .tv-cont { width: 190px; } .tv-yt { width: 260px; }
   .tv-hero-track { padding: 0 60px; scroll-padding: 0 60px; }
 }
 

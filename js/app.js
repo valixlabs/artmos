@@ -713,6 +713,8 @@ SHOP.loadShop().then(() => { if (tab === 'shop' || tab === 'my') shopRefresh(tab
 sheet.el.addEventListener('click', onAction);
 
 // 포스터 그림이 다 오면 빈칸 빛(스켈레톤)을 멈춤
+// 포스터 그림을 못 받으면(끊김) 한 번 더 받아 봄
+document.addEventListener('error', (e) => { const el = e.target; if (!el || !el.classList || !(el.classList.contains('tv-art') || el.classList.contains('tv-hp-img')) || el.dataset.retry) return; el.dataset.retry = '1'; const u = el.getAttribute('src') || ''; setTimeout(() => { el.src = u + (u.includes('?') ? '&' : '?') + 'r=' + Date.now(); }, 600); }, true);
 document.addEventListener('load', (e) => { const el = e.target; if (el && el.classList && (el.classList.contains('tv-art') || el.classList.contains('tv-hp-img')) && el.parentElement) el.parentElement.classList.add('ld'); }, true);
 /* ---------- 전시 보기 ---------- */
 const viewer = $('#viewer'), frame = $('#frame');
