@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js?v=35';
+import { CONFIG } from './config.js?v=36';
 import { lang, tr } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';
 
@@ -99,10 +99,13 @@ async function loadLiveData() {
   return prepareData(cells, blocks, source, translations);
 }
 
+// 닫힌 전시(config.closed)는 목록·번호·월간 호 어디에도 넣지 않음
+export const isClosed = (id) => (CONFIG.closed || []).includes(id);
+
 // 메모된 원본에 제목·그룹 역참조가 섞이지 않도록 행을 복사한 뒤 공통 처리
 async function prepareData(cellRows, blockRows, source, translations) {
   let cells = cellRows.map((c) => ({ ...c }))
-    .filter((c) => c.id && c.status !== 'hidden')
+    .filter((c) => c.id && c.status !== 'hidden' && !isClosed(c.id))
     .sort((a, b) => Number(a.order) - Number(b.order));
   let blocks = blockRows.map((b) => ({ ...b }))
     .filter((b) => b.cell_id).sort((a, b) => Number(a.order) - Number(b.order));

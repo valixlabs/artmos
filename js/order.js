@@ -1,12 +1,12 @@
 // ARTMOS 주문 / 결제 페이지 (order.html?work=작품id)
 // 한 화면에: 주문 작품 → 주문자 → 받는 분(주소 검색) → 결제 수단(토스 결제위젯) → 최종 금액 → 필수 동의 → 결제하기
 // 로그인한 회원만. 금액은 서버(create-order)가 정함. 결제 성공·실패는 checkout.html 로 돌아감.
-import { loadShop, workInfo } from './app-shop.js?v=18';
-import { api, loadToss, back, CLIENT_KEY, WIDGET, SHOP_TEST, PAY_ON, SHIPPING_KRW, saveOrder } from './shop-pay.js?v=15';
-import { currentUser } from './auth.js?v=13';
+import { loadShop, workInfo } from './app-shop.js?v=19';
+import { api, loadToss, back, CLIENT_KEY, WIDGET, SHOP_TEST, PAY_ON, SHIPPING_KRW, saveOrder } from './shop-pay.js?v=16';
+import { currentUser } from './auth.js?v=14';
 import { lang } from './i18n.js?v=7';
 import { bizHTML } from './biz.js?v=2';
-import { esc } from './data.js?v=34';
+import { esc } from './data.js?v=35';
 
 document.documentElement.lang = lang;
 const T = {
