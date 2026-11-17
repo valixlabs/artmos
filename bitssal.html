@@ -3,7 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <style>html { touch-action: manipulation; } /* 두 번 탭 확대 막기 */</style>
+  <style>/* 앱처럼: 두 번 탭 확대·길게 눌러 뜨는 메뉴(공유·사진 저장)·글자 선택·눌림 회색 빛·당김 출렁임 막기 (휴대폰만, 입력칸은 그대로) */
+    html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    @media (hover: none) {
+      html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+      html, body, body * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; }
+      img, svg, a, video, canvas { -webkit-user-drag: none; }
+      input, textarea, select, [contenteditable], [contenteditable] * { -webkit-touch-callout: default !important; -webkit-user-select: text !important; user-select: text !important; }
+    }
+  </style>
+  <script>matchMedia('(hover: none)').matches && addEventListener('contextmenu', function (e) { var t = e.target; if (!(t.closest && t.closest('input, textarea, select, [contenteditable]'))) e.preventDefault(); }, true);</script>
   <title>A-003 · 빛쌀 — 80년의 기억 | ARTMOS</title>
   <meta name="description" content="한 톨의 쌀을 따라 1946년 대구10월사건과 1950년 경산 코발트광산 사건을 걷는 인터랙티브 전시. 진시영 · 김동선 《빛쌀》." />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
