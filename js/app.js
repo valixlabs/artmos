@@ -452,7 +452,7 @@ const HT = {
 };
 const ht = (k) => (HT[lang] && HT[lang][k]) || t(k);
 let homeCat = 'home';
-const HOME_CATS = [['home', '홈'], ['all', '전시'], ['video', '영상'], ['read', '기사'], ['mag', '매거진']];
+const HOME_CATS = [['home', '홈'], ['all', '전시'], ['video', '영상'], ['read', '기사']];
 function allLinks() {
   const out = [], seen = new Set(), keys = Object.keys(ISSUES).sort().reverse();
   for (const k of (keys.length ? keys : [thisMonth()])) for (const c of cells) for (const l of linksFor(c, k)) if (!seen.has(l.url)) { seen.add(l.url); out.push({ ...l, c }); }
@@ -469,20 +469,9 @@ const tvPoster = (c, extra = '') => `<span class="tv-poster${isOpen(c) ? '' : ' 
 const rowH = (title, more) => `<div class="tv-rh"><h2>${esc(title)}</h2>${more ? `<button ${more}>${esc(ht('더보기'))}</button>` : ''}</div>`;
 const ytCard = (l) => { const id = ytId(l.url); return `<button class="tv-yt" data-yt="${id}" data-ytt="${esc(l.title)}"><span class="tv-yt-th"><img loading="lazy" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" decoding="async"><i></i></span><b>${esc(l.title)}</b><small>${esc(l.source || '')}</small></button>`; };
 const rdCard = (l) => `<a class="tv-rd" href="${esc(l.url)}" target="_blank" rel="noopener"><span><b>${esc(l.title)}</b><small>${esc(l.source || '')}${l.c ? ' · ' + esc(name(l.c)) : ''}</small></span><i>↗</i></a>`;
-const CIRC = [
-  ['data-all', '전체 행성', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.6" transform="rotate(-20 12 12)"/>'],
-  ['data-gotab="play"', '플레이', '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M4 9c-1 2-1 4 0 6M20 9c1 2 1 4 0 6"/>'],
-  ['data-gotab="shop"', '컬렉트', '<rect x="4" y="3.5" width="16" height="17" rx="1.5"/><rect x="7.5" y="7" width="9" height="8" rx=".5"/>'],
-  ['data-cat="mag"', '매거진', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>'],
-  ['data-saved', '좋아요', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'],
-  ['data-recent', '최근 본', '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 8v4l3 2"/>'],
-  ['data-vols', '지난 호', '<rect x="4" y="5" width="16" height="15" rx="1.5"/><path d="M4 10h16M9 3v4M15 3v4"/>'],
-  ['data-search', '검색', '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>'],
-];
 function homeHTML() {
   const top = `<header class="tv-top"><b class="tv-logo nb-brand-word">ARTMOS</b><div class="icons"><button data-search aria-label="${t('전시 검색')}">${searchIcon}</button>${bell()}</div></header>
     <nav class="tv-cats" aria-label="${esc(ht('홈'))}">${HOME_CATS.map(([id, k]) => `<button data-cat="${id}" class="${homeCat === id ? 'on' : ''}" aria-pressed="${homeCat === id}">${esc(ht(k))}</button>`).join('')}</nav>`;
-  if (homeCat === 'mag') return `<div class="tv-home tv-magwrap">${top}</div>${magazineHTML()}`;
   const k = viewMonth || thisMonth(), picks = picksFor(k), open = cells.filter(isOpen);
   if (homeCat === 'all') {
     const list = [...open.slice().reverse(), ...cells.filter((c) => !isOpen(c))];
@@ -508,7 +497,6 @@ function homeHTML() {
         <span class="tv-htext"><small>${esc(c.code || '')}${c.artist ? ' · ' + esc(c.artist) : ''}</small><b>${esc(name(c))}</b><i>${esc(c.subtitle || playOf(c).q || '')}</i></span>
       </button>`; }).join('')}</div>
       ${heroList.length > 1 ? `<div class="tv-dots">${heroList.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</section>
-    <section class="tv-circles">${CIRC.map(([a, k, d]) => `<button ${a}><span><svg viewBox="0 0 24 24">${d}</svg></span><b>${esc(ht(k))}</b></button>`).join('')}</section>
     ${rank.length ? `<section class="tv-sec">${rowH(ht('지금 열린 행성 TOP') + ' ' + rank.length)}<div class="tv-row tv-rank">${rank.map((c, i) => `<button class="tv-rk" data-detail="${esc(c.id)}"><em>${i + 1}</em>${tvPoster(c)}</button>`).join('')}</div></section>` : ''}
     ${seen.length ? `<section class="tv-sec">${rowH((p && p.nick ? p.nick : '') + ht('님이 보던 전시'), 'data-recent')}<div class="tv-row">${seen.map(([c, x]) => { const pr = Math.max(.04, Math.min(1, (x.time || 0) / (readMin(c) * 60))); return `<button class="tv-card tv-cont" data-open="${esc(c.id)}">${tvPoster(c, `<span class="tv-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="tv-prog"><i style="width:${Math.round(pr * 100)}%"></i></span>`)}<span class="tv-cap">${fmtTime(x.time || 0)}</span></button>`; }).join('')}</div></section>` : ''}
     ${yt.length ? `<section class="tv-sec">${rowH(ht('함께 보기'), 'data-cat="video"')}<div class="tv-row">${yt.slice(0, 10).map(ytCard).join('')}</div></section>` : ''}
@@ -535,7 +523,7 @@ function bindHero() {
   }, { passive: true });
 }
 
-const TAB_I = { home: 0, play: 1, shop: 2, my: 3 };
+const TAB_I = { home: 0, shop: 1, my: 2 };
 function go(next, keepScroll) {
   if (!Object.hasOwn(screens, next)) return;
   const previous = tab, oldScroll = scrollY;
