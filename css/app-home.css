@@ -130,12 +130,14 @@
 .tv-hp-logo { width: 62%; max-width: 250px; height: auto; filter: drop-shadow(0 2px 14px rgba(0,0,0,.7)); }
 .tv-hp-title { font-size: 34px; font-weight: 800; }
 .tv-hp-copy i { font-style: normal; font-size: 15px; line-height: 1.6; color: #e6e6e6; white-space: pre-line; text-shadow: 0 1px 8px rgba(0,0,0,.8); }
-.tv-hp-logo, .tv-hp-title, .tv-hp-copy i { opacity: 0; transform: translateY(26px); }
+.tv-hp-by { font-size: 12px; letter-spacing: .14em; color: #bdbdbd; text-shadow: 0 1px 8px rgba(0,0,0,.8); margin-top: -2px; }
+.tv-hp-logo, .tv-hp-title, .tv-hp-copy i, .tv-hp-by { opacity: 0; transform: translateY(26px); }
 .tv-hposter.in :is(.tv-hp-logo, .tv-hp-title) { animation: tvRise .9s cubic-bezier(.2,.8,.2,1) .25s both; }
 .tv-hposter.in .tv-hp-copy i { animation: tvRise .9s cubic-bezier(.2,.8,.2,1) .75s both; }
+.tv-hposter.in .tv-hp-by { animation: tvRise .9s cubic-bezier(.2,.8,.2,1) 1.15s both; }
 @keyframes tvRise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .tv-hp-logo, .tv-hp-title, .tv-hp-copy i { opacity: 1; transform: none; animation: none !important; } .tv-hp-img { transform: none; } }
-.artmos-calm .tv-hp-logo, .artmos-calm .tv-hp-title, .artmos-calm .tv-hp-copy i { opacity: 1; transform: none; animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .tv-hp-logo, .tv-hp-title, .tv-hp-copy i, .tv-hp-by { opacity: 1; transform: none; animation: none !important; } .tv-hp-img { transform: none; } }
+.artmos-calm .tv-hp-logo, .artmos-calm .tv-hp-title, .artmos-calm .tv-hp-copy i, .artmos-calm .tv-hp-by { opacity: 1; transform: none; animation: none !important; }
 
 /* 포스터가 있는 전시는 줄에서도 포스터로 */
 .tv-poster.has-art .tv-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; aspect-ratio: auto; left: 0; top: 0; }

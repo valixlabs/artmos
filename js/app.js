@@ -495,7 +495,7 @@ function homeHTML() {
       <button class="tv-hcard tv-hposter" data-detail="${esc(c.id)}" aria-label="${esc(name(c))}">
         <img class="tv-hp-img" src="${esc(A.poster)}" decoding="async" alt="" draggable="false">
         <span class="tv-hp-shade"></span>
-        <span class="tv-hp-copy">${A.logo ? `<img class="tv-hp-logo" src="${esc(A.logo)}" decoding="async" alt="${esc(name(c))}" draggable="false">` : `<b class="tv-hp-title">${esc(name(c))}</b>`}<i>${esc(playOf(c).q || c.subtitle || '')}</i></span>
+        <span class="tv-hp-copy">${A.logo ? `<img class="tv-hp-logo" src="${esc(A.logo)}" decoding="async" alt="${esc(name(c))}" draggable="false">` : `<b class="tv-hp-title">${esc(name(c))}</b>`}<i>${esc(playOf(c).q || c.subtitle || '')}</i>${c.artist ? `<small class="tv-hp-by">${esc(c.artist)}</small>` : ''}</span>
       </button>` : `
       <button class="tv-hcard" data-detail="${esc(c.id)}" style="--c:${esc(c.color || '#b7b7b7')}">
         <span class="tv-hstage"><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"></span>
