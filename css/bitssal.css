@@ -422,8 +422,17 @@ body.phase-open #hud > div, body.phase-open #labels { opacity: 0 !important; poi
   .card p, .card h1, .card h2, .card h3, .card li, .card small, .card b { text-shadow: 0 1px 3px rgba(0,0,0,.95); } /* 그림자는 한 겹만 (넓게 번지는 그림자는 스크롤 때 무거움) */
   .card.play .try { background: none !important; border: 0 !important; padding: 0 !important; }
   .card.play.docked { padding: 8px 6px 4px; }
-  .card.play.docked::before { content: ''; position: absolute; inset: -40px -12px -20px; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(5,5,5,0), rgba(5,5,5,.7) 45%); }
+  .card.play.docked::before { content: none; }
 }
+/* 2026-11-17: 붙은 체험 카드가 아이폰에서 옆으로 밀리던 문제 — 그라데이션 조각이 카드 밖(좌우 12px)으로 나가 가로 스크롤이 생겼음.
+   가로 스크롤을 막고, 그라데이션은 카드 안 배경으로 */
+@media (max-width: 819px) {
+  .card.play.docked { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch;
+    background: linear-gradient(180deg, rgba(5,5,5,.45), rgba(5,5,5,.78) 40%) !important; border-radius: 12px; }
+  .card.play.docked * { max-width: 100%; }
+}
+/* 맨 위·맨 아래에서 더 당기면 화면 전체가 끌려 내려가던 출렁임(빈 검은 띠) 막기 */
+html, body { overscroll-behavior-y: none; }
 /* 마지막 '전시 행성 나가기' 버튼이 눌리게 (#story는 원래 터치를 통과시킴) */
 .bs-credits { pointer-events: auto; }
 /* 기억을 위한 한 문장: 글자가 불빛처럼 떠오름 */

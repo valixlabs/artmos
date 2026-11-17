@@ -60,7 +60,7 @@ const GAP_M = { chapToFace: 0.35, chapToStory: 0.55, storyToNext: 0.4, playToNex
 function relayout() {
   const M = innerWidth < 820, Hh = innerHeight, gap = Math.max(M ? 32 : 40, Hh * (M ? 0.07 : 0.1));
   document.querySelectorAll('.scene').forEach((sc) => {
-    const base = (+sc.dataset.h / 100) * innerHeight * (M ? GAP_M.base : 1);
+    const base = (+sc.dataset.h / 100) * innerHeight * (M && sc.id !== 's-prologue' ? GAP_M.base : 1); // 첫 화면(조형물 + 아래 글) 자리는 그대로 — 줄이면 글이 올라가 조형물이 상단 머리와 겹침
     const cards = [...sc.querySelectorAll(':scope > .card')].sort((a, b) => a.dataset.at - b.dataset.at);
     let y = 0;
     let prev = null;
