@@ -100,6 +100,26 @@
     "artist": "Jin Siyoung · Kim Dongsun",
     "period": ""
    }
+  },
+  "c007": {
+   "en": {
+    "title": "A Thread of Hope",
+    "subtitle": "Five small hopes, joined by a single red thread",
+    "artist": "Kim Baneul",
+    "period": ""
+   },
+   "zh": {
+    "title": "一线希望",
+    "subtitle": "一根红线串起五个人的小小希望",
+    "artist": "Kim Baneul",
+    "period": ""
+   },
+   "ja": {
+    "title": "一縷の望み",
+    "subtitle": "一本の赤い糸でつながる、五人の小さな希望",
+    "artist": "Kim Baneul",
+    "period": ""
+   }
   }
  },
  "blocks": {
@@ -1069,6 +1089,23 @@
    "ja": {
     "title": "あなたの星",
     "body": "もう一度見上げると、その星はそこにあります。小さくても、たしかに光りながら。\n今日の悩みも、いまは夜空の星のひとつです。",
+    "caption": ""
+   }
+  },
+  "c007:1": {
+   "en": {
+    "title": "A Thread of Hope",
+    "body": "Even in the darkest corner, there is a single thread to hold on to.",
+    "caption": ""
+   },
+   "zh": {
+    "title": "一线希望",
+    "body": "即使在最暗的角落，也有一根可以抓住的线。",
+    "caption": ""
+   },
+   "ja": {
+    "title": "一縷の望み",
+    "body": "いちばん暗い片隅にも、つかめる糸が一本ある。",
     "caption": ""
    }
   }

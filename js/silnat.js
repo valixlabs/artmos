@@ -1,34 +1,114 @@
 // 실낱 같은 희망(c007) — 스크롤하면 붉은 실 한 줄이 끊기지 않고 이어지는 단독 페이지.
 // 센서 없음. 원작 Take 1·2(작가 허락, 선을 벡터로 옮김)는 숨 쉬고 고개를 든다.
-import { sceneSVG, SCENES, redThread, curve, loop } from './silnat-art.js?v=2';
+import { sceneSVG, SCENES, redThread, curve, loop } from './silnat-art.js?v=3';
+import { lang, langSwitcher } from './i18n.js?v=7';
 
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const IN_FRAME = window !== window.top;
 const $ = (s, el = document) => el.querySelector(s);
 
-// ───────── 글(가상의 인물 · 전시 문안) ─────────
-const PEOPLE = [
-  { id: 'cart', no: '하나', time: '새벽 네 시의 리어카', who: '정옥', age: 71, body: [
-    '새벽 네 시, 정옥 씨의 하루는 리어카 바퀴 소리로 시작됩니다.',
-    '골목마다 내놓인 상자를 접어 싣고, 고물상 저울에 올립니다. 그날 번 돈은 두 딸의 밥값이 됩니다.',
-    '정옥 씨는 오늘도 저녁을 건너뜁니다. 리어카 손잡이에는 작은딸이 두고 간 머리끈이 묶여 있습니다.'] },
-  { id: 'boxes', no: '둘', time: '밤 열한 시의 편의점', who: '민재', age: 24, body: [
-    '민재 씨는 밤새 편의점을 지킵니다.',
-    '새벽이 가까워지면 빈 상자를 하나씩 접어 문 옆에 쌓아 둡니다. 누가 가져가는지는 정확히 모릅니다.',
-    '다만 아침이면 상자가 없어져 있고, 가끔 문 앞에 사탕 한 알이 놓여 있습니다.'] },
-  { id: 'scarf', no: '셋', time: '첫차', who: '영호', age: 58, body: [
-    '영호 씨는 첫차를 몹니다. 정류장마다 같은 얼굴들이 같은 자리에 앉습니다.',
-    '일을 마치면 요양병원에 들러, 이제 영호 씨를 잘 알아보지 못하는 아내 곁에 앉습니다.',
-    '그리고 목도리를 뜹니다. 하루에 한 줄씩. 겨울이 오기 전에 끝내려고요.'] },
-  { id: 'phone', no: '넷', time: '오후의 영상통화', who: '란', age: 31, body: [
-    '란 씨는 영호 씨 버스의 단골입니다. 맨 뒷자리 창가에서 늘 졸다가 내립니다.',
-    '공장 쉬는 시간, 란 씨는 휴대폰 화면 속 딸과 이야기합니다.',
-    '손목의 실 팔찌는 떠나오던 날 딸이 묶어 주었습니다. “엄마, 이거 풀리면 오는 거야.” 팔찌는 아직 단단합니다.'] },
-  { id: 'door', no: '다섯', time: '문고리의 봉지', who: '서윤', age: 22, body: [
-    '서윤 씨는 며칠째 방 밖으로 나가지 못했습니다. 이유를 설명하기도 어렵습니다.',
-    '저녁마다 문고리가 조금 흔들리고, 발소리가 멀어집니다. 문을 열면 반찬 봉지가 걸려 있습니다.',
-    '붉은 끈으로 단단히 묶은 매듭. 옆집 할머니의 매듭입니다.'] },
-];
+// ───────── 글(가상의 인물 · 전시 문안) — 한·영·중·일 ─────────
+const IDS = [['cart', 71], ['boxes', 24], ['scarf', 58], ['phone', 31], ['door', 22]];
+const TEXT = {
+  ko: {
+    title: '실낱 같은 희망', by: '김바늘 · 혼합매체 · 섬유미술', hint: '천천히 내려 보세요',
+    caps: ['흰 종이 위, 방 한구석.<br>한 사람이 무릎을 안고 앉아 있습니다.', '그러다, 고개를 듭니다.', '저기, 붉은 실 한 가닥.'],
+    heroAlt: '김바늘, 실낱 같은 희망 Take 1·2. 방 한구석에 웅크린 사람이 고개를 들어 붉은 실을 본다.',
+    nums: ['하나', '둘', '셋', '넷', '다섯'], fiction: '가상의 인물 · 전시 문안',
+    people: [
+      ['새벽 네 시의 리어카', '정옥', ['새벽 네 시, 정옥 씨의 하루는 리어카 바퀴 소리로 시작됩니다.', '골목마다 내놓인 상자를 접어 싣고, 고물상 저울에 올립니다. 그날 번 돈은 두 딸의 밥값이 됩니다.', '정옥 씨는 오늘도 저녁을 건너뜁니다. 리어카 손잡이에는 작은딸이 두고 간 머리끈이 묶여 있습니다.']],
+      ['밤 열한 시의 편의점', '민재', ['민재 씨는 밤새 편의점을 지킵니다.', '새벽이 가까워지면 빈 상자를 하나씩 접어 문 옆에 쌓아 둡니다. 누가 가져가는지는 정확히 모릅니다.', '다만 아침이면 상자가 없어져 있고, 가끔 문 앞에 사탕 한 알이 놓여 있습니다.']],
+      ['첫차', '영호', ['영호 씨는 첫차를 몹니다. 정류장마다 같은 얼굴들이 같은 자리에 앉습니다.', '일을 마치면 요양병원에 들러, 이제 영호 씨를 잘 알아보지 못하는 아내 곁에 앉습니다.', '그리고 목도리를 뜹니다. 하루에 한 줄씩. 겨울이 오기 전에 끝내려고요.']],
+      ['오후의 영상통화', '란', ['란 씨는 영호 씨 버스의 단골입니다. 맨 뒷자리 창가에서 늘 졸다가 내립니다.', '공장 쉬는 시간, 란 씨는 휴대폰 화면 속 딸과 이야기합니다.', '손목의 실 팔찌는 떠나오던 날 딸이 묶어 주었습니다. “엄마, 이거 풀리면 오는 거야.” 팔찌는 아직 단단합니다.']],
+      ['문고리의 봉지', '서윤', ['서윤 씨는 며칠째 방 밖으로 나가지 못했습니다. 이유를 설명하기도 어렵습니다.', '저녁마다 문고리가 조금 흔들리고, 발소리가 멀어집니다. 문을 열면 반찬 봉지가 걸려 있습니다.', '붉은 끈으로 단단히 묶은 매듭. 옆집 할머니의 매듭입니다.']],
+    ],
+    bg: [],
+    retNo: '다시, 그 방', ret: ['실은 문틈으로 들어가, 방 한구석에 닿습니다.', '실낱 같은 희망은 크지 않습니다.<br>다만 끊기지 않을 뿐입니다.'],
+    retAlt: '다시 그 방. 붉은 실이 웅크린 사람의 발치에 닿는다.', knot: '실 끝에 매듭 짓기', knotDone: '매듭을 지었어요',
+    blankH: '아직 수놓이지 않은 장', blank: '《실낱 같은 희망》은 다섯 점으로 이어지는 연작입니다. 나머지 세 점은 작가가 지금 수놓고 있습니다.', blankAlt: '아직 수놓이지 않음',
+    p2No: 'PART 2 · 작품과 작가', p2H: '김바늘 《실낱 같은 희망》',
+    p2: ['흰 종이 위에 바늘과 실로 선을 수놓습니다. 다섯 점으로 이어지는 연작 가운데 첫 두 점입니다. 구상과 시놉시스부터 한 땀 한 땀의 실, 마지막 액자 작업까지 작가가 직접 했습니다.', '[작가 노트 — 작가에게 받을 예정]'],
+    dl: [['작가', '김바늘 · 혼합매체, 섬유미술'], ['재료', '종이에 실 [확인 필요]'], ['연작', 'Take 1 · Take 2 (5점 중 2점)']],
+    credit: '© 김바늘. 작품 이미지는 작가의 허락을 받아 사용했고, 화면의 선은 원작 사진을 옮긴 것입니다. 다섯 사람의 장면 그림은 작가의 허락을 받은 전시용 일러스트이고, 다섯 사람은 가상의 인물입니다(전시 문안).',
+    end: '오늘, 당신의 실은<br>어디에 묶여 있나요.', exit: '전시 행성 나가기',
+    help: '마음이 힘들 때는 자살예방 상담전화 <b>109</b>(24시간),<br>카카오톡·문자 상담 ‘마들랜’에서 이야기를 들어 줍니다.',
+    sndOn: '소리 켜기', sndOff: '소리 끄기',
+  },
+  en: {
+    title: 'A Thread of Hope', by: 'Kim Baneul · Mixed media · Textile art', hint: 'Scroll down slowly',
+    caps: ['On white paper, a corner of a room.<br>Someone sits hugging their knees.', 'And then, they lift their head.', 'Over there — a single red thread.'],
+    heroAlt: 'Kim Baneul, A Thread of Hope, Take 1 and 2. A person curled up in the corner of a room lifts their head and sees a red thread.',
+    nums: ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'], fiction: 'Fictional characters · exhibition text',
+    people: [
+      ['The cart at 4 a.m.', 'Jeong-ok', ['At four in the morning, Jeong-ok’s day begins with the sound of cart wheels.', 'She folds the boxes left out in each alley, loads them up and sets them on the scrap dealer’s scale. What she earns that day pays for her two daughters’ meals.', 'Today again, Jeong-ok skips dinner. Tied to the cart handle is a hair tie her younger daughter left behind.']],
+      ['The convenience store at 11 p.m.', 'Minjae', ['Minjae keeps the convenience store open through the night.', 'As dawn nears, he folds the empty boxes one by one and stacks them by the door. He isn’t sure who takes them.', 'But by morning the boxes are gone, and now and then a single candy is left by the door.']],
+      ['The first bus', 'Youngho', ['Youngho drives the first bus of the day. At every stop, the same faces take the same seats.', 'After work he stops by the care home and sits beside his wife, who no longer quite recognizes him.', 'And he knits a scarf. One row a day. He wants to finish before winter comes.']],
+      ['A video call in the afternoon', 'Lan', ['Lan is a regular on Youngho’s bus. She always dozes by the back window until her stop.', 'On her factory break, Lan talks with her daughter on her phone screen.', 'The thread bracelet on her wrist was tied by her daughter the day she left. “Mom, when this comes undone, you come home.” The bracelet is still tight.']],
+      ['The bag on the doorknob', 'Seoyun', ['Seoyun hasn’t been able to leave her room for days. It is hard to explain why.', 'Every evening the doorknob shakes a little, and footsteps fade away. When she opens the door, a bag of side dishes is hanging there.', 'A knot tied tight with red string. The knot of the old woman next door.']],
+    ],
+    bg: ['In Korea, many older people make a living by collecting cardboard and waste paper from the streets.', 'Convenience stores in Korea stay open all night, and many young people work the night shift.', 'The first bus leaves before dawn, carrying people to early-morning jobs.', 'Many migrant workers in Korea’s factories live far away from their children.', 'Banchan are the small side dishes served at every Korean meal; neighbours often share them.'],
+    retNo: 'Back in that room', ret: ['The thread slips through the gap under the door and reaches the corner of the room.', 'A thread of hope is not large.<br>It simply does not break.'],
+    retAlt: 'Back in the room. The red thread reaches the feet of the curled-up person.', knot: 'Tie a knot at the end', knotDone: 'Knot tied',
+    blankH: 'Pages not yet stitched', blank: 'A Thread of Hope is a series of five works. The artist is stitching the remaining three right now.', blankAlt: 'not yet stitched',
+    p2No: 'PART 2 · The work and the artist', p2H: 'Kim Baneul, A Thread of Hope',
+    p2: ['Lines are stitched onto white paper with needle and thread. These are the first two works of a series of five. From the idea and synopsis to every stitch and the final framing, the artist made each part by hand.', '[Artist’s note — to come]'],
+    dl: [['Artist', 'Kim Baneul · Mixed media, textile art'], ['Material', 'Thread on paper [to be confirmed]'], ['Series', 'Take 1 · Take 2 (2 of 5)']],
+    credit: '© Kim Baneul. The artwork images are used with the artist’s permission; the lines on screen were traced from photographs of the originals. The scene drawings of the five people are exhibition illustrations made with the artist’s permission, and the five people are fictional (exhibition text).',
+    end: 'Today, where is<br>your thread tied?', exit: 'Leave this planet',
+    help: 'If you are struggling, please reach out to a crisis line or counselling service near you.',
+    sndOn: 'Sound on', sndOff: 'Sound off',
+  },
+  zh: {
+    title: '一线希望', by: 'Kim Baneul · 综合材料 · 纤维艺术', hint: '请慢慢向下滑动',
+    caps: ['白纸上，房间的一角。<br>一个人抱着膝盖坐着。', '然后，抬起了头。', '那边，有一根红线。'],
+    heroAlt: 'Kim Baneul《一线希望》Take 1、2。蜷缩在房间角落的人抬起头，看见一根红线。',
+    nums: ['一', '二', '三', '四', '五'], fiction: '虚构人物 · 展览文案',
+    people: [
+      ['凌晨四点的手推车', '正玉', ['凌晨四点，正玉的一天从手推车轮子的声音开始。', '她把每条巷子里放在外面的纸箱折好装上车，再放到废品站的秤上。那天挣的钱，是两个女儿的饭钱。', '今天，正玉又没吃晚饭。手推车把手上系着小女儿留下的发圈。']],
+      ['晚上十一点的便利店', '敏在', ['敏在整夜守着便利店。', '天快亮时，他把空纸箱一个个折好，堆在门边。他并不清楚是谁拿走的。', '只是到了早上，纸箱总会不见，门口偶尔还放着一颗糖。']],
+      ['头班车', '永浩', ['永浩开头班车。每一站，都是同样的面孔坐在同样的位置。', '下班后，他会去疗养院，坐在已经不太认得他的妻子身边。', '然后织围巾。一天织一行。他想在冬天到来之前织完。']],
+      ['下午的视频通话', '兰', ['兰是永浩那趟车的常客，总在最后一排靠窗打瞌睡，到站才下车。', '工厂休息时，兰和手机屏幕里的女儿说话。', '手腕上的线手链，是她离开那天女儿系上的。“妈妈，这个松开了，你就回来。”手链还系得很紧。']],
+      ['门把手上的袋子', '瑞允', ['瑞允已经好几天没能走出房间了。原因也很难说清。', '每到傍晚，门把手会轻轻晃一下，脚步声渐渐走远。打开门，门把手上挂着一袋小菜。', '用红绳系得紧紧的结。是隔壁奶奶的结。']],
+    ],
+    bg: ['在韩国，不少老人靠在街头捡纸箱、废纸维持生计。', '韩国的便利店通宵营业，很多年轻人在那里上夜班。', '头班公交车在天亮前出发，载着去上早班的人。', '韩国工厂里的许多外籍劳工，都和孩子远隔两地。', '小菜（반찬）是韩国人每顿饭都有的配菜，邻居之间常常互相分享。'],
+    retNo: '又回到那个房间', ret: ['线从门缝钻进去，抵达房间的一角。', '一线希望并不大。<br>只是不会断。'],
+    retAlt: '又回到那个房间。红线来到蜷缩着的人脚边。', knot: '在线的末端打个结', knotDone: '结打好了',
+    blankH: '尚未绣出的篇章', blank: '《一线希望》是由五件作品组成的系列。其余三件，艺术家正在绣制。', blankAlt: '尚未绣出',
+    p2No: 'PART 2 · 作品与艺术家', p2H: 'Kim Baneul《一线希望》',
+    p2: ['用针和线在白纸上绣出线条。这是五件系列作品中的前两件。从构思、故事梗概到每一针每一线，直至最后装裱，都由艺术家亲手完成。', '[艺术家手记——待提供]'],
+    dl: [['艺术家', 'Kim Baneul · 综合材料、纤维艺术'], ['材料', '纸上刺绣 [待确认]'], ['系列', 'Take 1 · Take 2（五件中的两件）']],
+    credit: '© Kim Baneul。作品图像经艺术家许可使用，画面中的线条由原作照片转描而成。五个人物的场景插图为经艺术家许可的展览插画，五人均为虚构人物（展览文案）。',
+    end: '今天，你的线<br>系在哪里？', exit: '离开展览星球',
+    help: '如果你感到难以承受，请联系当地的心理援助热线或咨询机构。',
+    sndOn: '开启声音', sndOff: '关闭声音',
+  },
+  ja: {
+    title: '一縷の望み', by: 'Kim Baneul · ミクストメディア · テキスタイルアート', hint: 'ゆっくりスクロールしてください',
+    caps: ['白い紙の上、部屋の片隅。<br>ひとりが膝を抱えて座っています。', 'そして、顔を上げます。', 'あそこに、赤い糸が一本。'],
+    heroAlt: 'Kim Baneul《一縷の望み》Take 1・2。部屋の片隅でうずくまる人が顔を上げ、赤い糸を見る。',
+    nums: ['一', '二', '三', '四', '五'], fiction: '架空の人物 · 展示文',
+    people: [
+      ['午前四時のリヤカー', 'チョンオク', ['午前四時、チョンオクさんの一日はリヤカーの車輪の音で始まります。', '路地ごとに出された段ボールをたたんで積み、古紙回収業者の秤に載せます。その日の稼ぎは、二人の娘のご飯代になります。', 'チョンオクさんは今日も夕食を抜きます。リヤカーの取っ手には、下の娘が置いていった髪ゴムが結ばれています。']],
+      ['夜十一時のコンビニ', 'ミンジェ', ['ミンジェさんは一晩中コンビニを守っています。', '夜明けが近づくと、空の段ボールを一つずつたたんで、ドアのそばに積んでおきます。誰が持っていくのかは、はっきり知りません。', 'ただ、朝になると段ボールはなくなっていて、ときどきドアの前に飴がひとつ置かれています。']],
+      ['始発', 'ヨンホ', ['ヨンホさんは始発バスを運転します。停留所ごとに、同じ顔が同じ席に座ります。', '仕事を終えると療養病院に寄り、もうヨンホさんのことがよく分からない妻のそばに座ります。', 'そしてマフラーを編みます。一日に一段ずつ。冬が来る前に仕上げたくて。']],
+      ['午後のビデオ通話', 'ラン', ['ランさんはヨンホさんのバスの常連です。いつもいちばん後ろの窓際でうとうとしてから降ります。', '工場の休憩時間、ランさんはスマホの画面の中の娘と話します。', '手首の糸のブレスレットは、国を出る日に娘が結んでくれたものです。「ママ、これがほどけたら帰ってくるんだよ」ブレスレットはまだ固く結ばれています。']],
+      ['ドアノブの袋', 'ソユン', ['ソユンさんはもう何日も部屋の外に出られずにいます。理由を説明するのも難しいのです。', '夕方になるとドアノブが少し揺れ、足音が遠ざかっていきます。ドアを開けると、おかずの入った袋が掛かっています。', '赤い紐で固く結ばれた結び目。隣のおばあさんの結び目です。']],
+    ],
+    bg: ['韓国では、道端の段ボールや古紙を集めて暮らしを立てる高齢者が少なくありません。', '韓国のコンビニは夜通し開いていて、多くの若者が夜勤で働いています。', '始発バスは夜明け前に出発し、早朝の仕事へ向かう人々を運びます。', '韓国の工場で働く外国人労働者の多くは、子どもと遠く離れて暮らしています。', 'パンチャン（おかず）は韓国の食卓に毎回並ぶ小皿料理で、近所同士でよく分け合います。'],
+    retNo: 'もう一度、あの部屋', ret: ['糸はドアの隙間から入り、部屋の片隅にたどり着きます。', '一縷の望みは大きくありません。<br>ただ、途切れないだけです。'],
+    retAlt: 'もう一度あの部屋。赤い糸がうずくまる人の足もとに届く。', knot: '糸の端に結び目をつくる', knotDone: '結び目ができました',
+    blankH: 'まだ刺繍されていない章', blank: '《一縷の望み》は五点からなる連作です。残りの三点は、作家がいま刺繍しています。', blankAlt: 'まだ刺繍されていない',
+    p2No: 'PART 2 · 作品と作家', p2H: 'Kim Baneul《一縷の望み》',
+    p2: ['白い紙に針と糸で線を刺繍します。五点の連作のうち、最初の二点です。構想とあらすじから一針一針の糸、最後の額装まで、作家自身が手がけました。', '[作家ノート — 作家から受け取る予定]'],
+    dl: [['作家', 'Kim Baneul · ミクストメディア、テキスタイルアート'], ['素材', '紙に糸 [確認予定]'], ['連作', 'Take 1 · Take 2（全5点のうち2点）']],
+    credit: '© Kim Baneul。作品画像は作家の許可を得て使用しており、画面の線は原作の写真から写し取ったものです。五人の場面の絵は作家の許可を得た展示用イラストで、五人は架空の人物です（展示文）。',
+    end: '今日、あなたの糸は<br>どこに結ばれていますか。', exit: '展示の惑星を出る',
+    help: 'つらいときは、お住まいの地域の相談窓口や電話相談に連絡してください。',
+    sndOn: '音をオン', sndOff: '音をオフ',
+  },
+};
+const T = TEXT[lang] || TEXT.ko;
+const PEOPLE = IDS.map(([id, age], i) => ({ id, age, no: T.nums[i], time: T.people[i][0], who: T.people[i][1], body: T.people[i][2], bg: T.bg[i] || '' }));
 
 // ───────── 원작 선(벡터) 불러오기 ─────────
 async function inkPath(name) {
@@ -68,13 +148,15 @@ function build(d1, d2) {
     <p class="no">${p.no} · ${p.time}</p>
     <h2>${p.who}<small>${p.age}</small></h2>
     ${p.body.map((t) => `<p>${t}</p>`).join('')}
+    ${p.bg ? `<p class="bgline">${p.bg}</p>` : ''}
+    <p class="note">${T.fiction}</p>
   </div>
 </section>`).join('');
   story.innerHTML = `
 <section class="sl-hero alive" id="hero">
   <div class="stick">
-    <div class="intro"><h1>실낱 같은 희망</h1><p class="by">김바늘 · 혼합매체 · 섬유미술</p><p class="hint">천천히 내려 보세요</p></div>
-    <svg class="take" id="heroSvg" viewBox="0 0 628 656" role="img" aria-label="김바늘, 실낱 같은 희망 Take 1·2. 방 한구석에 웅크린 사람이 고개를 들어 붉은 실을 본다.">
+    <div class="intro"><h1>${T.title}</h1><p class="by">${T.by}</p><p class="hint">${T.hint}</p></div>
+    <svg class="take" id="heroSvg" viewBox="0 0 628 656" role="img" aria-label="${T.heroAlt}">
       ${takeDefs(d1, d2)}${paper(628, 656)}
       <clipPath id="c-in"><rect id="inRect" x="0" y="0" width="628" height="0"/></clipPath>
       <g clip-path="url(#c-in)">
@@ -84,28 +166,25 @@ function build(d1, d2) {
       <g id="stub" opacity="0">${redThread(STUB, 3, { width: 2.4 })}</g>
     </svg>
     <div class="cap">
-      <p data-cap="1">흰 종이 위, 방 한구석.<br>한 사람이 무릎을 안고 앉아 있습니다.</p>
-      <p data-cap="2">그러다, 고개를 듭니다.</p>
-      <p data-cap="3">저기, 붉은 실 한 가닥.</p>
+      ${T.caps.map((c, i) => `<p data-cap="${i + 1}">${c}</p>`).join('')}
     </div>
   </div>
 </section>
 ${persons}
 <section class="sl-return alive" id="ret">
-  <svg class="take" id="retSvg" viewBox="0 0 628 656" role="img" aria-label="다시 그 방. 붉은 실이 웅크린 사람의 발치에 닿는다.">
+  <svg class="take" id="retSvg" viewBox="0 0 628 656" role="img" aria-label="${T.retAlt}">
     ${paper(628, 656)}${takeGroup(2, 'r2')}<g id="knot"></g>
   </svg>
   <div class="card reveal">
-    <p class="no">다시, 그 방</p>
-    <p>실은 문틈으로 들어가, 방 한구석에 닿습니다.</p>
-    <p>실낱 같은 희망은 크지 않습니다.<br>다만 끊기지 않을 뿐입니다.</p>
-    <button class="knot-btn" type="button">실 끝에 매듭 짓기</button>
+    <p class="no">${T.retNo}</p>
+    ${T.ret.map((t) => `<p>${t}</p>`).join('')}
+    <button class="knot-btn" type="button">${T.knot}</button>
   </div>
 </section>
 <section class="sl-blank">
-  <div class="row">${[1, 2, 3].map((i) => `<div>${sceneSVG('blank', { label: `Take ${i + 2}, 아직 수놓이지 않음` })}</div>`).join('')}</div>
-  <div class="card reveal"><p class="no">TAKE 3 · 4 · 5</p><h2>아직 수놓이지 않은 장</h2>
-    <p>《실낱 같은 희망》은 다섯 점으로 이어지는 연작입니다. 나머지 세 점은 작가가 지금 수놓고 있습니다.</p></div>
+  <div class="row">${[1, 2, 3].map((i) => `<div>${sceneSVG('blank', { label: `Take ${i + 2}, ${T.blankAlt}` })}</div>`).join('')}</div>
+  <div class="card reveal"><p class="no">TAKE 3 · 4 · 5</p><h2>${T.blankH}</h2>
+    <p>${T.blank}</p></div>
 </section>
 <section class="sl-part2">
   <div class="works">
@@ -113,18 +192,17 @@ ${persons}
     <figure><svg viewBox="0 0 628 656" role="img" aria-label="Take 2">${paper(628, 656)}<use href="#t2ink"/>${redThread(STUB, 3, { width: 2.4, flat: true })}</svg><figcaption>Take 2</figcaption></figure>
   </div>
   <div class="card reveal">
-    <p class="no">PART 2 · 작품과 작가</p>
-    <h2>김바늘 《실낱 같은 희망》</h2>
-    <p>흰 종이 위에 바늘과 실로 선을 수놓습니다. 다섯 점으로 이어지는 연작 가운데 첫 두 점입니다. 구상과 시놉시스부터 한 땀 한 땀의 실, 마지막 액자 작업까지 작가가 직접 했습니다.</p>
-    <p>[작가 노트 — 작가에게 받을 예정]</p>
-    <dl><dt>작가</dt><dd>김바늘 · 혼합매체, 섬유미술</dd><dt>재료</dt><dd>종이에 실 [확인 필요]</dd><dt>연작</dt><dd>Take 1 · Take 2 (5점 중 2점)</dd></dl>
-    <p class="note">© 김바늘. 작품 이미지는 작가의 허락을 받아 사용했고, 화면의 선은 원작 사진을 옮긴 것입니다. 다섯 사람의 장면 그림은 작가의 허락을 받은 전시용 일러스트이고, 다섯 사람은 가상의 인물입니다(전시 문안).</p>
+    <p class="no">${T.p2No}</p>
+    <h2>${T.p2H}</h2>
+    ${T.p2.map((t) => `<p>${t}</p>`).join('')}
+    <dl>${T.dl.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+    <p class="note">${T.credit}</p>
   </div>
 </section>
 <section class="sl-end">
-  <p>오늘, 당신의 실은<br>어디에 묶여 있나요.</p>
-  <a class="sl-back" href="./">전시 행성 나가기</a>
-  <p class="help">마음이 힘들 때는 자살예방 상담전화 <b>109</b>(24시간),<br>카카오톡·문자 상담 ‘마들랜’에서 이야기를 들어 줍니다.</p>
+  <p>${T.end}</p>
+  <a class="sl-back" href="./">${T.exit}</a>
+  <p class="help">${T.help}</p>
 </section>`;
 }
 
@@ -257,9 +335,13 @@ function pluck() {
   o.connect(g).connect(ac.destination); o.start(now); o.stop(now + .7);
 }
 const sndBtn = $('.sl-snd');
+sndBtn.textContent = T.sndOn;
+$('.sl-title').textContent = T.title;
+document.title = `${T.title} — ${lang === 'ko' ? '김바늘' : 'Kim Baneul'} | ARTMOS`;
+langSwitcher($('.sl-top'), { before: sndBtn, cls: 'sl-lang' });
 let sndOn = false;
 sndBtn.addEventListener('click', () => {
-  sndOn = !sndOn; sndBtn.setAttribute('aria-pressed', String(sndOn)); sndBtn.textContent = sndOn ? '소리 끄기' : '소리 켜기';
+  sndOn = !sndOn; sndBtn.setAttribute('aria-pressed', String(sndOn)); sndBtn.textContent = sndOn ? T.sndOff : T.sndOn;
   if (sndOn) soundOn(); else if (ac) ac.suspend();
 });
 document.addEventListener('visibilitychange', () => { if (ac && sndOn) document.hidden ? ac.suspend() : ac.resume(); });
@@ -318,12 +400,13 @@ addEventListener('resize', () => {
   // 매듭
   const kb = $('.knot-btn');
   kb.addEventListener('click', () => {
-    kb.disabled = true; kb.textContent = '매듭을 지었어요';
+    kb.disabled = true; kb.textContent = T.knotDone;
     $('#knot').innerHTML = redThread(loop(338, 578, 6, 4, 1.4, 0, 30), 21, { width: 2.6, flat: true });
     pluck();
   });
   // 나가기
   document.querySelectorAll('.sl-back').forEach((a) => a.addEventListener('click', (e) => {
+    if (e.defaultPrevented) return; // 앱 안이면 i18n.js가 이미 '전시 닫기'를 보냄
     if (IN_FRAME) { e.preventDefault(); try { parent.postMessage({ type: 'artmos:close-exhibit' }, '*'); } catch (err) {} setTimeout(() => (location.href = './'), 600); }
   }));
 })();

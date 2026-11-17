@@ -79,3 +79,15 @@ main { position: relative; z-index: 2; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .alive .fig .breathe { animation: none; }
 }
+
+/* 언어 선택 · 외국어 배경 한 줄 · 로고 글꼴 */
+@font-face { font-family: Michroma; src: url(../assets/fonts/michroma-latin-400.woff2) format('woff2'); font-display: swap; }
+.sl-top .lang-sw { position: relative; }
+.sl-top .lang-btn { font: inherit; font-size: 12px; color: var(--ink2); background: none; border: 1px solid #CFC7B8; border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.sl-top .lang-list { position: absolute; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; background: #FBF9F4; border: 1px solid #D9D2C5; border-radius: 10px; box-shadow: 0 6px 20px rgba(30,28,26,.12); min-width: 120px; }
+.sl-top .lang-list button { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; color: var(--ink); background: none; border: 0; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+.sl-top .lang-list button.on { color: var(--red); }
+.card .bgline { font-size: 14px; line-height: 1.7; color: var(--mute); border-left: 2px solid #D9D2C5; padding-left: 10px; }
+:lang(zh) .card p, :lang(ja) .card p { word-break: normal; line-break: strict; }
+.sl-title { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 400px) { .sl-title { visibility: hidden; } .sl-logo { font-size: 11px; letter-spacing: .14em; } }
