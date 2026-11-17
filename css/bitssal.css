@@ -106,10 +106,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .bs-progress { position: fixed; z-index: 10; left: clamp(16px, 4vw, 40px); right: clamp(16px, 4vw, 40px); top: 58px; display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
 .bs-progress button { height: 14px; display: flex; align-items: center; }
 .bs-progress button::before { content: ''; position: absolute; }
-.bs-progress i { display: block; height: 2px; width: 0; background: var(--rice); transition: width .2s; box-shadow: 0 0 0 0; }
+.bs-progress i { display: block; height: 2px; width: 100%; transform: scaleX(0); transform-origin: left center; background: var(--rice); transition: transform .2s; box-shadow: 0 0 0 0; }
 .bs-progress button { position: relative; }
 .bs-progress button::after { content: ''; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: rgba(255,255,255,.12); z-index: -1; }
-.bs-progress button.on i { width: 100%; }
+.bs-progress button.on i { transform: none; }
 .bs-credits { position: relative; z-index: 3; min-height: 80vh; display: grid; place-items: center; padding: 120px clamp(16px, 4vw, 40px); background: linear-gradient(180deg, rgba(5,5,5,0), #050505 30%); }
 .bs-credits div { max-width: 720px; }
 .bs-credits h3 { font-size: 13px; letter-spacing: .2em; color: var(--muted); margin-bottom: 18px; }
@@ -387,7 +387,7 @@ body.phase-open #hud > div, body.phase-open #labels { opacity: 0 !important; poi
 .card.story .st-stage { display: none; }
 @media (max-width: 819px) {
   .card.story { padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-  .card.story .st-stage { display: block; height: 82vh; height: 82svh; }
+  .card.story .st-stage { display: block; height: 70vh; height: 70svh; } /* 2026-11-17: 82 → 70 (얼굴 크기는 화면 폭으로 정해져 그대로) */
   .card.story .st-box { padding: 20px 20px 16px; background: linear-gradient(180deg, rgba(36,29,20,.95), rgba(20,16,11,.95)); border: 1px solid rgba(255,214,150,.22); border-radius: 6px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
   .card.story[data-face] .st-face { display: none; } /* 큰 얼굴이 바로 위에 따로 그려지니 작은 초상은 숨김 */
   .card.story[data-face] .st-top { gap: 0; }

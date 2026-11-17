@@ -55,23 +55,49 @@ if (LOCKED) story.addEventListener('click', (e) => { MB.handleMembershipClick(e,
 else MB.enter(CELL).then(MB.passChip); // 입장권이면 이때 24시간 시작
 if (window === window.top) import('./app-shop.js?v=21').then((SHOP) => SHOP.loadShop().then(() => { const box = document.querySelector('.bs-credits > div'), html = SHOP.collectBannerHTML(CELL.id); if (box && html) box.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만
 // 카드가 길어져도(작은 화면·번역·이야기 카드) 서로 겹치지 않게: 원래 자리보다 위로는 안 올리고, 앞 카드 밑으로만 밀어냄. 모자라면 장면을 늘림
+// 휴대폰 간격(화면 높이 배수) — 2026-11-17 소유자: 빈칸을 줄여 스크롤 속도를 맞춤(79화면 → 약 50화면). 이야기 카드 위에는 이미 얼굴 자리(82svh)가 있어서 그 앞 빈칸은 짧아도 됨
+const GAP_M = { chapToFace: 0.35, chapToStory: 0.55, storyToNext: 0.4, playToNext: 0.4, toStory: 0.45, otherToStory: 0.5, toPlay: 0.45, tailPlay: 0.6, tail: 0.45, base: 0.75 }; // chapToFace: 얼굴 있는 이야기는 얼굴 자리가 있어 짧게, 얼굴 없는 이야기는 장 모양이 보일 자리를 남김 · base: 장면 기본 길이(작품·기록 장의 카드 간격)
 function relayout() {
-  const gap = Math.max(40, innerHeight * 0.1);
+  const M = innerWidth < 820, Hh = innerHeight, gap = Math.max(M ? 32 : 40, Hh * (M ? 0.07 : 0.1));
   document.querySelectorAll('.scene').forEach((sc) => {
-    const base = (+sc.dataset.h / 100) * innerHeight;
+    const base = (+sc.dataset.h / 100) * innerHeight * (M ? GAP_M.base : 1);
     const cards = [...sc.querySelectorAll(':scope > .card')].sort((a, b) => a.dataset.at - b.dataset.at);
     let y = 0;
     let prev = null;
     cards.forEach((c) => {
-      // 장 표지 → 이야기, 이야기 → 체험 사이는 한 화면 가까이 띄워서 서로 겹쳐 보이지 않게
-      // 다른 종류로 넘어갈 때는 넉넉히 띄움 → 한 화면에 한 가지만
+      // 장 표지 → 이야기, 이야기 → 체험 사이는 띄워서 서로 겹쳐 보이지 않게 → 한 화면에 한 가지만
       const P = (k) => prev && prev.classList.contains(k), C = (k) => c.classList.contains(k);
-      const extra = !prev ? 0 : P('chap-open') ? innerHeight * (innerWidth < 820 ? 0.9 : 0.55) : P('story') && !C('story') ? innerHeight * 0.9 : P('play') ? innerHeight * 0.6 : C('story') ? innerHeight * 0.6 : C('play') && innerWidth < 820 ? innerHeight * 0.6 : 0;
-      const extra2 = innerWidth < 820 && prev && C('story') && !P('chap-open') && !P('story') ? Math.max(extra, innerHeight * 0.9) : extra; // 휴대폰: 다른 글 뒤 이야기 앞도 넉넉히(모양이 보일 자리) // 휴대폰: 체험 카드 앞은 넉넉히 → 앞의 글이 사라진 뒤 체험 그림이 나옴
-      const top = Math.max(+c.dataset.at * base, y + extra2); c.style.top = `${Math.round(top)}px`; y = top + c.offsetHeight + gap; prev = c;
+      let extra;
+      if (M) extra = !prev ? 0 : P('chap-open') ? Hh * (c.dataset.face ? GAP_M.chapToFace : GAP_M.chapToStory) : P('story') && !C('story') ? Hh * GAP_M.storyToNext : P('play') ? Hh * GAP_M.playToNext : C('story') ? Hh * (P('story') ? GAP_M.toStory : GAP_M.otherToStory) : C('play') ? Hh * GAP_M.toPlay : 0;
+      else extra = !prev ? 0 : P('chap-open') ? Hh * 0.55 : P('story') && !C('story') ? Hh * 0.9 : P('play') ? Hh * 0.6 : C('story') ? Hh * 0.6 : 0; // PC는 예전 그대로
+      // 화면 아래에 붙은(고정된) 체험 카드는 높이가 달라지므로, 붙기 전 높이로 계산 → 붙고 떨어질 때 아래 카드가 들썩이지 않게
+      const h = c.classList.contains('docked') ? (c._natH || c.offsetHeight) : (c._natH = c.offsetHeight);
+      const top = Math.max(+c.dataset.at * base, y + extra); c.style.top = `${Math.round(top)}px`; y = top + h + gap; prev = c;
     });
-    sc.style.height = `${Math.round(Math.max(base, y + innerHeight * (sc.querySelector(':scope > .card.play') ? 1.1 : 0.7)))}px`; // 체험 뒤에도 한 화면 가까이 머물 자리
+    const tail = sc.querySelector(':scope > .card.play') ? (M ? GAP_M.tailPlay : 1.1) : (M ? GAP_M.tail : 0.7);
+    sc.style.height = `${Math.round(Math.max(base, y + Hh * tail))}px`; // 체험 뒤에도 머물 자리
   });
+  cacheGeo();
+}
+// ---------- 위치 기억 (스크롤 때 매 프레임 레이아웃을 다시 재지 않게) ----------
+// 장면·카드의 문서 속 위치를 배치할 때 한 번만 재 두고, 프레임마다는 scrollY만 빼서 씀
+const GEO = new Map();
+function cacheGeo() {
+  const sy = scrollY;
+  document.querySelectorAll('.scene').forEach((sc) => {
+    const st = sc.getBoundingClientRect().top + sy; GEO.set(sc, { t: st, h: sc.offsetHeight });
+    sc.querySelectorAll(':scope > .card').forEach((c) => {
+      const ct = st + (parseFloat(c.style.top) || 0), ch = c.classList.contains('docked') ? (c._natH || c.offsetHeight) : c.offsetHeight; GEO.set(c, { t: ct, h: ch });
+      const box = c.querySelector(':scope > .st-box'), stage = c.querySelector(':scope > .st-stage'), b = c.classList.contains('chap-open') ? c.querySelector(':scope > b') : null;
+      [box, stage, b].forEach((el) => { if (el) GEO.set(el, { t: ct + el.offsetTop, h: el.offsetHeight }); });
+    });
+  });
+  const pg = document.querySelector('.bs-progress'); GEO.set('progBottom', pg ? pg.getBoundingClientRect().bottom : 70);
+}
+// getBoundingClientRect 대신 쓰는 위치 (top·bottom·height, 화면 기준). 기억에 없으면 그때 잼
+function rect(el) {
+  const g0 = GEO.get(el); if (!g0) return el.getBoundingClientRect();
+  const top = g0.t - scrollY; return { top, bottom: top + g0.h, height: g0.h };
 }
 let relT = 0, relW = innerWidth, relH = innerHeight; const relSoon = () => { cancelAnimationFrame(relT); relT = requestAnimationFrame(relayout); };
 const portraits = () => document.querySelectorAll('canvas.st-face').forEach((c) => drawPortrait(c, c.dataset.face));
@@ -353,16 +379,17 @@ function wantFace(id) {
 }
 function applyFace(id) {
   const want = wantFace(id);
-  if (want && want.kind !== face.kind) { if (face.k > 0.04) face.k = Math.max(0, face.k - 0.06); else { face.kind = want.kind; face.pts = facePoints(want.kind, FN); } }
-  else if (want) face.k = face.k > (want.max ?? 1) ? Math.max(want.max ?? 1, face.k - 0.06) : Math.min(want.max ?? 1, face.k + 0.025);
-  else face.k = Math.max(0, face.k - 0.04);
+  const fs = FR * (1 + SCR); // 화면 주사율과 상관없이 같은 속도 + 빨리 스크롤하면 더 빨리 모임
+  if (want && want.kind !== face.kind) { if (face.k > 0.04) face.k = Math.max(0, face.k - 0.06 * fs); else { face.kind = want.kind; face.pts = facePoints(want.kind, FN); } }
+  else if (want) face.k = face.k > (want.max ?? 1) ? Math.max(want.max ?? 1, face.k - 0.06 * fs) : Math.min(want.max ?? 1, face.k + 0.025 * fs);
+  else face.k = Math.max(0, face.k - 0.04 * fs);
   if (want) face.col = want.col;
   if (face.k <= 0 || !face.pts) { face.lastFy = null; face.fy = null; return; }
   TA[0] *= 1 - face.k; // 첫 쌀알(빛)이 얼굴을 가리지 않게
   let sc = R * (mobile ? 0.55 : 0.62), fx = CX, fy = mobile ? CY - R * 0.32 : CY - R * 0.05; const k = face.k;
   // 이야기 카드 위쪽의 얼굴 자리(.st-stage, 한 화면)에 얼굴을 그림 → 스크롤하면 카드와 함께 올라가고, 글 상자는 그 아래라 겹치지 않음
   const stage = mobile && faceCard ? faceCard.querySelector('.st-stage') : null;
-  if (stage) { const r = stage.getBoundingClientRect(); sc = Math.min(r.height * 0.36, W * 0.42); fy = Math.min(r.top + r.height / 2, H * 0.42) - sc * 0.1; face.fy = fy; face.sc = sc; } // 화면 42% 높이에서 모이고, 얼굴 자리가 올라가면 함께 올라감
+  if (stage) { const r = rect(stage); sc = Math.min(r.height * 0.36, W * 0.42); fy = Math.min(r.top + r.height / 2, H * 0.42) - sc * 0.1; face.fy = fy; face.sc = sc; } // 화면 42% 높이에서 모이고, 얼굴 자리가 올라가면 함께 올라감
   else if (mobile && face.fy != null) { fy = face.fy; sc = face.sc; }
   if (mobile && face.lastFy != null && Math.abs(fy - face.lastFy) < 600) { const dy = fy - face.lastFy; for (let i = 1; i <= FN; i++) Y[i] += dy; } // 카드와 함께 그대로 따라 움직임
   face.lastFy = mobile ? fy : null;
@@ -383,8 +410,8 @@ const GLASS = (() => { const q = (p0, p1, p2, t) => { const u = 1 - t; return [u
 function glassW(y) { for (let k = 1; k < GLASS.length; k++) { const [x0, y0] = GLASS[k - 1], [x1, y1] = GLASS[k]; if (y <= y1) return y1 === y0 ? Math.min(x0, x1) : x0 + (x1 - x0) * Math.max(0, (y - y0) / (y1 - y0)); } return 0; }
 // 《빛쌀》 조형물(윗 접시 → 좁은 목 → 아래 그릇)을 쌀알로. 첫 화면에서 상단 머리와 아래 글 사이에 맞춰 섬
 function sculpt(a = 1) {
-  const top = (document.querySelector('.bs-progress')?.getBoundingClientRect().bottom || 70) + 28;
-  const p0 = sections[0].querySelector(':scope > .card:not(.story)'), bottom = (p0 ? p0.getBoundingClientRect().top - (state.offY || 0) : H * 0.6) - 24;
+  const top = (GEO.get('progBottom') || 70) + 28;
+  const p0 = sections[0].querySelector(':scope > .card:not(.story)'), bottom = (p0 ? rect(p0).top - (state.offY || 0) : H * 0.6) - 24;
   const sc = Math.max(0.2, Math.min(R / 260, (bottom - top) / 470)), cy = top + 250 * sc;
   for (let i = 0; i < 1300; i++) {
     const u = (R1[i] + state.flowT * (0.5 + R3[i])) % 1; let x, y;
@@ -664,10 +691,10 @@ const sections = [...document.querySelectorAll('.scene')];
 function measure() {
   const mid = innerHeight * 0.5;
   for (let i = 0; i < sections.length; i++) {
-    const r = sections[i].getBoundingClientRect();
+    const r = rect(sections[i]);
     if (r.top <= mid && r.bottom > mid) { cur = i; curP = (mid - r.top) / r.height; return; }
   }
-  if (sections[sections.length - 1].getBoundingClientRect().bottom <= mid) { cur = sections.length - 1; curP = 1; }
+  if (rect(sections[sections.length - 1]).bottom <= mid) { cur = sections.length - 1; curP = 1; }
 }
 
 // 쌀알 그리기
@@ -791,11 +818,12 @@ function placeLabels(id, p) {
 
 // ---------------- 루프 ----------------
 let last = performance.now();
+let FR = 1, SCR = 0, scrollV = 0, lastSY = scrollY; // 프레임 길이 보정 · 스크롤 빠르기
 // 지금 읽고 있는 이야기 카드 (화면 가운데 띠에 걸친 것) → 읽기 단계
 // 체험 진행도: 체험 카드가 화면 아래에 닿은 때(0)부터 장이 끝날 때(1)까지. 장면 움직임은 이 값으로 → 읽는 동안이 아니라 체험할 때 펼쳐짐
 function playProgress(i, p) {
   const sc = sections[i], pc = sc.querySelector(':scope > .card.play'); if (!pc) return p;
-  const sr = sc.getBoundingClientRect(), top = sr.top + (parseFloat(pc.style.top) || 0);
+  const sr = rect(sc), top = rect(pc).top;
   return Math.max(0, Math.min(1, (innerHeight * 0.72 - top) / Math.max(1, sr.bottom - top - innerHeight * 0.18)));
 }
 let readCard = null, faceCard = null, faceMax = 1, hold = false; // hold: 지금은 체험을 받지 않음 (얼굴·글을 보는 중이거나 아직 이야기를 다 읽지 않음)
@@ -803,12 +831,12 @@ let readCard = null, faceCard = null, faceMax = 1, hold = false; // hold: 지금
 function findStory() {
   if (!mobile) { // PC: 예전대로 — 화면 가운데 띠에 걸친 이야기 카드를 읽는 동안 그 인물 얼굴
     const b0 = innerHeight * 0.22, b1 = innerHeight * 0.78; let bst = null, bdd = 1e9;
-    sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => { const r = el.getBoundingClientRect(); if (r.bottom < b0 || r.top > b1) return; const d = Math.abs(r.top + r.height / 2 - innerHeight / 2); if (d < bdd) { bdd = d; bst = el; } });
+    sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => { const r = rect(el); if (r.bottom < b0 || r.top > b1) return; const d = Math.abs(r.top + r.height / 2 - innerHeight / 2); if (d < bdd) { bdd = d; bst = el; } });
     readCard = bst; faceCard = bst && bst.dataset.face ? bst : null; faceMax = 1; return;
   }
   const H0 = innerHeight, band0 = H0 * 0.22, band1 = H0 * 0.78; let best = null, bd = 1e9, fc = null;
   sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => {
-    const r = el.getBoundingClientRect(), br = (el.querySelector('.st-box') || el).getBoundingClientRect();
+    const r = rect(el), br = rect(el.querySelector(':scope > .st-box') || el);
     if (el.dataset.face && r.top < H0 * 0.92 && br.bottom > H0 * 0.3) fc = el; // 얼굴 자리가 들어오면 모이고, 글까지 다 지나가면 흩어짐
     if (br.bottom < band0 || br.top > band1) return; const d = Math.abs(br.top + br.height / 2 - H0 / 2); if (d < bd) { bd = d; best = el; }
   });
@@ -823,6 +851,8 @@ function frame(now) {
 function draw(now) {
   if (state.videoOn || !lb.hidden) { last = now; return; } // 영상·라이트박스 보는 동안 쉼
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
+  FR = dt * 60; // 60fps 한 프레임 = 1 (120Hz 화면·느린 프레임에서도 같은 빠르기)
+  { const sy = scrollY, v = Math.abs(sy - lastSY) / Math.max(dt, 0.008); lastSY = sy; scrollV += (v - scrollV) * Math.min(1, dt * 8); SCR = Math.min(1, scrollV / (innerHeight * 1.5)); } // 스크롤 빠르기(0~1): 1.5화면/초면 최대
   if (TOUCH && ptr.in && now - ptr.t > 2500) ptr.in = false;
   measure();
   const sc = SCENES[cur], id = sc.id, p = curP;
@@ -830,12 +860,12 @@ function draw(now) {
   findStory();
   // 휴대폰: 체험 카드에 닿으면 화면 아래에 고정 → 위쪽 그림을 가리지 않고 보면서 해 볼 수 있게
   if (mobile) document.querySelectorAll('.card.play').forEach((pc) => {
-    const sr = pc.parentElement.getBoundingClientRect(), top = sr.top + (parseFloat(pc.style.top) || 0);
+    const sr = rect(pc.parentElement), top = rect(pc).top;
     let nx = pc.nextElementSibling; while (nx && !nx.classList.contains('card')) nx = nx.nextElementSibling;
-    const nextTop = nx ? sr.top + (parseFloat(nx.style.top) || 0) : Infinity;
+    const nextTop = nx ? rect(nx).top : Infinity;
     pc.classList.toggle('docked', top < innerHeight * 0.72 && sr.bottom > innerHeight * 0.9 && nextTop > innerHeight * 0.9); // 다음 카드·다음 장이 보이기 전에 내려감
   });
-  sections[cur].querySelectorAll(':scope > .card.story, :scope > .card.chap-open').forEach((el) => { const r = el.getBoundingClientRect(); el.classList.toggle('past', el.classList.contains('chap-open') ? (() => { const b = (el.querySelector('b') || el).getBoundingClientRect(); return (b.top + b.bottom) / 2 < innerHeight * 0.32; })() : r.bottom < innerHeight * 0.3); });
+  sections[cur].querySelectorAll(':scope > .card.story, :scope > .card.chap-open').forEach((el) => { const r = rect(el); el.classList.toggle('past', el.classList.contains('chap-open') ? (() => { const b = rect(el.querySelector(':scope > b') || el); return (b.top + b.bottom) / 2 < innerHeight * 0.32; })() : r.bottom < innerHeight * 0.3); });
   const reading = !!readCard || !!faceCard;
   const secEl = sections[cur];
   // 휴대폰(앱): 쌀알이 꺼지지 않고 모양을 바꿔 가며 흐름 — 조형물 → 흩어짐 → 얼굴 → (글) → 흩어짐 → 장 모양 → 흩어짐 → 얼굴 … 체험 카드가 붙으면 체험
@@ -844,10 +874,10 @@ function draw(now) {
     const playing = !!secEl.querySelector(':scope > .card.play.docked');
     // 장 제목 → (제목이 지나가면) 그 장의 모양 → 그 모양이 얼굴로 → 글 → 흩어짐 → 체험
     let titleOn = false, passed = false;
-    secEl.querySelectorAll(':scope > .card.chap-open').forEach((el) => { const b = (el.querySelector('b') || el).getBoundingClientRect(), c = (b.top + b.bottom) / 2; if (c > innerHeight * 0.32 && c < innerHeight * 1.02) titleOn = true; else if (c <= innerHeight * 0.32) passed = true; });
-    const st0 = secEl.querySelector(':scope > .card.story'), st1 = st0 && st0.dataset.face ? st0 : null, storyAhead = !!st0 && st0.getBoundingClientRect().top > innerHeight * (st1 ? 0.92 : 0.86); // 얼굴 없는 이야기는 글이 올라올 때까지 모양 유지
-    const p0 = id === 'prologue' ? secEl.querySelector(':scope > .card:not(.story)') : null, p0r = p0 && p0.getBoundingClientRect();
-    const textOn = [...secEl.querySelectorAll(':scope > .card:not(.story):not(.chap-open):not(.play)')].some((el) => { const r = el.getBoundingClientRect(); return r.bottom > innerHeight * 0.12 && r.top < innerHeight * 0.88; }); // 그 밖의 글(예: '4년 뒤')이 보이면 모양을 띄우지 않음
+    secEl.querySelectorAll(':scope > .card.chap-open').forEach((el) => { const b = rect(el.querySelector(':scope > b') || el), c = (b.top + b.bottom) / 2; if (c > innerHeight * 0.32 && c < innerHeight * 1.02) titleOn = true; else if (c <= innerHeight * 0.32) passed = true; });
+    const st0 = secEl.querySelector(':scope > .card.story'), st1 = st0 && st0.dataset.face ? st0 : null, storyAhead = !!st0 && rect(st0).top > innerHeight * (st1 ? 0.92 : 0.86); // 얼굴 없는 이야기는 글이 올라올 때까지 모양 유지
+    const p0 = id === 'prologue' ? secEl.querySelector(':scope > .card:not(.story)') : null, p0r = p0 && rect(p0);
+    const textOn = [...secEl.querySelectorAll(':scope > .card:not(.story):not(.chap-open):not(.play)')].some((el) => { const r = rect(el); return r.bottom > innerHeight * 0.12 && r.top < innerHeight * 0.88; }); // 그 밖의 글(예: '4년 뒤')이 보이면 모양을 띄우지 않음
     mm = titleOn ? 'title' : faceCard ? 'face' : playing ? 'play' : passed && storyAhead && !textOn && SHAPE_OF[id] ? 'shape' : p0r && p0r.bottom > innerHeight * 0.12 ? 'intro' : 'dust';
     state.faceFromShape = mm === 'face' && faceCard === st1 && passed && !!SHAPE_OF[id];
     state.offY = mm === 'intro' ? Math.min(0, p0r.top - innerHeight * 0.6) : 0;
@@ -856,7 +886,7 @@ function draw(now) {
   hold = quiet || !!secEl.querySelector(':scope > .card.play.locked'); state.readK = Math.max(0, Math.min(1, (state.readK || 0) + (quiet ? dt * 2.5 : -dt * 1.6)));
   document.body.classList.toggle('phase-read', quiet);
   // 장 표지가 화면 가운데 있으면 (PC) 쌀알·장면 그림을 거의 꺼서 제목만 보이게 · 휴대폰은 장 모양을 쌀알로 보여 줌
-  const opening = !mobile && !reading && [...secEl.querySelectorAll(':scope > .card.chap-open')].some((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.45; });
+  const opening = !mobile && !reading && [...secEl.querySelectorAll(':scope > .card.chap-open')].some((el) => { const r = rect(el); return r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.45; });
   state.openK = Math.max(0, Math.min(1, (state.openK || 0) + (opening ? dt * 2.5 : -dt * 1.5)));
   document.body.classList.toggle('phase-open', opening);
   // 휴대폰: 장면 선 그림(밥상 테두리 등)은 체험 때 또렷이, 장 표지 때 은은히, 나머지는 끔
@@ -876,17 +906,19 @@ function draw(now) {
     state.lastOff = mm === 'intro' ? oy : null;
   }
   applyFace(id);
-  document.body.dataset.scene = id;
+  if (document.body.dataset.scene !== id) document.body.dataset.scene = id;
   // HUD 가시성
   hud.clock.classList.toggle('on', id === 'street' || id === 'spread');
   hud.count.classList.remove('on'); // 이야기 장면에선 숫자를 띄우지 않음
   hud.year.classList.toggle('on', id === 'boundary');
   hud.depth.classList.toggle('on', id === 'mine');
   glass.classList.toggle('on', !mobile && id === 'prologue' && state.entered); // 휴대폰은 유리 선 대신 쌀알 조형물
-  glass.style.opacity = !mobile && id === 'prologue' ? seg(p, 0.2, 0.55) * (state.entered ? 0.9 : 0.5) * (1 - face.k) : 0;
+  { const go = !mobile && id === 'prologue' ? Math.round(seg(p, 0.2, 0.55) * (state.entered ? 0.9 : 0.5) * (1 - face.k) * 100) / 100 : 0; if (go !== state.glassO) { state.glassO = go; glass.style.opacity = go; } } // 바뀔 때만
   document.body.classList.toggle('facing', face.k > 0.3);
   [...prog.children].forEach((b, i) => b.classList.toggle('on', i <= cur));
-  prog.children[cur].querySelector('i').style.width = Math.round(p * 100) + '%';
+  { const pi = prog.children[cur].querySelector('i'), pv = Math.round(p * 100); // 진행 막대: 폭 대신 transform (매 프레임 레이아웃을 다시 하지 않게), 바뀔 때만 씀
+    if (state.progI !== pi) { if (state.progI) state.progI.style.transform = ''; state.progI = pi; state.progV = -1; }
+    if (pv !== state.progV) { state.progV = pv; pi.style.transform = `scaleX(${pv / 100})`; } }
 
   gReset();
   if (!state.ar) { g.fillStyle = id === 'mine' ? '#020202' : '#050505'; g.fillRect(0, 0, W, H); }
@@ -937,14 +969,15 @@ function draw(now) {
   // 빛이 열 개 모이면 오빠의 얼굴이 빛으로 떠오름
   if (id === 'light' && !state.brotherLight && state.lamps.length >= 10) { state.brotherLight = true; sound.ping('memory'); sensor.vibrate([30, 60, 30, 60, 90]); showTip(UI.brotherLight, UI.brotherLightT, { getBoundingClientRect: () => ({ left: CX - 120, top: CY + R * 0.6 }) }); }
   const ox = gx * W * 0.07, oy = gy * H * 0.05;
-  const ease = reduced ? 1 : state.freeze ? 0 : id === 'mine' ? 0.035 : 0.075;
+  const e0 = reduced ? 1 : state.freeze ? 0 : id === 'mine' ? 0.035 : 0.075, e1 = e0 && e0 < 1 ? e0 + (0.22 - e0) * SCR : e0; // 빨리 스크롤하면 쌀알이 글을 바로 따라옴
+  const ease = e1 >= 1 || !e1 ? e1 : 1 - Math.pow(1 - e1, FR), aEase = 1 - Math.pow(1 - (0.08 + 0.12 * SCR), FR);
   if (state.ar) { g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, 0, W, H); }
   for (let i = 0; i < N; i++) {
     const fg = face.k > 0.02 && i > 0 && i <= FN;
-    X[i] += (TX[i] - X[i]) * ease; Y[i] += (TY[i] - Y[i]) * ease; A[i] += (TA[i] - A[i]) * 0.08;
+    X[i] += (TX[i] - X[i]) * ease; Y[i] += (TY[i] - Y[i]) * ease; A[i] += (TA[i] - A[i]) * aEase;
     if (A[i] < 0.01) continue;
-    if ((face.k > 0.3 || (mobile && mm === 'shape')) && i > 0 && i <= FN) { const d = ((TROT[i] - ROT[i]) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2; ROT[i] += d * 0.12; }
-    else if (!state.freeze) ROT[i] += (R3[i] - 0.5) * 0.01;
+    if ((face.k > 0.3 || (mobile && mm === 'shape')) && i > 0 && i <= FN) { const d = ((TROT[i] - ROT[i]) % Math.PI + Math.PI * 1.5) % Math.PI - Math.PI / 2; ROT[i] += d * Math.min(1, 0.12 * FR); }
+    else if (!state.freeze) ROT[i] += (R3[i] - 0.5) * 0.01 * FR;
     let al = A[i] * (1 - 0.98 * state.openK);
     if (torch > 0) { const d = Math.hypot(X[i] - tx, Y[i] - ty); al *= lerp(1, d < 150 ? 1.25 - d / 300 : 0.12, torch); }
     if (al < 0.01) continue;
