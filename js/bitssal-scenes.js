@@ -221,7 +221,7 @@ const T = {
 // 장면 목록 만들기
 export function buildScenes({ lang, IS_MOBILE: M, TOUCH, PH, VD, photo, vid, SRC1, SRC2 }) {
   const L = T[lang] || T.ko, SY = STORY[lang] || STORY.ko;
-  const story = (id, k, at) => { const s = SY[id][k]; const chap = (T.ko.chap[id] ? `${T.ko.chap[id]} · ` : '') + (L.titles[id] || ''); return { at, kind: 'story', chap: id === 'prologue' ? '' : chap, head: L.heads[id][k], who: s.who, html: s.html, face: FACES[id][k], first: id === 'prologue' }; };
+  const story = (id, k, at) => { const s = SY[id][k]; const chap = (T.ko.chap[id] ? `${T.ko.chap[id]} · ` : '') + (L.titles[id] || ''); return { at, kind: 'story', nk: SY[id].length > 1 ? `${id}_${k + 1}` : id, chap: id === 'prologue' ? '' : chap, head: L.heads[id][k], who: s.who, html: s.html, face: FACES[id][k], first: id === 'prologue' }; };
   const rec = (id, at, src, tone) => { const r = L.rec[id]; return { at, kind: 'record', title: r[0], html: `<p>${r[1]}</p>${r[2] ? `<p class="quiet">${r[2]}</p>` : ''}`, src, tone }; };
   const mobIa = (id, html) => { // 휴대폰(앱): 밥 푸기 · 쌀독만 털기 · 문서 후 불기
     if (!M) return html;

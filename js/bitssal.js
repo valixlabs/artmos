@@ -5,7 +5,7 @@ import { sound } from './bitssal-sound.js?v=7';
 import { lang, tr, langSwitcher } from './i18n.js?v=7';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=5';
-import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=10';
+import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=11';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
 import * as MB from './membership.js?v=15';
@@ -108,7 +108,7 @@ if (window.ResizeObserver) { const ro = new ResizeObserver(relSoon); document.qu
 function cardHTML(s, c, si, ci) {
   const pos = `style="top:${c.at * 100}%" data-at="${c.at}"`;
   const src = c.src ? `<p class="src">${tr('출처: ')}${esc(c.src)}</p>` : '';
-  if (c.kind === 'story') return `<article class="card story" ${pos}${c.face ? ` data-face="${c.face}"` : ''}>${c.face ? '<div class="st-stage" aria-hidden="true"></div>' : ''}<div class="st-box">${c.chap ? `<p class="chap">${esc(c.chap)}</p>` : ''}<div class="st-top">${c.face ? `<canvas class="st-face" data-face="${c.face}" aria-hidden="true"></canvas>` : ''}<div><p class="st-who"><b>${esc(LABEL)}</b>${esc(c.who)}</p><h2>${esc(c.head)}</h2></div></div>${c.html}${c.first ? `<p class="note st-note">${esc(NOTE)}</p>` : ''}${s.cards.some((d) => d.play && d.at > c.at) ? `<p class="st-next">↓ ${esc(LX.next)}</p>` : ''}</div></article>`;
+  if (c.kind === 'story') return `<article class="card story" ${pos}${c.face ? ` data-face="${c.face}"` : ''}${c.nk ? ` data-nk="${c.nk}"` : ''}>${c.face ? '<div class="st-stage" aria-hidden="true"></div>' : ''}<div class="st-box">${c.chap ? `<p class="chap">${esc(c.chap)}</p>` : ''}<div class="st-top">${c.face ? `<canvas class="st-face" data-face="${c.face}" aria-hidden="true"></canvas>` : ''}<div><p class="st-who"><b>${esc(LABEL)}</b>${esc(c.who)}</p><h2>${esc(c.head)}</h2></div></div>${c.html}${c.first ? `<p class="note st-note">${esc(NOTE)}</p>` : ''}${s.cards.some((d) => d.play && d.at > c.at) ? `<p class="st-next">↓ ${esc(LX.next)}</p>` : ''}</div></article>`;
   if (c.kind === 'record') return `<article class="card rec brief ${c.tone || ''}" ${pos}><p class="rec-label">${tr('기록')}</p><h3>${esc(c.title)}</h3>${c.html}${src}</article>`;
   if (c.kind === 'reveal') return `<article class="card rec reveal-rec" ${pos}><p class="rec-label">${tr('기록')}</p><h3>${esc(c.title)}</h3><div class="blur">${c.html}</div><button class="rv-btn">${tr('기록 읽기')}</button>${src}</article>`;
   if (c.kind === 'correct') return `<article class="card rec reveal-rec correct" ${pos}><p class="rec-label">${tr('기록')}</p><h3>${esc(c.title)}</h3><div class="blur">${c.html}</div><button class="rv-btn">${tr('기록 읽기')}</button><button class="fix-btn" hidden>${tr('기록 바로잡기')}</button><p class="fix-note" hidden>${esc(c.fix)}</p>${src}</article>`;
@@ -148,10 +148,51 @@ function sndGate(kicker, title, onStart) {
 const sndBtn = document.querySelector('.bs-snd');
 let sndUserOff = (() => { try { return localStorage.getItem('xpace-sound') === 'off'; } catch (e) { return false; } })();
 function sndUI() { sndBtn.classList.toggle('on', sound.on); sndBtn.setAttribute('aria-pressed', String(sound.on)); sndBtn.querySelector('span').textContent = sound.on ? tr('소리 켜짐') : tr('소리 켜기'); }
-sndBtn.addEventListener('click', (e) => { e.stopPropagation(); const v = sound.toggle(); sndUserOff = !v; try { localStorage.setItem('xpace-sound', v ? 'on' : 'off'); } catch (e2) {} setTimeout(sndUI, 30); });
+sndBtn.addEventListener('click', (e) => { e.stopPropagation(); const v = sound.toggle(); sndUserOff = !v; narr.set(v); try { localStorage.setItem('xpace-sound', v ? 'on' : 'off'); } catch (e2) {} setTimeout(sndUI, 30); });
 // 내레이션: 순이의 이야기를 읽어 줌 (기기 음성). 말하는 동안 배경 소리는 낮춤
 // 내레이션(기기 음성)은 껐음 — ElevenLabs 녹음이 준비되면 녹음 파일로 다시 붙임 (bitssal-narrator.js는 남겨 둠)
-const narr = { follow() {}, stop() {}, unlock() {}, set() {}, card: null };
+// 내레이션 녹음 (2026-11-18): assets/narration/<언어>/<언어>_<장>.mp3 — 지금은 한국어만. 소리를 켠 사람에게만 재생.
+// 이야기 글이 나타나면 그 카드의 녹음을 틀고(배경 소리는 낮춤), 카드가 화면을 벗어나면 멈춤. 녹음이 끝나야 체험이 열림.
+const NARR_LANGS = ['ko'];
+const narr = (() => {
+  const ok = NARR_LANGS.includes(lang) && typeof Audio !== 'undefined';
+  const au = ok ? new Audio() : null; if (au) { au.preload = 'auto'; au.playsInline = true; au.setAttribute('playsinline', ''); }
+  const url = (k) => `assets/narration/${lang}/${lang}_${k}.mp3?v=1`;
+  const fetched = new Set(), missing = new Set();
+  let cur = null, unlocked = false, blocked = false, enabled = true, safety = 0;
+  const silent = () => { const n = 2205, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, t) => [...t].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0))); // 0.1초 무음 (아이폰 재생 풀기용)
+    w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 22050, true); v.setUint32(28, 44100, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+    return URL.createObjectURL(new Blob([b], { type: 'audio/wav' })); };
+  const release = (c) => { if (c) c._narrWait = false; clearTimeout(safety); };
+  const api = {
+    card: null,
+    unlock() { // 손가락으로 누를 때 무음을 한 번 틀어 둠. 이미 읽어 주는 중이면 건드리지 않음
+      blocked = false; if (!au || unlocked || cur) return; unlocked = true;
+      try { au.src = silent(); const pr = au.play(); if (pr) pr.then(() => { if (!cur) au.pause(); }).catch(() => {}); } catch (e) {} },
+    set(v) { enabled = v; if (!v) api.stop(); },
+    prefetch(c) { const k = c && c.dataset.nk; if (!au || !k || fetched.has(k)) return; fetched.add(k); fetch(url(k)).then((r) => { if (!r.ok) missing.add(k); }).catch(() => {}); },
+    stop() { if (!cur) return; try { au.pause(); } catch (e) {} release(cur); cur.classList.remove('narrating'); cur = null; api.card = null; sound.duck(1); },
+    follow(c) {
+      if (!au) return;
+      if (cur) { // 지금 읽어 주는 카드: 글 상자가 화면에서 벗어나거나, 소리를 끄면 멈춤
+        const b = rect(cur.querySelector(':scope > .st-box') || cur);
+        if (!enabled || !sound.on || state.videoOn || b.bottom < innerHeight * 0.05 || b.top > innerHeight * 0.95 || (c && c !== cur)) api.stop(); else return;
+      }
+      if (!c || blocked || !enabled || !sound.on || state.videoOn || !c._shown || c._narrDone) return;
+      const k = c.dataset.nk; if (!k || missing.has(k)) return;
+      cur = c; api.card = c; c._narrWait = true; c.classList.add('narrating');
+      au.src = url(k); au.currentTime = 0; sound.duck(0.35);
+      const onEnd = () => { if (cur !== c) return; c._narrDone = true; api.stop(); };
+      au.onended = onEnd; au.onerror = () => { missing.add(k); onEnd(); };
+      au.onloadedmetadata = () => { clearTimeout(safety); safety = setTimeout(() => release(c), (au.duration || 30) * 1000 + 4000); }; // 멈춰도 체험이 영영 잠기지 않게
+      au.muted = false; const pr = au.play(); if (pr) pr.catch(() => { release(c); if (cur === c) { cur.classList.remove('narrating'); cur = null; api.card = null; sound.duck(1); } unlocked = false; blocked = true; }); // 막히면 다음 터치 때 다시
+    },
+  };
+  if (location.hash === '#debug') window.__narr = { au, api, get cur() { return cur; } }; // 시험용
+  return api;
+})();
+// 아이폰은 소리 파일을 처음 한 번 손가락으로 눌렀을 때 틀어야 이후에도 재생됨 → 첫 터치에서 풀어 둠
+['pointerdown', 'touchend', 'keydown'].forEach((ev) => addEventListener(ev, () => narr.unlock(), { passive: true }));
 const GEST = ['pointerdown', 'keydown', 'touchstart'];
 const firstGesture = (e) => {
   if (e.target && e.target.closest && e.target.closest('.bs-snd, .snd-gate')) return; // 버튼은 자체 처리
@@ -225,15 +266,15 @@ function unlockAfter(c) { c.classList.add('done'); (c._plays || []).forEach((pl)
 function runSeq(c) {
   if (c._seq) return; c._seq = true;
   const ps = seqParas(c);
-  if (SEQ_RM) { ps.forEach((p) => p.classList.add('shown')); unlockAfter(c); return; }
+  if (SEQ_RM) { c._shown = true; ps.forEach((p) => p.classList.add('shown')); unlockAfter(c); return; }
   // 쌀알 얼굴이 먼저 그려지고(1.4초) → 문단이 함께 나타남 → 읽을 시간이 지나면 체험이 열림
   const chars = ps.reduce((n, p) => n + p.textContent.trim().length, 0);
   let wait = APPMODE() ? 400 : 1400, read = Math.max(4000, Math.min(14000, chars * (lang === 'en' ? 18 : 45))), shown = false;
   const tick = () => {
     const bx = (APPMODE() && c.querySelector('.st-box') || c).getBoundingClientRect(), seen = APPMODE() ? bx.top < innerHeight * 0.85 && bx.bottom > innerHeight * 0.1 : c.classList.contains('in'); // 글 상자가 올라와야 시작 (얼굴 자리만 보일 땐 기다림)
     if (!seen) { if (bx.bottom < 0) { ps.forEach((p) => p.classList.add('shown')); unlockAfter(c); return; } setTimeout(tick, 400); return; } // 화면 밖이면 멈춤, 이미 지나 내려갔으면 열어 둠
-    if (!shown) { if ((wait -= 200) > 0) { setTimeout(tick, 200); return; } shown = true; ps.forEach((p, k) => setTimeout(() => p.classList.add('shown'), k * 350)); }
-    if ((read -= 200) > 0) { setTimeout(tick, 200); return; }
+    if (!shown) { if ((wait -= 200) > 0) { setTimeout(tick, 200); return; } shown = true; c._shown = true; ps.forEach((p, k) => setTimeout(() => p.classList.add('shown'), k * 350)); }
+    if ((read -= 200) > 0 || c._narrWait) { setTimeout(tick, 200); return; } // 녹음을 듣는 중이면 끝날 때까지 기다림
     unlockAfter(c);
   };
   tick();
@@ -901,6 +942,7 @@ function draw(now) {
   document.body.classList.toggle('phase-open', opening);
   // 휴대폰: 장면 선 그림(밥상 테두리 등)은 체험 때 또렷이, 장 표지 때 은은히, 나머지는 끔
   state.bdK = mobile ? state.bdK == null ? 0 : state.bdK + ((mm === 'play' ? 1 : 0) - state.bdK) * Math.min(1, dt * 3) : null;
+  if (faceCard || readCard) narr.prefetch(faceCard || readCard); // 얼굴이 보일 때 미리 받아 둠
   narr.follow(readCard);
   const pp = playProgress(cur, p);
   state.freeze = false; // 밤 장면에서만 켜짐 (다른 장으로 넘어가면 풀림)
