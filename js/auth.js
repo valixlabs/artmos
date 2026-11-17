@@ -9,7 +9,7 @@ const A = CONFIG.auth || {};
 export const AUTH_TEST = new URLSearchParams(location.search).has('authtest') || (() => { try { return sessionStorage.getItem('artmos-authtest') === '1'; } catch (e) { return false; } })();
 if (AUTH_TEST) { try { sessionStorage.setItem('artmos-authtest', '1'); } catch (e) {} }
 export const AUTH_ON = AUTH_TEST || !!(A.supabaseUrl && A.supabaseAnonKey);
-export const PROVIDERS = ['kakao', 'apple', 'google']; // 화면에는 늘 세 개
+export const PROVIDERS = ['kakao', 'google']; // 화면에 보이는 소셜 로그인(2026-11-17 소유자: 카카오·구글만. Apple·네이버는 뺌)
 const SOCIAL_ON = AUTH_TEST ? PROVIDERS : (A.providers || []).filter((p) => PROVIDERS.includes(p)); // Supabase에서 켠 것만 실제로 동작
 
 const W = {
