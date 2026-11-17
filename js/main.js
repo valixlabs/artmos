@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { loadData, imageUrl, esc } from './data.js?v=36';
 import { hsound } from './home-sound.js?v=7';
 import { tr, lang, langSwitcher } from './i18n.js?v=7';
-import { IS_MOBILE } from './sensors.js?v=4';
+import { IS_MOBILE } from './sensors.js?v=5';
 import { initHomeInterface } from './home-interface.js?v=5';
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 let calm = motionQuery.matches;
@@ -559,7 +559,7 @@ document.querySelector('.orbit-dock').setAttribute('aria-busy', 'true');
     </li>`).join('');
   resize();
   last = performance.now();
-  if (IS_MOBILE) { const { initHomeMobile } = await import('./home-mobile.js?v=7'); initHomeMobile(Object.assign(M, { state, planets, world, camera, THREE, enter, hsound, code, shortTitle, canvas })); }
+  if (IS_MOBILE) { const { initHomeMobile } = await import('./home-mobile.js?v=8'); initHomeMobile(Object.assign(M, { state, planets, world, camera, THREE, enter, hsound, code, shortTitle, canvas })); }
   document.querySelector('.orbit-dock').setAttribute('aria-busy', 'false');
   document.body.dataset.loaded = 'true';
   autoSound();

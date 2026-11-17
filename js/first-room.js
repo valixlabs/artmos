@@ -2,7 +2,7 @@
 // cell.js가 g001 기획전에 자기 블록(cell_id = g001)이 있을 때만 불러옵니다.
 // 블록 type: sense(감각 표지) · worry(고민 적기·무게) · breath(숨 세 번) · zoom(10배씩 멀어지기) · sip(물 한 모금) · release(놓아 주기)
 // 적은 고민은 이 화면의 메모리에만 있고, 저장·전송하지 않습니다.
-import { IS_MOBILE, sensor, startMic } from './sensors.js?v=4';
+import { IS_MOBILE, sensor, startMic } from './sensors.js?v=5';
 import { DICT } from './i18n-dict.js?v=6';
 import { tr } from './i18n.js?v=7';
 

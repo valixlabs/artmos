@@ -1,6 +1,6 @@
 // ARTMOS 전시 페이지 — 모바일 전용 센서 안내 · 진동 · 제스처 (cell.js가 휴대폰에서만 불러옴)
 // 각 블록의 센서 효과 자체는 cell.js 안에 있고, 이 파일은 '지금 할 수 있는 동작' 안내와 공통 제스처를 맡습니다.
-import { sensor } from './sensors.js?v=4';
+import { sensor } from './sensors.js?v=5';
 import { DICT } from './i18n-dict.js?v=6';
 import { tr } from './i18n.js?v=7';
 

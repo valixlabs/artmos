@@ -15,6 +15,8 @@ export const sensor = {
   micOn: false,
   async enable() {
     if (!IS_MOBILE || this.on) return this.on;
+    // 앱 틀(껍데기) 안의 전시: 아이폰은 다른 출처 iframe에 기울기 신호를 주지 않아서, 앱 화면이 받아 넘겨줌(아래 'artmos:sensor')
+    if (inAppFrame()) { this.on = true; try { parent.postMessage({ type: 'artmos:sensor-want' }, '*'); } catch (e) {} return true; }
     try {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') return false;
@@ -37,8 +39,17 @@ export const sensor = {
 };
 
 let mic = null; // 마이크 분석기 (startMic)
+// ── 앱 틀 안에서 전시를 볼 때: 앱 화면(부모)이 보낸 기울기·움직임 값을 받아 같은 계산에 넣음
+const inAppFrame = () => { try { return window.parent !== window && (sessionStorage.getItem('artmos-in-app') === '1' || /[?&]app=1(?:&|$)/.test(location.search)); } catch (e) { return false; } };
+let relayed = false;
+addEventListener('message', (e) => {
+  const d = e.data; if (e.source !== window.parent || !d || d.type !== 'artmos:sensor') return;
+  relayed = true;
+  if (d.o) onOrient(d.o, true); if (d.a) onAbs(d.a, true); if (d.m) onMotion(d.m, true);
+});
 let rawX = 0, rawY = 0, lastShake = 0, absSeen = false, faceRaw = false, faceSince = 0, spinAcc = 0, lastSpin = 0, loopT = 0;
-function onOrient(e) {
+function onOrient(e, fromApp) {
+  if (relayed && !fromApp) return; // 앱이 넘겨주는 값을 쓰는 중이면 직접 받은 값은 무시(겹치지 않게)
   if (e.gamma == null) return;
   // 화면 방향(세로/가로)에 맞춰 좌우·앞뒤 기울기 계산
   const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
@@ -50,8 +61,12 @@ function onOrient(e) {
   if (e.webkitCompassHeading != null) sensor.heading = e.webkitCompassHeading; // iPhone
   else if (!absSeen && e.absolute && e.alpha != null) sensor.heading = (360 - e.alpha) % 360;
 }
-function onAbs(e) { if (e.alpha != null) { absSeen = true; sensor.heading = (360 - e.alpha) % 360; } }
-function onMotion(e) {
+function onAbs(e, fromApp) {
+  if (relayed && !fromApp) return;
+  if (e.alpha != null) { absSeen = true; sensor.heading = (360 - e.alpha) % 360; }
+}
+function onMotion(e, fromApp) {
+  if (relayed && !fromApp) return; // 앱이 넘겨주는 값을 쓰는 중이면 직접 받은 값은 무시(겹치지 않게)
   const rr = e.rotationRate;
   if (rr && rr.alpha != null) { const v = rr.alpha; sensor.spin += (v - sensor.spin) * 0.3; } // 화면 수직축 회전
   const a = e.acceleration && e.acceleration.x != null ? e.acceleration : null;

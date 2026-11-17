@@ -6,7 +6,7 @@ import { lang, LANGS } from './i18n.js?v=7';
 import { hasRing } from './planets.js?v=4';
 import { planetSrc, planetKey, onPlanet, planetBitmap, warm } from './planet-store.js?v=2';
 import { videoHTML, mountVideos, playVideo, stopVideos } from './video.js?v=2';
-import { IS_MOBILE, sensor } from './sensors.js?v=4';
+import { IS_MOBILE, sensor } from './sensors.js?v=5';
 import { createAppSky } from './app-sky.js?v=3';
 import { createAppSheet } from './app-sheet.js?v=2';
 import { createAppLanding } from './app-landing.js?v=5';
@@ -726,8 +726,21 @@ function loadExhibitFrame(c) {
   cancelAnimationFrame(frameRaf); replaceFrame('about:blank');
   frameRaf = requestAnimationFrame(() => { frameRaf = 0; if (current === c && !viewer.hidden) replaceFrame(exhibitUrl(c)); });
 }
+// 앱 틀 안: 전시(다른 출처 iframe)는 아이폰이 기울기·움직임 신호를 직접 받지 못함 → 앱 화면이 받아서 그대로 넘겨줌
+let relayOn = false;
+const xyz = (v) => v ? { x: v.x, y: v.y, z: v.z } : null;
+const relay = (msg) => { if (!viewer.hidden && frame.contentWindow) try { frame.contentWindow.postMessage(msg, '*'); } catch (e) {} };
+function startSensorRelay() {
+  if (!IN_SHELL || !IS_MOBILE) return;
+  sensor.enable(); // 사용자가 누른 순간(착륙하기) 안에서 권한 요청
+  if (relayOn) return; relayOn = true;
+  addEventListener('deviceorientation', (e) => relay({ type: 'artmos:sensor', o: { alpha: e.alpha, beta: e.beta, gamma: e.gamma, absolute: e.absolute, webkitCompassHeading: e.webkitCompassHeading } }), true);
+  addEventListener('deviceorientationabsolute', (e) => relay({ type: 'artmos:sensor', a: { alpha: e.alpha } }), true);
+  addEventListener('devicemotion', (e) => relay({ type: 'artmos:sensor', m: { acceleration: xyz(e.acceleration), accelerationIncludingGravity: xyz(e.accelerationIncludingGravity), rotationRate: e.rotationRate ? { alpha: e.rotationRate.alpha, beta: e.rotationRate.beta, gamma: e.rotationRate.gamma } : null } }), true);
+}
 function openExhibit(c) {
   if (!c || !isOpen(c) || !viewer.hidden) return;
+  startSensorRelay();
   if (waitingForBack) { queuedExhibit = c; return; }
   stopVideos(); current = c; enteredAt = 0;
   const h = hist(); h[c.id] = { ...(h[c.id] || {}), last: Date.now(), visits: ((h[c.id] && h[c.id].visits) || 0) + 1 }; store.set('valix-history', h);
@@ -743,7 +756,7 @@ function closeExhibit(fromPop = false) {
   go(tab, true);
 }
 $('#close').addEventListener('click', () => closeExhibit());
-addEventListener('message', (e) => { if (e.source === frame.contentWindow && e.data && e.data.type === 'artmos:close-exhibit') closeExhibit(); }); // 전시 안 '전시 행성 나가기'
+addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(); }); // 전시 안 '전시 행성 나가기'
 $('#land-cancel').addEventListener('click', () => closeExhibit());
 addEventListener('popstate', () => {
   if (waitingForBack) {
