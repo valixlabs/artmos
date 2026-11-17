@@ -6,7 +6,7 @@ import { CONFIG } from './config.js?v=37';
 import { fetchSheet, imageUrl, esc } from './data.js?v=36';
 import { lang } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';
-import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser, SHOP_SIM } from './shop-pay.js?v=17';
+import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser, SHOP_SIM } from './shop-pay.js?v=18';
 let acctUser = null; // 로그인한 계정(소장 폼에 이메일 미리 채움)
 
 const SH = CONFIG.shop || {};

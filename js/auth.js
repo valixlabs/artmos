@@ -81,10 +81,16 @@ const listeners = new Set();
 export async function finishDeepLink(url) {
   if (!AUTH_ON || !/^artmos:\/\/auth/i.test(String(url || ''))) return false;
   const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser; if (B) B.close().catch(() => {});
-  const u = new URL(String(url).replace(/^artmos:\/\/auth\/?/i, 'https://x/?').replace('?#', '?').replace('#', '&'));
-  const code = u.searchParams.get('code');
-  try { const c = await supa(); if (code) { const { error } = await c.auth.exchangeCodeForSession(code); if (error) throw error; } else if (u.searchParams.get('access_token')) { await c.auth.setSession({ access_token: u.searchParams.get('access_token'), refresh_token: u.searchParams.get('refresh_token') || '' }); } else return false; }
-  catch (e) { return false; }
+  // artmos://auth?code=… 또는 artmos://auth#access_token=… (오류면 error_description=…)
+  const P = new URLSearchParams(String(url).replace(/^artmos:\/\/auth\/?/i, '').replace(/^[?#]/, '').replace('#', '&'));
+  if (P.get('error') || P.get('error_description')) return 'error';
+  const code = P.get('code'), at0 = P.get('access_token');
+  try {
+    const c = await supa();
+    if (code) { const { error } = await c.auth.exchangeCodeForSession(code); if (error) throw error; }
+    else if (at0) { const { error } = await c.auth.setSession({ access_token: at0, refresh_token: P.get('refresh_token') || '' }); if (error) throw error; }
+    else return 'error';
+  } catch (e) { console.warn('[ARTMOS] 소셜 로그인 마무리 실패', e); return 'error'; }
   await currentUser(); emit(); return true;
 }
 export const onAuth = (f) => { listeners.add(f); return () => listeners.delete(f); };

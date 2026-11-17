@@ -15,8 +15,8 @@ import { createAppDiscover } from './app-discover.js?v=4';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=2';
 import * as MB from './membership.js?v=15';
-import * as SHOP from './app-shop.js?v=20';
-import * as AU from './auth.js?v=15';
+import * as SHOP from './app-shop.js?v=21';
+import * as AU from './auth.js?v=16';
 import { bizHTML } from './biz.js?v=2';
 import { web, IN_SHELL } from './web-base.js?v=1';
 const motionQuery = createMotionPreference();
@@ -779,7 +779,7 @@ if (CapApp) {
     if (sheet.isOpen) sheet.close(); else if (!viewer.hidden) closeExhibit();
     else if (!ob.hidden) showOB('login'); else if (tab !== 'home') go('home'); else CapApp.exitApp();
   });
-  CapApp.addListener('appUrlOpen', async ({ url }) => { if (await AU.finishDeepLink(url)) afterLogin(); }); // 소셜 로그인 뒤 artmos://auth 로 돌아옴
+  CapApp.addListener('appUrlOpen', async ({ url }) => { const r = await AU.finishDeepLink(url); if (r === true) afterLogin(); else if (r === 'error') toast(AU.at('eNet')); }); // 소셜 로그인 뒤 artmos://auth 로 돌아옴
   CapApp.addListener('appStateChange', ({ isActive }) => {
     nativeActive = isActive; syncRuntime(); if (isActive) applyPendingData();
   });
