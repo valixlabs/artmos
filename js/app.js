@@ -696,6 +696,8 @@ function shopRefresh(name) { if (tab === name && !view.hidden) go(name, true); }
 SHOP.loadShop().then(() => { if (tab === 'shop' || tab === 'my') shopRefresh(tab); });
 sheet.el.addEventListener('click', onAction);
 
+// 포스터 그림이 다 오면 빈칸 빛(스켈레톤)을 멈춤
+document.addEventListener('load', (e) => { const el = e.target; if (el && el.classList && (el.classList.contains('tv-art') || el.classList.contains('tv-hp-img')) && el.parentElement) el.parentElement.classList.add('ld'); }, true);
 /* ---------- 전시 보기 ---------- */
 const viewer = $('#viewer'), frame = $('#frame');
 let current = null, enteredAt = 0, frameRaf = 0, waitingForBack = false, queuedExhibit = null;
@@ -1000,7 +1002,11 @@ function firstValidData(promises) {
   const issues = loadIssues();
   const fresh = Promise.all([loadData().catch(() => null), issues]).then(([data, issue]) => data ? { cells: data.cells, blocks: data.blocks || [], ISSUES: issue || saved?.ISSUES || {} } : null);
   const local = saved ? null : loadLocalData().catch(() => null).then((data) => data ? { cells: data.cells, blocks: data.blocks || [], ISSUES: {} } : null);
-  const initial = saved || await firstValidData([local, fresh]);
+  // 켤 때는 최신 목록을 1.5초까지 기다림(그동안 시작 화면) → 오면 최신으로, 늦거나 오프라인이면 폰에 저장해 둔 목록으로(2026-11-17 소유자 선택 C)
+  const FRESH_WAIT = 1500;
+  const freshFirst = await Promise.race([fresh.catch(() => null), new Promise((r) => setTimeout(() => r(null), FRESH_WAIT))]);
+  const usedFresh = validData(freshFirst);
+  const initial = usedFresh ? freshFirst : saved || await firstValidData([local, fresh]);
   if (validData(initial)) unpack(initial);
   const splash = $('#splash'); splash.classList.add('out'); setTimeout(() => splash.remove(), motionQuery.matches ? 0 : 350);
   if (!cells.length) {
@@ -1023,7 +1029,7 @@ function firstValidData(promises) {
   if (location.hash === '#orders') { history.replaceState(null, '', location.pathname + location.search); go('my'); SHOP.loadShop().then(() => SHOP.openOrders(sheet)); } // 결제 후 돌아옴
   const match = location.hash.match(/open=([\w-]+)/);
   if (match) { const cell = cells.find((item) => item.id === match[1]); if (cell && isOpen(cell)) openExhibit(cell); }
-  if (!saved) saveData(pack());
+  if (!saved || usedFresh) saveData(pack());
   issues.then((issue) => {
     if (!issue || JSON.stringify(issue) === JSON.stringify(ISSUES)) return;
     pendingData = { ...(pendingData || { cells, blocks }), ISSUES: issue };
