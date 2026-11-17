@@ -17,6 +17,7 @@ import { APP_COPY } from './app-copy.js?v=2';
 import * as MB from './membership.js?v=11';
 import * as SHOP from './app-shop.js?v=15';
 import * as AU from './auth.js?v=10';
+import { bizHTML } from './biz.js?v=1';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
 
@@ -123,7 +124,7 @@ const OB = {
 function showOB(k, arg) {
   stopViewEffects(); ob.hidden = false; view.hidden = true; tabsEl.hidden = true;
   if (!OB[k] && k !== 'intro0' && k !== 'intro1') k = 'login';
-  ob.innerHTML = k === 'intro0' ? OB.intro(0) : k === 'intro1' ? OB.intro(1) : OB[k](arg);
+  ob.innerHTML = (k === 'intro0' ? OB.intro(0) : k === 'intro1' ? OB.intro(1) : OB[k](arg)) + (k === 'login' ? bizHTML() : ''); // 로그인 첫 화면 아래 사업자 정보
   ob.dataset.step = k;
   if (k === 'nick') {
     const i = $('#nick'), b = $('#nick-go'), p = me();
@@ -433,7 +434,8 @@ const screens = {
       <section class="sec"><button class="nb-preference" data-motion role="switch" aria-checked="${motionQuery.matches}" ${motionQuery.systemReduced ? 'disabled' : ''}><span><b>${t('모션 줄이기')}</b><small>${t(motionQuery.systemReduced ? '시스템에서 모션 감소를 사용 중이에요.' : '카드 기울기와 장식 애니메이션을 줄여요.')}</small></span><i class="nb-switch" aria-hidden="true"></i></button></section>
       <section class="sec list"><button class="row" data-intro-replay><b>${t('인트로 다시 보기')}</b><span class="v">›</span></button></section>
       <section class="sec"><div class="sec-h"><h2 class="h20">${t('체험 권한')}</h2></div><p class="small">${t('기울기·흔들기·마이크·카메라·위치는 전시 안에서 체험할 때만 쓰고, 기기 밖으로 저장하거나 보내지 않아요.')}</p></section>
-      <section class="sec list"><button class="row" data-clear><b>${t('관람 기록 지우기')}</b></button><div class="row"><b>${t('버전')}</b><span class="v">ARTMOS ${VERSION}</span></div></section>`;
+      <section class="sec list"><button class="row" data-clear><b>${t('관람 기록 지우기')}</b></button><div class="row"><b>${t('버전')}</b><span class="v">ARTMOS ${VERSION}</span></div></section>
+      ${bizHTML()}`;
   },
 };
 

@@ -183,3 +183,10 @@
   .home .snd-gate .g-b { min-height: 36px; width: auto; padding: 8px 12px; font-size: 10px; margin: 0; }
   .home .snd-gate .g-s { margin: 0; padding: 4px; font-size: 9px; }
 }
+
+/* 사업자 정보(ABOUT·전시 목록 아래) */
+.panel .biz-info { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--home-line, rgba(255,255,255,.15)); font-size: 12px; line-height: 1.7; opacity: .75; }
+.panel .biz-info p { margin: 0 0 6px; font-size: inherit; }
+.panel .biz-info .biz-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.panel .biz-info a { color: inherit; }
+.panel .biz-info .biz-rows span { margin-right: 10px; }

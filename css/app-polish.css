@@ -217,3 +217,16 @@
 /* 로그인 화면: "이미 계정이 있어요 · 로그인" 한 줄 가운데 정렬 */
 .ob-login .au-row { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 8px; width: 100%; margin: 4px 0 0; }
 .ob-login .au-row > * { width: auto; height: auto; min-height: 0; margin: 0; padding: 0; flex: 0 0 auto; line-height: 1.4; }
+
+/* 사업자 정보(앱 마이·로그인·컬렉트·주문 페이지 아래) */
+.biz-info { margin: 28px 0 0; padding: 18px 0 calc(28px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(255,255,255,.12); color: #8c8c8c; font-size: 11.5px; line-height: 1.7; text-align: left; }
+.biz-info p { margin: 0; color: inherit; }
+.biz-info .biz-links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 12.5px; }
+.biz-info .biz-links a { color: #d8d8d8; text-decoration: none; }
+.biz-info .biz-links span { color: #555; }
+.biz-info .biz-rows span { display: inline; margin-right: 10px; word-break: keep-all; }
+.biz-info .biz-rows b { color: #b0b0b0; font-weight: 600; }
+.biz-info .biz-copy { margin-top: 6px; color: #666; }
+#onboard .biz-info { margin-top: 18px; padding-bottom: 8px; text-align: center; border-top: 0; font-size: 10.5px; }
+#onboard .biz-info .biz-links { justify-content: center; }
+.od-biz { max-width: 640px; margin: 0 auto; padding: 0 18px 110px; box-sizing: border-box; }

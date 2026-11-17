@@ -4,6 +4,7 @@ import * as SHOP from './app-shop.js?v=15';
 import { createAppSheet } from './app-sheet.js?v=2';
 import { loadLocalData } from './data.js?v=32';
 import { lang } from './i18n.js?v=6';
+import { bizHTML } from './biz.js?v=1';
 
 document.documentElement.lang = lang;
 const view = document.getElementById('view'), toastEl = document.getElementById('toast');
@@ -15,7 +16,7 @@ document.getElementById('cw-back').textContent = '← ' + SHOP.st('back');
 let cells = [];
 const cellUrl = (id) => { const c = cells.find((x) => x.id === id); return (c && c.url) || `cell.html?id=${encodeURIComponent(id)}`; };
 function render() {
-  view.innerHTML = SHOP.screenHTML('') + SHOP.myHTML();
+  view.innerHTML = SHOP.screenHTML('') + SHOP.myHTML() + bizHTML();
 }
 function refresh() { const y = scrollY; render(); scrollTo(0, y); }
 function onClick(e) {

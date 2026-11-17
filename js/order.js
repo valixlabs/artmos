@@ -5,6 +5,7 @@ import { loadShop, workInfo } from './app-shop.js?v=15';
 import { api, loadToss, back, CLIENT_KEY, WIDGET, SHOP_TEST, PAY_ON, SHIPPING_KRW, saveOrder } from './shop-pay.js?v=12';
 import { currentUser } from './auth.js?v=10';
 import { lang } from './i18n.js?v=6';
+import { bizHTML } from './biz.js?v=1';
 import { esc } from './data.js?v=32';
 
 document.documentElement.lang = lang;
@@ -19,6 +20,7 @@ const q = new URLSearchParams(location.search), workId = q.get('work') || '';
 const backTo = (() => { try { return sessionStorage.getItem('nebula-shop-back') || 'collect.html'; } catch (e) { return 'collect.html'; } })();
 document.getElementById('od-back').href = backTo;
 document.title = 'ARTMOS — ' + t('title');
+box.insertAdjacentHTML('afterend', `<div class="od-biz">${bizHTML()}</div>`);
 
 const center = (h, p, href, label) => { box.innerHTML = `<div class="od-center"><h1>${esc(h)}</h1><p>${esc(p)}</p><a class="btn black" href="${esc(href)}">${esc(label)}</a></div>`; };
 
