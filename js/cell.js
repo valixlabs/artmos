@@ -1,8 +1,8 @@
 import { loadData, imageUrl, videoEmbed, esc, paras } from './data.js?v=36';
 import { tr, langSwitcher } from './i18n.js?v=7';
-import { IS_MOBILE, sensor, keepAwake } from './sensors.js?v=5';
+import { IS_MOBILE, sensor, keepAwake } from './sensors.js?v=6';
 import { videoHTML, mountVideos } from './video.js?v=2';
-import { labRenderers, setupSakamotoLab } from './sakamoto-lab.js?v=4';
+import { labRenderers, setupSakamotoLab } from './sakamoto-lab.js?v=5';
 import * as MB from './membership.js?v=15';
 
 const story = document.getElementById('story');
@@ -234,7 +234,7 @@ langSwitcher(document.querySelector('.topbar'));
 // 모바일: 첫 탭에서 기울기 권한 · 흔들면 화면에 보이는 양자 실험을 관측
 if (IS_MOBILE) {
   document.body.classList.add('is-mobile');
-  import('./cell-mobile.js?v=9');
+  import('./cell-mobile.js?v=10');
   addEventListener('click', function once() { removeEventListener('click', once, true); sensor.enable(); keepAwake(); }, true);
   sensor.onShake(() => {
     const q = [...document.querySelectorAll('.q-stage')].find((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.7 && r.bottom > innerHeight * 0.3; });
@@ -352,7 +352,7 @@ async function renderFlow(g, blocks) {
   document.title = `${g.title} — ARTMOS`;
   document.documentElement.style.setProperty('--accent', g.color);
   document.getElementById('cell-label').textContent = g.title;
-  const FR = await import('./first-room.js?v=4');
+  const FR = await import('./first-room.js?v=6');
   Object.assign(R, FR.renderers({ esc, paras }));
   const c = { flow: true, id: g.id, code: g.code, title: g.title, subtitle: g.subtitle, artist: g.artist, period: g.period, color: g.color };
   let bs = blocks.filter((b) => b.type !== 'end');

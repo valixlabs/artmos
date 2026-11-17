@@ -4,7 +4,7 @@
 import { sound } from './bitssal-sound.js?v=7';
 import { lang, tr, langSwitcher } from './i18n.js?v=7';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
-import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=5';
+import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=6';
 import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=11';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';

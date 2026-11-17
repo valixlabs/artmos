@@ -2,7 +2,7 @@
 // 나침반: 폰을 돌리면 행성계 전체가 나침반처럼 돌고, 가운데 X 둘레에 방위 고리가 생깁니다.
 // 기울이기: 행성계가 따라 기울어짐 · 흔들기: 별빛이 흩어지고 행성이 빨라짐(+소리·진동)
 // 스와이프: 좌우로 밀어 행성 넘기기 · 탭: 행성 소개 → 한 번 더 탭(또는 착륙 버튼)으로 착륙
-import { sensor, startMic, keepAwake, onPinch } from './sensors.js?v=5';
+import { sensor, startMic, keepAwake, onPinch } from './sensors.js?v=6';
 import { tr } from './i18n.js?v=7';
 
 export function initHomeMobile(api) {

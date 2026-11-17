@@ -2,7 +2,7 @@
 // cell.js가 g001 기획전에 자기 블록(cell_id = g001)이 있을 때만 불러옵니다.
 // 블록 type: sense(감각 표지) · worry(고민 적기·무게) · breath(숨 세 번) · zoom(10배씩 멀어지기) · sip(물 한 모금) · release(놓아 주기)
 // 적은 고민은 이 화면의 메모리에만 있고, 저장·전송하지 않습니다.
-import { IS_MOBILE, sensor, startMic } from './sensors.js?v=5';
+import { IS_MOBILE, sensor, startMic, stopMic } from './sensors.js?v=6';
 import { DICT } from './i18n-dict.js?v=6';
 import { tr } from './i18n.js?v=7';
 
@@ -32,6 +32,12 @@ const WORDS = {
   '잠깐 멈추세요': ['Hold', '停一下', '止めて'],
   '내쉬세요': ['Breathe out', '呼气', '吐いて'],
   '{n}번째 숨': ['Breath {n}', '第 {n} 次呼吸', '{n}回目の息'],
+  '후 불기 켜짐 — 화면에 대고 후~': ['Blowing on — blow onto the screen', '吹气已开启 — 对着屏幕吹', 'オン — 画面にふーっと'],
+  '숨결이 닿았어요': ['Your breath reached it', '你的气息碰到了它', '息が届きました'],
+  '원을 위로 쓸어 올려도 숨이 나가요': ['Or swipe up on the circle to breathe out', '向上滑动圆圈，也能呼出气息', '円を上へなぞっても息が出ます'],
+  '마이크를 쓸 수 없어요. 원을 위로 쓸어 올려 보세요.': ["The mic isn't available. Try swiping up on the circle.", '无法使用麦克风。试着向上滑动圆圈。', 'マイクが使えません。円を上へなぞってみてください。'],
+  '마이크 권한을 물어보는 중…': ['Asking for mic permission…', '正在请求麦克风权限…', 'マイクの許可を確認中…'],
+  '세 번의 숨이 끝났어요': ['Three breaths, done', '三次呼吸结束了', '三回の息が終わりました'],
   '숨에는 냄새가 있어요. 지금 당신 방의 공기는 어떤 냄새인가요? 그 냄새를 잠깐 기억해 두세요.': ['Breath has a smell. What does the air in your room smell like right now? Hold on to it for a moment.', '呼吸是有气味的。此刻你房间里的空气是什么味道？记住它一会儿。', '息にはにおいがあります。いま、あなたの部屋の空気はどんなにおいですか？少しだけ覚えておいてください。'],
   '고민의 크기': ['Size of your worry', '烦恼的大小', '悩みの大きさ'],
   '화면의 {r}': ['{r} of the screen', '屏幕的 {r}', '画面の {r}'],
@@ -106,7 +112,17 @@ function tone(f, { dur = 1.8, vol = 0.05, type = 'sine', glide = 0 } = {}) {
 const thump = (k) => { tone(58, { dur: 0.35, vol: 0.08 + k * 0.03, glide: 0.6 }); setTimeout(() => tone(52, { dur: 0.3, vol: 0.05 + k * 0.02, glide: 0.6 }), 150); };
 ['pointerdown', 'keydown', 'touchstart'].forEach((t) => addEventListener(t, wake, { capture: true, passive: true }));
 
-function fillWords() { document.querySelectorAll('.fr-wordslot').forEach((el) => { el.textContent = worryText(); }); }
+function fillWords() { document.querySelectorAll('.fr-wordslot').forEach((el) => { if (el.hasAttribute('data-split')) splitWord(el); else el.textContent = worryText(); }); }
+// 숨 장면: 고민 글자를 한 자씩 나눠 두고, 저마다 날아갈 방향을 정해 둠(내쉴 때 그 방향으로 풀림)
+function splitWord(el) {
+  const R = rng(worryText().length * 97 + 13); el.textContent = ''; el.setAttribute('aria-label', worryText());
+  [...worryText()].forEach((ch, i, all) => {
+    const c = document.createElement('i'); c.setAttribute('aria-hidden', 'true'); c.textContent = ch === ' ' ? '\u00a0' : ch;
+    const side = (i + 0.5) / all.length - 0.5;
+    c.style.cssText = `--dx:${(side * 230 + (R() - 0.5) * 70).toFixed(0)};--dy:${(-40 - R() * 150 - Math.abs(side) * 60).toFixed(0)};--r:${((R() - 0.5) * 70).toFixed(0)};--d:${(R() * 0.5).toFixed(2)}`;
+    el.appendChild(c);
+  });
+}
 
 export function renderers({ esc, paras }) {
   const head = (b) => `<div class="q-head reveal">${b.title ? `<h2>${esc(b.title)}</h2>` : ''}${paras(b.body)}</div>`;
@@ -129,8 +145,15 @@ export function renderers({ esc, paras }) {
       <p class="fr-note">${tr('적은 글은 이 화면에만 잠시 머물고, 저장하거나 보내지 않아요.')}</p>
     </div></section>`,
     breath: (b) => `<section class="b-breath fr-sec"><div class="fr-wrap">${head(b)}
-      <div class="br-stage reveal"><div class="br-circle"><span class="br-word fr-wordslot"></span></div><p class="br-cue">${tr('준비가 되면 눌러 주세요')}</p></div>
-      <div class="br-row"><button type="button" class="fr-btn br-go">${tr('숨 세 번 쉬기')}</button>${IS_MOBILE ? `<button type="button" class="fr-btn ghost br-mic">${tr('후 불기 켜기 (마이크)')}</button>` : ''}</div>
+      <div class="br-stage reveal">
+        <canvas class="br-cv" aria-hidden="true"></canvas>
+        <svg class="br-arc" viewBox="0 0 120 120" aria-hidden="true"><circle class="br-track" cx="60" cy="60" r="57"/><circle class="br-prog" cx="60" cy="60" r="57" pathLength="100"/></svg>
+        <div class="br-circle"><i class="br-halo"></i><i class="br-core"></i><span class="br-word fr-wordslot" data-split></span></div>
+        <div class="br-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p class="br-cue" aria-live="polite"><b class="br-label">${tr('준비가 되면 눌러 주세요')}</b><span class="br-count"></span></p>
+      </div>
+      <p class="br-hint">${tr('원을 위로 쓸어 올려도 숨이 나가요')}</p>
+      <div class="br-row"><button type="button" class="fr-btn br-go">${tr('숨 세 번 쉬기')}</button>${IS_MOBILE ? `<button type="button" class="fr-btn ghost br-mic"><span class="br-mt">${tr('후 불기 켜기 (마이크)')}</span><i class="br-lv" aria-hidden="true"><b></b></i></button>` : ''}</div>
       <p class="br-after fr-say" hidden>${tr('숨에는 냄새가 있어요. 지금 당신 방의 공기는 어떤 냄새인가요? 그 냄새를 잠깐 기억해 두세요.')}</p>
     </div></section>`,
     zoom: (b) => `<section class="b-zoom"><div class="zm-sticky"><canvas class="zm-cv" aria-hidden="true"></canvas>
@@ -206,43 +229,131 @@ function setupWorry() {
 }
 
 // ---------- 숨: 4초 들이쉬기 · 2초 멈춤 · 6초 내쉬기 × 3 ----------
+// 원 둘레의 숨결 입자(들이쉬면 모이고 내쉬면 퍼짐) · 둘레 진행 고리 · 숨 세 점 · 고민 글자가 한 자씩 풀림
+// 후~ 불기(휴대폰 마이크) 또는 원을 위로 쓸어 올리기 = 바람: 입자가 날아가고 물결이 퍼지고, 내쉴 때면 글자가 더 많이 풀림
 function setupBreath() {
   document.querySelectorAll('.b-breath').forEach((sec) => {
-    const circle = sec.querySelector('.br-circle'), word = sec.querySelector('.br-word'), cue = sec.querySelector('.br-cue');
-    const go = sec.querySelector('.br-go'), micBtn = sec.querySelector('.br-mic'), after = sec.querySelector('.br-after');
-    const PH = [[4, '들이쉬세요', 0.55, 1], [2, '잠깐 멈추세요', 1, 1], [6, '내쉬세요', 1, 0.55]];
+    const stage = sec.querySelector('.br-stage'), cv = sec.querySelector('.br-cv'), g = cv.getContext('2d');
+    const circle = sec.querySelector('.br-circle'), word = sec.querySelector('.br-word');
+    const label = sec.querySelector('.br-label'), count = sec.querySelector('.br-count'), dots = [...sec.querySelectorAll('.br-dots i')];
+    const go = sec.querySelector('.br-go'), micBtn = sec.querySelector('.br-mic'), after = sec.querySelector('.br-after'), hint = sec.querySelector('.br-hint');
+    const PH = [[4, '들이쉬세요', 0.62, 1], [2, '잠깐 멈추세요', 1, 1], [6, '내쉬세요', 1, 0.62]];
     const ROUND = 12, TOTAL = ROUND * 3;
-    let t0 = 0, loose = 0, lastPh = -1;
+    const dpr = Math.min(devicePixelRatio || 1, IS_MOBILE ? 1.5 : 2);
+    let t0 = 0, loose = 0, lastPh = -1, k = -1, s = 0.8, visible = false, raf = 0, last = 0, done = false;
+    let swipe = 0, gust = 0, gustT = 0, myMic = false, W = 0, H = 0, R0 = 0;
+    const N = IS_MOBILE ? 110 : 170, rnd = rng(31);
+    const P = Array.from({ length: N }, () => ({ a: rnd() * 6.283, r: 1.15 + rnd() * 0.5, v: 0, sp: 0.4 + rnd() * 0.8, z: 0.6 + rnd() * 1.6, al: 0.25 + rnd() * 0.6, up: 0 }));
+    const rings = [];
+    const size = () => { W = stage.clientWidth; H = stage.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); R0 = circle.offsetWidth / 2; };
+    size(); addEventListener('resize', () => { if (Math.abs(stage.clientWidth - W) > 2) size(); });
+    let accent = '201,214,255';
+    const readAccent = () => { const c = getComputedStyle(sec).getPropertyValue('--accent').trim(); const m = c.match(/^#([0-9a-f]{6})$/i); if (m) { const n = parseInt(m[1], 16); accent = `${n >> 16},${(n >> 8) & 255},${n & 255}`; } };
+    readAccent();
+    const ring = (str = 1) => { if (rings.length < 8) rings.push({ r: s * R0, a: 0.5 * str, w: 1 + str }); };
+
+    // 마이크(휴대폰): 누르는 순간 소리 장치를 깨워야 아이폰에서 소리가 들어옴(sensors.js)
     if (micBtn) micBtn.addEventListener('click', async () => {
-      try { await startMic(); micBtn.textContent = tr('후 불기 켜짐 — 내쉴 때 화면에 후~'); micBtn.disabled = true; } catch (e) { micBtn.textContent = tr('마이크를 쓸 수 없어요. 숨만 쉬어도 괜찮아요.'); micBtn.disabled = true; }
+      if (sensor.micOn) return;
+      micBtn.disabled = true; micBtn.querySelector('.br-mt').textContent = tr('마이크 권한을 물어보는 중…');
+      try { await startMic(); myMic = true; micBtn.classList.add('on'); micBtn.querySelector('.br-mt').textContent = tr('후 불기 켜짐 — 화면에 대고 후~'); }
+      catch (e) { micBtn.querySelector('.br-mt').textContent = tr('마이크를 쓸 수 없어요. 원을 위로 쓸어 올려 보세요.'); micBtn.classList.add('off'); }
+      micBtn.disabled = false;
     });
+    // 쓸어 올리기 = 바람 (마이크 없이도, PC는 끌어 올리기)
+    let py = null, pt = 0;
+    stage.addEventListener('pointerdown', (e) => { py = e.clientY; pt = e.timeStamp; wake(); });
+    stage.addEventListener('pointermove', (e) => { if (py == null) return; const dy = py - e.clientY, dt = Math.max(8, e.timeStamp - pt); if (dy > 0) swipe = Math.min(1, swipe + dy / dt * 0.35); py = e.clientY; pt = e.timeStamp; });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => stage.addEventListener(t, () => { py = null; }));
+
     go.addEventListener('click', () => {
-      if (t0) return; t0 = performance.now(); go.disabled = true; sec.classList.add('on'); loose = 0; lastPh = -1;
-      requestAnimationFrame(step);
+      if (t0) return; wake(); t0 = performance.now(); go.disabled = true; sec.classList.add('on'); sec.classList.remove('done');
+      loose = 0; lastPh = -1; done = false; dots.forEach((d) => d.className = ''); after.hidden = true; after.classList.remove('in');
+      fillWords(); kick();
+      stage.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); // 원 전체가 화면 가운데에 오게
     });
-    function step(now) {
-      const e = (now - t0) / 1000;
-      if (e >= TOTAL) {
-        t0 = 0; go.disabled = false; sec.classList.remove('on'); circle.style.setProperty('--s', 0.8);
-        cue.textContent = ''; after.hidden = false; requestAnimationFrame(() => after.classList.add('in'));
-        if (IS_MOBILE) sensor.vibrate(40); return;
-      }
-      const round = Math.floor(e / ROUND), r = e - round * ROUND;
-      let acc = 0, k = 0; while (k < 2 && r >= acc + PH[k][0]) { acc += PH[k][0]; k++; }
-      const [dur, label, a, b] = PH[k], f = (r - acc) / dur, ease = 0.5 - Math.cos(f * Math.PI) / 2;
-      const s = a + (b - a) * ease;
+    const kick = () => { if (!raf && visible) { last = performance.now(); raf = requestAnimationFrame(frame); } };
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible) { readAccent(); size(); kick(); }
+      else if (myMic && !t0) { stopMic(); myMic = false; if (micBtn) { micBtn.classList.remove('on'); micBtn.querySelector('.br-mt').textContent = tr('후 불기 켜기 (마이크)'); } }
+    }, { rootMargin: '120px 0px' }).observe(stage);
+
+    function frame(now) {
+      raf = 0; if (!visible) return;
+      const dt = Math.min(0.05, (now - last) / 1000) || 0.016, f60 = dt * 60; last = now;
+      // 바람 세기: 마이크 후~ 와 쓸어 올리기 중 큰 것
+      swipe *= Math.pow(0.9, f60);
+      const wind = Math.max(sensor.micOn ? sensor.blow || 0 : 0, swipe);
+      gust += (wind - gust) * (wind > gust ? 0.5 : 0.12);
+      if (gust > 0.35 && now - gustT > 420) { gustT = now; ring(0.6 + gust); if (IS_MOBILE) sensor.vibrate(10); }
+      if (micBtn && sensor.micOn) micBtn.style.setProperty('--lv', Math.max(sensor.micLevel || 0, sensor.blow || 0).toFixed(2));
+      let f = 0, target = 1.3; // 입자가 머물 반지름(원 크기 기준)
+      if (t0) {
+        const e = (now - t0) / 1000;
+        if (e >= TOTAL) finish();
+        else {
+          const round = Math.floor(e / ROUND), r = e - round * ROUND;
+          let acc = 0; k = 0; while (k < 2 && r >= acc + PH[k][0]) { acc += PH[k][0]; k++; }
+          const [dur, lb, a, b] = PH[k]; f = (r - acc) / dur;
+          s = a + (b - a) * (0.5 - Math.cos(f * Math.PI) / 2);
+          const id = round * 3 + k;
+          if (id !== lastPh) {
+            lastPh = id; label.textContent = tr(lb); sec.dataset.ph = k;
+            dots.forEach((d, i) => d.className = i < round ? 'done' : i === round ? 'now' : '');
+            if (k === 0) tone(196, { dur: 3.8, vol: 0.035 }); if (k === 2) { tone(147, { dur: 5.5, vol: 0.035 }); ring(1); }
+            if (IS_MOBILE && k !== 1) sensor.vibrate(k === 0 ? 12 : [8, 60, 8]);
+          }
+          count.textContent = `${tr('{n}번째 숨', { n: round + 1 })} · ${Math.ceil(dur - (r - acc))}`;
+          sec.style.setProperty('--p', (e / TOTAL).toFixed(4));
+          target = k === 0 ? 1.12 - f * 0.08 : k === 1 ? 1.06 : 1.1 + f * 1.1;
+          // 내쉴 때 글자가 풀림 (바람이 닿으면 훨씬 많이)
+          if (k === 2) loose = Math.min(1, loose + (0.0006 + gust * 0.0018) * f60); // 숨만 쉬면 세 번에 반쯤, 후~ 불면 두 번째 숨쯤 다 풀림
+          else if (gust > 0.2) loose = Math.min(1, loose + gust * 0.0004 * f60);
+        }
+      } else if (!done) { s += (0.8 + Math.sin(now / 1400) * 0.025 - s) * 0.06; }
       circle.style.setProperty('--s', s.toFixed(3));
-      const id = round * 3 + k;
-      if (id !== lastPh) {
-        lastPh = id;
-        if (k === 0) tone(196, { dur: 3.8, vol: 0.035 }); if (k === 2) tone(147, { dur: 5.5, vol: 0.035 });
-        if (IS_MOBILE && k !== 1) sensor.vibrate(k === 0 ? 12 : [8, 60, 8]);
-      }
-      cue.textContent = `${tr('{n}번째 숨', { n: round + 1 })} · ${tr(label)} ${Math.ceil(dur - (r - acc))}`;
-      // 내쉴 때 고민 글자가 조금씩 풀림 (후 불면 더 많이)
-      if (k === 2) loose = Math.min(1, loose + 0.0009 + (sensor.blow || 0) * 0.012);
+      circle.style.setProperty('--g', gust.toFixed(3));
       word.style.setProperty('--loose', loose.toFixed(3));
-      requestAnimationFrame(step);
+      draw(target, dt);
+      if (visible) raf = requestAnimationFrame(frame);
+    }
+    function finish() {
+      t0 = 0; done = true; k = -1; go.disabled = false; sec.classList.remove('on'); sec.classList.add('done'); delete sec.dataset.ph;
+      s = 0.8; loose = Math.max(loose, 0.55); sec.style.setProperty('--p', 1);
+      dots.forEach((d) => d.className = 'done'); label.textContent = tr('세 번의 숨이 끝났어요'); count.textContent = '';
+      ring(1.4); after.hidden = false; requestAnimationFrame(() => after.classList.add('in'));
+      if (IS_MOBILE) sensor.vibrate(40);
+    }
+    function draw(target, dt) {
+      g.clearRect(0, 0, W, H);
+      const cx = W / 2, cy = H / 2, R = R0, f60 = dt * 60, inh = k === 0;
+      // 원 안쪽 은은한 빛 (바람이 닿으면 밝아짐)
+      const glow = g.createRadialGradient(cx, cy, R * s * 0.2, cx, cy, R * s * 1.5);
+      glow.addColorStop(0, `rgba(${accent},${0.10 + gust * 0.18})`); glow.addColorStop(1, `rgba(${accent},0)`);
+      g.fillStyle = glow; g.beginPath(); g.arc(cx, cy, R * s * 1.5, 0, 6.283); g.fill();
+      // 물결
+      for (let i = rings.length - 1; i >= 0; i--) {
+        const q = rings[i]; q.r += (1.2 + q.w) * f60; q.a *= Math.pow(0.965, f60);
+        if (q.a < 0.02 || q.r > Math.max(W, H)) { rings.splice(i, 1); continue; }
+        g.strokeStyle = `rgba(${accent},${q.a.toFixed(3)})`; g.lineWidth = q.w * 0.8; g.beginPath(); g.arc(cx, cy, q.r, 0, 6.283); g.stroke();
+      }
+      // 숨결 입자
+      g.fillStyle = `rgb(${accent})`;
+      for (const p of P) {
+        const tr0 = target + (p.sp - 0.8) * 0.25;
+        p.r += (tr0 - p.r) * (inh ? 0.035 : 0.018) * f60 + p.v * f60;
+        p.v = p.v * Math.pow(0.93, f60) + gust * 0.0035 * p.sp * f60;
+        p.up = p.up * Math.pow(0.95, f60) + gust * 0.6 * p.sp * f60; // 바람이면 위로 날림
+        p.a += (0.0016 + (inh ? -0.002 : 0.001)) * p.sp * f60;
+        if (p.r > 2.6 || p.up > H * 0.6) { p.r = 1.0 + rnd() * 0.15; p.up = 0; p.v = 0; p.a = rnd() * 6.283; p.al = 0; }
+        p.al = Math.min(0.25 + p.sp * 0.5, p.al + 0.01 * f60);
+        const x = cx + Math.cos(p.a) * p.r * R * s, y = cy + Math.sin(p.a) * p.r * R * s - p.up;
+        const fade = Math.max(0, 1 - (p.r - 1.6) / 1.0);
+        g.globalAlpha = Math.min(1, p.al * fade * (0.6 + gust * 0.6));
+        g.beginPath(); g.arc(x, y, p.z * (0.8 + gust * 0.5), 0, 6.283); g.fill();
+      }
+      g.globalAlpha = 1;
     }
   });
 }

@@ -13,6 +13,7 @@ export const sensor = {
   faceDown: false,    // 화면이 바닥을 향해 엎어져 있는지
   blow: 0,            // 0~1 마이크에 '후~' 부는 세기
   micOn: false,
+  micLevel: 0,        // 0~1 마이크에 들어오는 소리 크기(평소보다 얼마나 큰지)
   async enable() {
     if (!IS_MOBILE || this.on) return this.on;
     // 앱 틀(껍데기) 안의 전시: 아이폰은 다른 출처 iframe에 기울기 신호를 주지 않아서, 앱 화면이 받아 넘겨줌(아래 'artmos:sensor')
@@ -88,10 +89,7 @@ function onMotion(e, fromApp) {
   if (faceRaw !== sensor.faceDown) { if (!faceSince) faceSince = now; if (now - faceSince > (faceRaw ? 1200 : 300)) { sensor.faceDown = faceRaw; faceSince = 0; listeners.face.forEach((f) => f(faceRaw)); } } else faceSince = 0;
   const dt = Math.min(0.1, (now - (loopT || now)) / 1000); loopT = now;
   if (Math.abs(sensor.spin) > 90) { spinAcc += sensor.spin * dt; if (Math.abs(spinAcc) > 80 && now - lastSpin > 500) { lastSpin = now; listeners.spin.forEach((f) => f(Math.sign(spinAcc))); spinAcc = 0; } } else spinAcc *= 0.9;
-  if (mic) { mic.an.getByteFrequencyData(mic.buf); let lo = 0, hi = 0; for (let i = 1; i < 12; i++) lo += mic.buf[i]; for (let i = 40; i < 120; i++) hi += mic.buf[i]; lo /= 11 * 255; hi /= 80 * 255;
-    const b = lo > 0.55 ? Math.min(1, (lo - 0.55) * 3 + hi) : 0; // 바람 소리: 낮은 대역이 크게 꽉 참
-    sensor.blow += (b - sensor.blow) * (b > sensor.blow ? 0.5 : 0.08);
-    if (sensor.blow > 0.55 && now - (mic.last || 0) > 700) { mic.last = now; listeners.blow.forEach((f) => f(sensor.blow)); } }
+  if (mic) readMic(now);
   requestAnimationFrame(loop);
 })();
 
@@ -104,16 +102,55 @@ export async function startCamera(videoEl) {
 
 // 마이크: '후~' 불기 감지. 소리는 이 기기 안에서만 분석되고 녹음·전송되지 않음
 export async function startMic() {
-  if (mic) return true;
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  if (mic) { try { mic.ac.resume(); } catch (e) {} return true; }
+  // 아이폰: 소리 장치는 터치 순간에 만들고 바로 깨워야 함(권한 창을 기다린 뒤 만들면 '멈춤' 상태라 소리가 0으로만 들어옴)
   const ac = new (window.AudioContext || window.webkitAudioContext)();
-  const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 512; an.smoothingTimeConstant = 0.4;
+  try { ac.resume(); } catch (e) {}
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (e) { try { ac.close(); } catch (x) {} throw e; }
+  try { await ac.resume(); } catch (e) {}
+  const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.3;
   src.connect(an);
-  mic = { ac, an, stream, buf: new Uint8Array(an.frequencyBinCount) };
+  mic = { ac, an, stream, src, tb: new Float32Array(an.fftSize), fb: new Float32Array(an.frequencyBinCount), floor: 0, last: 0, t: 0, poke: 0 };
   sensor.micOn = true;
   return true;
 }
-export function stopMic() { if (!mic) return; mic.stream.getTracks().forEach((t) => t.stop()); mic.ac.close(); mic = null; sensor.micOn = false; sensor.blow = 0; }
+// 멈춘 소리 장치는 다음 터치 때 다시 깨움
+['touchend', 'pointerup', 'click'].forEach((t) => addEventListener(t, () => { if (mic && mic.ac.state !== 'running') { try { mic.ac.resume(); } catch (e) {} } }, { capture: true, passive: true }));
+
+// '후~' 판단: 조용할 때의 소리 크기(바닥)를 계속 재 두고, 그보다 얼마나 큰지 + 낮은 소리(바람 소리)가 얼마나 많은지로 정함
+// 폰마다 마이크 감도가 달라도 '평소보다 크게'로 보므로 잘 맞음
+function readMic(now) {
+  if (now - mic.t < 30) return; mic.t = now; // 초당 약 30번
+  if (mic.ac.state !== 'running') { if (now - mic.poke > 1000) { mic.poke = now; try { mic.ac.resume(); } catch (e) {} } return; }
+  const { an, tb, fb } = mic;
+  an.getFloatTimeDomainData(tb);
+  let sq = 0; for (let i = 0; i < tb.length; i++) sq += tb[i] * tb[i];
+  const rms = Math.sqrt(sq / tb.length) || 1e-6;
+  an.getFloatFrequencyData(fb);
+  const hz = mic.ac.sampleRate / an.fftSize;
+  let lo = 0, mid = 0, hi = 0, lsum = 0, psum = 0, n = 0;
+  for (let i = 1; i < fb.length; i++) {
+    const f = i * hz; if (f > 8000) break;
+    const p = Math.pow(10, (isFinite(fb[i]) ? fb[i] : -140) / 10);
+    if (f < 500) lo += p; else if (f < 3000) mid += p; else hi += p;
+    if (f > 150 && f < 4000) { lsum += Math.log(p + 1e-14); psum += p; n++; }
+  }
+  const lowShare = lo / (lo + mid + hi + 1e-14);
+  const flat = n ? Math.exp(lsum / n) / (psum / n + 1e-14) : 0; // 1에 가까우면 '쉬~' 같은 바람 소리, 0에 가까우면 목소리·악기
+  if (!mic.floor) mic.floor = rms;
+  const snr = 20 * Math.log10(rms / Math.max(mic.floor, 2e-4));
+  // 바닥은 조용해지면 빨리 내려가고, 커질 땐 아주 천천히 올라감(계속 불어도 바닥이 따라 올라오지 않게)
+  mic.floor += (rms - mic.floor) * (rms < mic.floor ? 0.25 : snr < 8 ? 0.02 : 0.0008);
+  sensor.micLevel = Math.max(0, Math.min(1, (snr - 4) / 30));
+  const loud = Math.max(0, Math.min(1, (snr - 12) / 20)) + (rms > 0.25 && snr > 6 ? 0.4 : 0); // 아주 가까이서 불면 바로
+  const windy = Math.max(Math.min(1, Math.max(0, lowShare - 0.25) / 0.35), Math.min(1, Math.max(0, flat - 0.06) / 0.18));
+  const b = Math.min(1, loud * (0.35 + 0.65 * windy));
+  sensor.blow += (b - sensor.blow) * (b > sensor.blow ? 0.6 : 0.15);
+  if (sensor.blow > 0.45 && now - mic.last > 600) { mic.last = now; listeners.blow.forEach((f) => f(sensor.blow)); }
+}
+export function stopMic() { if (!mic) return; mic.stream.getTracks().forEach((t) => t.stop()); try { mic.ac.close(); } catch (e) {} mic = null; sensor.micOn = false; sensor.blow = 0; sensor.micLevel = 0; }
 
 // 위치: 두 지점 사이 거리(km). 위치는 이 기기 안에서만 계산하고 어디에도 보내지 않음
 export function getPosition() {

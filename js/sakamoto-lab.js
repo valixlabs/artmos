@@ -4,7 +4,7 @@
 //  forest  : 세계의 소리 360° — 다섯 개의 소리가 둘러쌈. 몸을 돌리면(나침반) 그쪽 소리가 커지고, 앞으로 기울이면 가까이
 //  silence : 고요 — 폰을 엎어 두거나 버튼을 누르고 10초. 끝나면 한 음(라 A)과 문장
 // 센서 값은 기기 안에서만 쓰고 저장·전송하지 않음
-import { IS_MOBILE, sensor } from './sensors.js?v=5';
+import { IS_MOBILE, sensor } from './sensors.js?v=6';
 import { lang } from './i18n.js?v=7';
 
 const W = {
