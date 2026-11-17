@@ -230,3 +230,4 @@
 #onboard .biz-info { margin-top: 18px; padding-bottom: 8px; text-align: center; border-top: 0; font-size: 10.5px; }
 #onboard .biz-info .biz-links { justify-content: center; }
 .od-biz { max-width: 640px; margin: 0 auto; padding: 0 18px 110px; box-sizing: border-box; }
+#view > .biz-info, .sp-wrap .biz-info, main > .biz-info { margin-left: 24px; margin-right: 24px; }
