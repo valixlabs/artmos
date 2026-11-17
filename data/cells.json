@@ -87,6 +87,25 @@
    "planet": "ocean",
    "month": "2026-11",
    "url": "sansa.html"
+  },
+  {
+   "id": "c007",
+   "order": 7,
+   "status": "open",
+   "title": "A-007 · 실낱 같은 희망",
+   "subtitle": "붉은 실 한 가닥으로 이어지는 다섯 사람의 작은 희망",
+   "artist": "김바늘",
+   "period": "2026.11 –",
+   "color": "#c9c3b6",
+   "thumbnail": "",
+   "summary": "방 한구석에 웅크린 사람이 고개를 들어 붉은 실 한 가닥을 봅니다. 스크롤하면 그 실이 끊기지 않고 이어져, 서로 모르는 다섯 사람의 작은 희망을 차례로 꿰어 갑니다. 김바늘 작가의 자수 연작 《실낱 같은 희망》.",
+   "bgm": "",
+   "fx": "",
+   "planet": "ice",
+   "month": "2026-11",
+   "url": "silnat.html",
+   "poster": "assets/posters/c007-poster.webp",
+   "logo": "assets/posters/c007-logo.webp"
   }
  ],
  "blocks": [
@@ -1089,6 +1108,17 @@
    "bg": "",
    "align": "",
    "extra": true
+  },
+  {
+   "cell_id": "c007",
+   "order": 1,
+   "type": "cover",
+   "title": "실낱 같은 희망",
+   "body": "가장 어두운 구석에도, 붙잡을 수 있는 실 한 가닥은 있다.",
+   "media": "",
+   "caption": "",
+   "bg": "#F3F0E8",
+   "align": ""
   }
  ]
 }

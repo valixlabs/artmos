@@ -11,6 +11,7 @@
     "title": "기억하는 빛",
     "picks": [
       "c005",
+      "c007",
       "c004",
       "g001",
       "c006"
@@ -107,6 +108,14 @@
         "title": "Revealing the Cosmic Microwave Background with Planck",
         "source": "ESA"
       }
+    ]
+  },
+  "2026-12": {
+    "title": "이어지는 실",
+    "picks": [
+      "c007",
+      "c005",
+      "g001"
     ]
   }
 }
