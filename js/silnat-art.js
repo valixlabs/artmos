@@ -87,12 +87,12 @@ export function redThread(pts, seed = 7, opt = {}) {
     const [x1, y1] = p[i], [x2, y2] = p[i + 1];
     const len = Math.hypot(x2 - x1, y2 - y1); if (!len) continue;
     const ux = (x2 - x1) / len, uy = (y2 - y1) / len, nx = -uy, ny = ux;
-    for (let t = (acc ? 0 : 0); t < len; t += w * .95) {
+    for (let t = 0; t < len; t += w * (opt.flat ? 1.5 : .95)) {
       const cx = x1 + ux * t, cy = y1 + uy * t;
       const a = [cx + nx * w * .5 - ux * w * .35, cy + ny * w * .5 - uy * w * .35];
       const b = [cx - nx * w * .5 + ux * w * .35, cy - ny * w * .5 + uy * w * .35];
       twist += `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
-      if (r() < .09) { // 보풀
+      if (r() < (opt.flat ? .04 : .09)) { // 보풀
         const s = r() < .5 ? 1 : -1, l = 3 + r() * 6;
         const fx = cx + nx * s * w * .5, fy = cy + ny * s * w * .5;
         fuzz += `M${fx.toFixed(1)} ${fy.toFixed(1)}q${(nx * s * l * .6 + ux * l * .5).toFixed(1)} ${(ny * s * l * .6 + uy * l * .5).toFixed(1)} ${(nx * s * l + ux * (r() - .3) * l).toFixed(1)} ${(ny * s * l + uy * (r() - .3) * l).toFixed(1)}`;
@@ -100,7 +100,7 @@ export function redThread(pts, seed = 7, opt = {}) {
     }
   }
   return `<g class="red-thread">
-<path d="${d}" stroke="#3a1a14" stroke-opacity=".28" stroke-width="${w + 1.6}" transform="translate(2.2 3)" filter="url(#sl-soft)" fill="none" stroke-linecap="round"/>
+<path d="${d}" stroke="#3a1a14" stroke-opacity=".28" stroke-width="${w + 1.6}" transform="translate(2.2 3)"${opt.flat ? '' : ' filter="url(#sl-soft)"'} fill="none" stroke-linecap="round"/>
 <path d="${d}" stroke="#7d1512" stroke-width="${w + .6}" fill="none" stroke-linecap="round"/>
 <path d="${d}" stroke="#b3231c" stroke-width="${w - .4}" fill="none" stroke-linecap="round"/>
 <path d="${twist}" stroke="#6e100d" stroke-width="${(w * .32).toFixed(2)}" fill="none" stroke-linecap="round" opacity=".85"/>
@@ -337,7 +337,7 @@ export const SCENES = {
     L.push(...F);
     const hz = [...hatch(312, 790, 376, 22, 0.5, 9, rng(13), .4), ...hatch(720, 60, 40, 760, 1.2, 14, rng(14))];
     const red = [...curve([[-20, 380], [300, 430], [600, 500]]), ...loop(632, 505, 26, 9, 1.3, Math.PI),
-      ...curve([[650, 520], [720, 640], [640, 790], [500, 812], [420, 816]])];
+      ...curve([[650, 520], [720, 640], [640, 790], [500, 812], [400, 818], [200, 840], [-20, 860]])];
     return { L, hz, red };
   },
   // 아직 수놓이지 않은 장: 바늘구멍만
@@ -361,8 +361,8 @@ export function sceneSVG(name, opt = {}) {
 <filter id="sl-paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 .55  0 0 0 0 .52  0 0 0 0 .47  0 0 0 .09 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
 <filter id="sl-soft"><feGaussianBlur stdDeviation="1.6"/></filter>
 </defs>
-<rect x="-60" y="-60" width="1120" height="1120" fill="#ECEAE4"/>
-<rect x="-14" y="-14" width="1028" height="1028" fill="#d9d5cc"/>
+${opt.noRed ? '' : '<rect x="-60" y="-60" width="1120" height="1120" fill="#ECEAE4"/>'}
+<rect x="-14" y="-14" width="1028" height="1028" fill="#d9d5cc"${opt.noRed ? ' opacity=".55"' : ''}/>
 <rect x="0" y="0" width="1000" height="1000" fill="#F3F0E8"/>
 <rect x="0" y="0" width="1000" height="1000" filter="url(#sl-paper)"/>
 <g fill="#3b3631" opacity=".35">${holes}</g>
