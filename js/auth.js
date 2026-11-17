@@ -72,7 +72,7 @@ const supaProvider = {
   async signIn(email, pw) { const c = await supa(); const { data, error } = await c.auth.signInWithPassword({ email, password: pw }); if (error) throw error; return { id: data.user.id, email: data.user.email, provider: 'email' }; },
   async reset(email) { const c = await supa(); const { error } = await c.auth.resetPasswordForEmail(email, { redirectTo: back() }); if (error) throw error; return true; },
   async signOut() { const c = await supa(); await c.auth.signOut(); },
-  async remove() { const c = await supa(); const { error } = await c.functions.invoke('delete-account'); if (error) throw error; await c.auth.signOut(); },
+  async remove() { const c = await supa(); const { error } = await c.functions.invoke('delete-account', { method: 'POST' }); if (error) throw error; try { await c.auth.signOut({ scope: 'local' }); } catch (e) {} },
 };
 const P = AUTH_TEST ? testProvider : supaProvider;
 const listeners = new Set();

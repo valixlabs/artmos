@@ -17,7 +17,7 @@ create table if not exists public.works (
 
 create table if not exists public.orders (
   order_id    text primary key,                -- 토스 orderId (6~64자, 영문·숫자·-_=)
-  user_id     uuid not null references auth.users(id) on delete restrict, -- 로그인 필수. 결제 기록은 법정 보관 기간 동안 남김
+  user_id     uuid references auth.users(id) on delete set null, -- 주문은 로그인한 회원만. 계정을 지우면 user_id만 비우고 결제 기록은 법정 보관 기간(5년) 동안 남김
   work_id     text not null references public.works(work_id),
   cell_id     text,                            -- 어느 전시에서 소장했는지(정산·통계)
   amount_krw  integer not null,                -- 서버가 정한 금액(작품가 + 배송비)
@@ -133,3 +133,8 @@ insert into public.works (work_id, artist_id, title, price_krw, status, edition_
   ('w-sample-7', 'a-sample-4', '기울어진 별 (에디션)', 380000, 'available', 6, true),
   ('w-sample-8', 'a-sample-4', '후 불면 번지는 빛', 250000, 'available', 19, true)
 on conflict (work_id) do nothing;
+
+-- 2026-11-17: 계정 삭제가 되게 주문의 회원 연결을 set null로 (이미 만든 표 바꾸기)
+alter table public.orders alter column user_id drop not null;
+alter table public.orders drop constraint if exists orders_user_id_fkey;
+alter table public.orders add constraint orders_user_id_fkey foreign key (user_id) references auth.users(id) on delete set null;

@@ -15,8 +15,8 @@ import { createAppDiscover } from './app-discover.js?v=3';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=2';
 import * as MB from './membership.js?v=12';
-import * as SHOP from './app-shop.js?v=16';
-import * as AU from './auth.js?v=11';
+import * as SHOP from './app-shop.js?v=17';
+import * as AU from './auth.js?v=12';
 import { bizHTML } from './biz.js?v=1';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
@@ -674,7 +674,7 @@ function onAction(e) {
     if (k === 'login') showOB('login');
     else if (k === 'logout') AU.signOut().then(() => { try { localStorage.removeItem('valix-intro-at'); } catch (e) {} location.reload(); }); // 로그아웃하면 인트로부터 다시(로그인 전에는 늘 인트로)
     else if (k === 'delete') sheet.open(AU.deleteConfirmHTML(), 'confirm');
-    else if (k === 'delete-go') { b.disabled = true; AU.deleteAccount().then(() => { sheet.close(); store.set('valix-onboarded', false); store.set('valix-me', null); toast(AU.at('deleted')); showOB('login'); }).catch(() => { b.disabled = false; toast(AU.at('eNet')); }); }
+    else if (k === 'delete-go') { b.disabled = true; AU.deleteAccount().then(() => { sheet.close(); store.set('valix-onboarded', false); store.set('valix-me', null); toast(AU.at('deleted')); setTimeout(() => location.replace('app.html'), 900); }).catch(() => { b.disabled = false; toast(AU.at('eNet')); }); } // 지우면 처음(인트로→로그인)부터
     return true;
   }
   if ((b = q('[data-lang]'))) { if (b.dataset.lang !== lang) { try { localStorage.setItem('xpace-lang', b.dataset.lang); } catch (er) {} location.reload(); } return true; }
