@@ -18,7 +18,7 @@ const R = {
   cover: (b, c, i) => `
     <section class="b-cover ${b.align ? 'is-' + esc(b.align) : ''}" style="${b.bg ? `--bg:${esc(b.bg)}` : ''}">
       ${b.align === 'cosmos' ? '<canvas class="star-cv" data-mode="drift"></canvas>' : ''}${b.align === 'light' ? '<canvas class="beam-cv"></canvas>' : ''}${b.align === 'sound' ? '<canvas class="rip-cv"></canvas>' : ''}${b.align === 'rice' ? '<canvas class="rice-cv"></canvas>' : ''}
-      ${b.media ? `<div class="cover-media parallax" data-speed="0.3">${media(b.media)}</div>` : '<div class="cover-planet"><i class="pl-ring back"></i><i class="pl-body"></i><i class="pl-ring front"></i></div>'}
+      ${b.media ? `<div class="cover-media parallax" data-speed="0.3">${media(b.media)}</div>` : c.flow ? '' : '<div class="cover-planet"><i class="pl-ring back"></i><i class="pl-body"></i><i class="pl-ring front"></i></div>'}
       <div class="cover-text">
         <p class="eyebrow">${c.group ? (c.group.single ? `${esc(c.group.code)} ${esc(c.group.title.replace(/^[XN]-\d+ · /, ''))} · ${String(c.room).padStart(2, '0')}` : `${esc(c.group.code)} ${esc(c.group.title.replace(/^[XN]-\d+ · /, ''))} · ROOM ${String(c.room).padStart(2, '0')}`) : esc(c.code || '')}</p>
         <h1 class="split">${esc(b.title || c.title)}</h1>
@@ -354,7 +354,7 @@ async function renderFlow(g, blocks) {
   document.getElementById('cell-label').textContent = g.title;
   const FR = await import('./first-room.js?v=1');
   Object.assign(R, FR.renderers({ esc, paras }));
-  const c = { id: g.id, code: g.code, title: g.title, subtitle: g.subtitle, artist: g.artist, period: g.period, color: g.color };
+  const c = { flow: true, id: g.id, code: g.code, title: g.title, subtitle: g.subtitle, artist: g.artist, period: g.period, color: g.color };
   let bs = blocks.filter((b) => b.type !== 'end');
   if (!bs.some((b) => b.type === 'cover')) bs = [{ type: 'cover' }, ...bs];
   const top = TOP.filter((x) => x.status === 'open'), gi = top.indexOf(g), next = top[(gi + 1) % top.length];
