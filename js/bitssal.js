@@ -193,6 +193,16 @@ const prog = document.querySelector('.bs-progress');
 prog.style.gridTemplateColumns = `repeat(${SCENES.length}, 1fr)`;
 prog.innerHTML = SCENES.map((s, i) => `<button title="${esc(s.title)}" data-id="${s.id}" class="part${s.part || 1}"><i></i></button>`).join('');
 prog.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) jump(b.dataset.id); });
+// 휴대폰: 상단 바(머리·진행 막대)는 아래로 스크롤하면 숨고, 위로 올리면 다시 나옴 (2026-11-17 소유자). 맨 위·목차를 연 동안은 늘 보임. PC는 그대로
+{ let lastY = scrollY, acc = 0, hidden = false, tick = 0;
+  const setTop = (h) => { if (h !== hidden) { hidden = h; document.body.classList.toggle('top-hide', h); } };
+  addEventListener('scroll', () => { if (tick) return; tick = requestAnimationFrame(() => { tick = 0;
+    const y = scrollY, d = y - lastY; lastY = y;
+    if (innerWidth >= 820 || y < 120 || !menu.hidden) { acc = 0; setTop(false); return; }
+    acc = (acc > 0) === (d > 0) ? acc + d : d; // 같은 방향으로 움직인 거리만 모음 (손 떨림에 깜빡이지 않게)
+    if (acc > 24) setTop(true); else if (acc < -14) setTop(false);
+  }); }, { passive: true });
+  menuBtn.addEventListener('click', () => setTop(false)); }
 function jump(id) { const el = document.getElementById('s-' + id); if (el) window.scrollTo({ top: el.offsetTop + 2, behavior: 'smooth' }); }
 
 // 카드 등장

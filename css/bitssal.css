@@ -452,3 +452,11 @@ body[data-scene="light"] .mem-sky, .mem-sky.rising { opacity: 1; }
   body::before { animation: none; inset: 0; }
   #stage { will-change: transform; }
 }
+
+/* 휴대폰: 아래로 스크롤하면 상단 바가 숨고 위로 올리면 나옴 (2026-11-17) */
+@media (max-width: 819px) {
+  .bs-top, .bs-progress { transition: transform .35s var(--ease), opacity .35s var(--ease); will-change: transform; }
+  body.top-hide .bs-top { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+  body.top-hide .bs-progress { transform: translateY(calc(-100% - 90px)); opacity: 0; pointer-events: none; }
+}
+@media (max-width: 819px) and (prefers-reduced-motion: reduce) { .bs-top, .bs-progress { transition: opacity .2s; } }
