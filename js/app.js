@@ -112,6 +112,12 @@ const OB = {
   'login-form'() { return AU.loginFormHTML(); },
   reset() { return AU.resetHTML(); },
   verify(email) { return AU.verifyHTML(email); },
+  sensor() {
+    return `<h1 class="ob-h">${br(t('ARTMOS의 전시는\n폰을 기울이고 흔들며\n함께 움직여요'))}</h1>
+      <p class="ob-sensor-p">${esc(t('기울기·움직임 센서를 켜 주세요. 체험할 때만 쓰고, 저장하거나 보내지 않아요.'))}</p>
+      <p class="ob-sensor-p dim">${esc(t('마이크·카메라는 쓰는 장면에서 그때 따로 물어볼게요.'))}</p>
+      <div style="margin-top:auto"><button class="btn black" data-ob="sensor-on">${t('센서 켜기')}</button><button class="link" data-ob="sensor-skip">${t('나중에')}</button></div>`;
+  },
   nick() {
     return `<button class="back" data-ob="login" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button>
       <h1 class="ob-h">${br(t('마지막으로\n이 우주에서 불릴\n이름을 정해주세요'))}</h1>
@@ -154,10 +160,17 @@ function returnAfterLogin() {
   try { sessionStorage.removeItem('artmos-next'); } catch (e) {}
   location.href = next; return true;
 }
+// 아이폰(기울기 권한을 물어야 하는 기기)에서 처음 한 번: 입장 전에 센서 안내 화면 → [센서 켜기] 누를 때 권한 요청
+const NEEDS_SENSOR_ASK = IS_MOBILE && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+let afterSensor = null;
+function enterApp(then) {
+  if (NEEDS_SENSOR_ASK && !sensor.on && !store.get('valix-sensor-intro', false)) { afterSensor = then; showOB('sensor'); return; }
+  then();
+}
 async function afterLogin() {
   if (await AU.needsConsent()) { showOB('agree'); return; } // 소셜 첫 가입: 동의 먼저
   const n = await AU.profileNick();
-  if (n) { const old = me(); store.set('valix-me', { nick: n, since: (old && old.since) || Date.now() }); store.set('valix-onboarded', true); if (returnAfterLogin()) return; ob.hidden = true; ob.innerHTML = ''; toast(AU.at('welcome')); go(tab); return; }
+  if (n) { const old = me(); store.set('valix-me', { nick: n, since: (old && old.since) || Date.now() }); store.set('valix-onboarded', true); if (returnAfterLogin()) return; enterApp(() => { ob.hidden = true; ob.innerHTML = ''; toast(AU.at('welcome')); go(tab); }); return; }
   showOB('nick');
 }
 const auCtx = { show: (k, arg) => showOB(k, arg), done: afterLogin, browse: () => showOB('nick'), toast: (m) => toast(m) };
@@ -168,6 +181,14 @@ ob.addEventListener('click', (e) => {
   const nm = e.target.closest('[data-name]'); if (nm) { $('#nick').value = nm.dataset.name; $('#nick-go').className = 'btn black'; checkNick(); return; }
   const b = e.target.closest('[data-ob]'); if (!b) return;
   const k = b.dataset.ob;
+  if (k === 'sensor-on' || k === 'sensor-skip') {
+    store.set('valix-sensor-intro', true);
+    const then = afterSensor || (() => { ob.hidden = true; ob.innerHTML = ''; go(tab); }); afterSensor = null;
+    if (k === 'sensor-skip') { then(); return; }
+    b.disabled = true;
+    sensor.enable().then((on) => { b.disabled = false; if (!on) toast(t('센서를 켜지 못했어요. 전시 안에서 다시 켤 수 있어요.')); then(); }); // 누른 순간 안에서 권한 요청
+    return;
+  }
   if (k === 'soon') { toast(t('로그인은 곧 열려요. 지금은 둘러보기로 시작할게요.')); setTimeout(() => showOB('nick'), 900); return; }
   if (k === 'done') {
     const f = AU.nickFormat($('#nick').value), st = $('#nick-state');
@@ -187,7 +208,7 @@ function finishNick(nick) {
   {
     const old = me();
     store.set('valix-me', { nick, since: (old && old.since) || Date.now() });
-    store.set('valix-onboarded', true); if (returnAfterLogin()) return; ob.hidden = true; ob.innerHTML = ''; go(tab);
+    store.set('valix-onboarded', true); if (returnAfterLogin()) return; enterApp(() => { ob.hidden = true; ob.innerHTML = ''; go(tab); });
   }
 }
 
@@ -198,6 +219,13 @@ const T2 = {
   ja: { '알림': 'お知らせ', '모두 읽음': 'すべて既読', '행성이 열렸어요': 'の惑星がひらきました', '이번 달 행성이 도착했어요': '今月の惑星が届きました', '이번 주 행성이 도착했어요': '今週の惑星が届きました', '플레이 마감까지': 'プレイ締切まで', '새 알림이 없어요.': '新しいお知らせはありません。', '지난 호': 'バックナンバー', '진행 중': '公開中', '전체 행성': 'すべての惑星', '착륙하기': '着陸する', '좋아요': 'いいね', '좋아요한 행성': 'いいねした惑星', '아직 좋아요한 행성이 없어요.': 'まだいいねした惑星はありません。', '좋아요에 담았어요.': 'いいねに追加しました。', '좋아요를 뺐어요.': 'いいねを外しました。', '방': '部屋', '이렇게 체험해요': '体験のしかた', '휴대폰을 기울이고, 흔들고, 엎어 보세요. 권한은 입장할 때 한 번 물어봐요.': 'スマホを傾けたり、振ったり、伏せたりしてみましょう。権限は入場時に一度だけ聞きます。', '참여 방법': '参加方法', '매주 월요일 새 Vol.이 열려요.': '毎週月曜日に新しいVol.がひらきます。', '그 주에 행성 한 곳 이상 착륙하면 그 주의 책이 채워져요.': 'その週に惑星へ一度でも着陸すると、その週の本が埋まります。', '한 주에 서로 다른 행성 3곳에 착륙하면 스탬프가 완성돼요.': '1週間で異なる惑星3つに着陸するとスタンプ完成です。', '3주 연속으로 책을 채우면 항해 리포트가 열려요.': '3週連続で本を埋めると航海レポートがひらきます。', '연속': '連続', '주': '週', '닫기': '閉じる', '지난 호는 이번 주와 같은 행성으로 보여줘요. (프로토타입)': 'バックナンバーは当時公開中の惑星を表示します。（プロトタイプ）', '항해 리포트가 열렸어요': '航海レポートがひらきました', '가장 오래 머문 행성': '最も長く滞在した惑星', '처음 착륙한 날': '初めて着陸した日' },
 };
 Object.keys(T2).forEach((l) => Object.assign(T[l], T2[l]));
+const T_SENSOR = {
+  en: { 'ARTMOS의 전시는\n폰을 기울이고 흔들며\n함께 움직여요': 'ARTMOS exhibitions\nmove with you as you\ntilt and shake your phone', '기울기·움직임 센서를 켜 주세요. 체험할 때만 쓰고, 저장하거나 보내지 않아요.': 'Please turn on the motion sensors. They are used only during the experience and never stored or sent.', '마이크·카메라는 쓰는 장면에서 그때 따로 물어볼게요.': 'We’ll ask about the mic and camera only in the scenes that use them.', '센서 켜기': 'Turn on sensors', '나중에': 'Later', '센서를 켜지 못했어요. 전시 안에서 다시 켤 수 있어요.': 'Sensors are off. You can turn them on inside an exhibition.', '센서가 켜졌어요. 폰을 기울여 보세요.': 'Sensors on. Try tilting your phone.', '센서를 켜지 못했어요. 앱을 완전히 닫았다가 다시 열고 허용을 눌러 주세요.': 'Couldn’t turn on sensors. Fully close and reopen the app, then tap Allow.', '눌러서 센서 켜기': 'Tap to turn on sensors' },
+  zh: { 'ARTMOS의 전시는\n폰을 기울이고 흔들며\n함께 움직여요': 'ARTMOS 的展览\n会随着你倾斜、摇晃手机\n一起动起来', '기울기·움직임 센서를 켜 주세요. 체험할 때만 쓰고, 저장하거나 보내지 않아요.': '请开启倾斜与动作传感器。仅在体验中使用，不会保存或发送。', '마이크·카메라는 쓰는 장면에서 그때 따로 물어볼게요.': '麦克风和相机只会在需要的场景中另行询问。', '센서 켜기': '开启传感器', '나중에': '以后再说', '센서를 켜지 못했어요. 전시 안에서 다시 켤 수 있어요.': '传感器未开启，可在展览中再次开启。', '센서가 켜졌어요. 폰을 기울여 보세요.': '传感器已开启，试着倾斜手机吧。', '센서를 켜지 못했어요. 앱을 완전히 닫았다가 다시 열고 허용을 눌러 주세요.': '无法开启传感器。请完全关闭应用后重新打开，并点击“允许”。', '눌러서 센서 켜기': '点按开启传感器' },
+  ja: { 'ARTMOS의 전시는\n폰을 기울이고 흔들며\n함께 움직여요': 'ARTMOSの展示は\nスマホを傾けたり振ったりすると\n一緒に動きます', '기울기·움직임 센서를 켜 주세요. 체험할 때만 쓰고, 저장하거나 보내지 않아요.': '傾き・動きセンサーをオンにしてください。体験中だけ使い、保存・送信しません。', '마이크·카메라는 쓰는 장면에서 그때 따로 물어볼게요.': 'マイク・カメラは使う場面でその都度おたずねします。', '센서 켜기': 'センサーをオン', '나중에': 'あとで', '센서를 켜지 못했어요. 전시 안에서 다시 켤 수 있어요.': 'センサーはオフです。展示の中で再びオンにできます。', '센서가 켜졌어요. 폰을 기울여 보세요.': 'センサーがオンになりました。スマホを傾けてみてください。', '센서를 켜지 못했어요. 앱을 완전히 닫았다가 다시 열고 허용을 눌러 주세요.': 'センサーをオンにできませんでした。アプリを完全に閉じて再度開き、「許可」をタップしてください。', '눌러서 센서 켜기': 'タップしてセンサーをオン' },
+};
+Object.keys(T_SENSOR).forEach((l) => Object.assign(T[l], T_SENSOR[l]));
+{ const sa = document.querySelector('#sensor-ask span'); if (sa) sa.textContent = t('눌러서 센서 켜기'); }
 
 /* ---------- 앱 상태에 따라 쉬는 배경 · 시트 ---------- */
 const sky = createAppSky({ sensor, motionQuery, getTilt: () => tilt });
@@ -718,9 +746,12 @@ function loadExhibitFrame(c) {
 let relayOn = false;
 const xyz = (v) => v ? { x: v.x, y: v.y, z: v.z } : null;
 const relay = (msg) => { if (!viewer.hidden && frame.contentWindow) try { frame.contentWindow.postMessage(msg, '*'); } catch (e) {} };
-function startSensorRelay() {
+const sensorAsk = $('#sensor-ask');
+const showSensorAsk = (v) => { if (sensorAsk) sensorAsk.hidden = !v || sensor.on || !NEEDS_SENSOR_ASK; };
+function startSensorRelay(fromTap = true) {
   if (!IN_SHELL || !IS_MOBILE) return;
-  sensor.enable(); // 사용자가 누른 순간(착륙하기) 안에서 권한 요청
+  if (fromTap) sensor.enable().then((on) => { if (!on && !viewer.hidden) showSensorAsk(true); }); // 사용자가 누른 순간(착륙하기) 안에서 권한 요청
+  else if (!sensor.on) showSensorAsk(true); // 전시가 센서를 원하는데 아직 꺼져 있음 → 누를 버튼을 띄움(누르지 않은 때 물으면 아이폰이 무시함)
   if (relayOn) return; relayOn = true;
   addEventListener('deviceorientation', (e) => relay({ type: 'artmos:sensor', o: { alpha: e.alpha, beta: e.beta, gamma: e.gamma, absolute: e.absolute, webkitCompassHeading: e.webkitCompassHeading } }), true);
   addEventListener('deviceorientationabsolute', (e) => relay({ type: 'artmos:sensor', a: { alpha: e.alpha } }), true);
@@ -739,12 +770,16 @@ function openExhibit(c) {
 function closeExhibit(fromPop = false) {
   if (viewer.hidden) return;
   flushWatchTime(); cancelAnimationFrame(frameRaf); frameRaf = 0;
-  landing.stop(); viewer.hidden = true; replaceFrame('about:blank'); current = null;
+  landing.stop(); showSensorAsk(false); viewer.hidden = true; replaceFrame('about:blank'); current = null;
   if (!fromPop && history.state?.viewer) { waitingForBack = true; history.back(); }
   go(tab, true);
 }
 $('#close').addEventListener('click', () => closeExhibit());
-addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(); }); // 전시 안 '전시 행성 나가기'
+if (sensorAsk) sensorAsk.addEventListener('click', () => {
+  sensorAsk.disabled = true;
+  sensor.enable().then((on) => { sensorAsk.disabled = false; showSensorAsk(!on); toast(on ? t('센서가 켜졌어요. 폰을 기울여 보세요.') : t('센서를 켜지 못했어요. 앱을 완전히 닫았다가 다시 열고 허용을 눌러 주세요.')); });
+});
+addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(false); }); // 전시 안 '전시 행성 나가기'
 $('#land-cancel').addEventListener('click', () => closeExhibit());
 addEventListener('popstate', () => {
   if (waitingForBack) {
@@ -847,8 +882,10 @@ addEventListener('pointermove', (e) => {
   }
 }, { passive: true });
 // iPhone은 탭 안에서만 센서 권한을 물을 수 있음 → 첫 탭에서 켬
+// (로그인·항해명·센서 안내 화면에서는 묻지 않음 — 카카오 버튼 누를 때 권한 창이 뜨면 헷갈림. 처음엔 센서 안내 화면의 [센서 켜기]에서 물음)
 addEventListener('click', function once() {
   if (IS_MOBILE && motionQuery.matches) return;
+  if (!ob.hidden) return;
   removeEventListener('click', once, true);
   if (IS_MOBILE) sensor.enable().then((ok) => { if (ok) { document.body.classList.add('sensing'); scheduleTilt(); } });
 }, true);
