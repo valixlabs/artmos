@@ -419,7 +419,7 @@ body.phase-open #hud > div, body.phase-open #labels { opacity: 0 !important; poi
   .card:not(.story):not(.chap-open):not(.play):not(.rec):not(.choice):not(.arch):not(.car):not(.vd):not(.ph) {
     background: none !important; border-color: transparent !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
   }
-  .card p, .card h1, .card h2, .card h3, .card li, .card small, .card b { text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.85); }
+  .card p, .card h1, .card h2, .card h3, .card li, .card small, .card b { text-shadow: 0 1px 3px rgba(0,0,0,.95); } /* 그림자는 한 겹만 (넓게 번지는 그림자는 스크롤 때 무거움) */
   .card.play .try { background: none !important; border: 0 !important; padding: 0 !important; }
   .card.play.docked { padding: 8px 6px 4px; }
   .card.play.docked::before { content: ''; position: absolute; inset: -40px -12px -20px; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(5,5,5,0), rgba(5,5,5,.7) 45%); }
@@ -437,3 +437,9 @@ body[data-scene="light"] .mem-sky, .mem-sky.rising { opacity: 1; }
 .mem-line.go span i { font-style: normal; display: inline-block; animation: memBob 4.5s ease-in-out infinite alternate; }
 @keyframes memBob { from { transform: translateY(2px); opacity: .78; } to { transform: translateY(-3px); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mem-line span { transition: opacity .6s; transform: none; } .mem-line.go span i { animation: none; } }
+
+/* 스크롤이 끊기지 않게 (휴대폰): 화면 전체 필름 입자는 멈춰 두고, 쌀알 캔버스는 따로 그리기 */
+@media (max-width: 819px) {
+  body::before { animation: none; inset: 0; }
+  #stage { will-change: transform; }
+}

@@ -73,9 +73,9 @@ function relayout() {
     sc.style.height = `${Math.round(Math.max(base, y + innerHeight * (sc.querySelector(':scope > .card.play') ? 1.1 : 0.7)))}px`; // 체험 뒤에도 한 화면 가까이 머물 자리
   });
 }
-let relT = 0; const relSoon = () => { cancelAnimationFrame(relT); relT = requestAnimationFrame(relayout); };
+let relT = 0, relW = innerWidth, relH = innerHeight; const relSoon = () => { cancelAnimationFrame(relT); relT = requestAnimationFrame(relayout); };
 const portraits = () => document.querySelectorAll('canvas.st-face').forEach((c) => drawPortrait(c, c.dataset.face));
-relayout(); portraits(); addEventListener('resize', () => { relSoon(); portraits(); }); addEventListener('load', relSoon);
+relayout(); portraits(); addEventListener('resize', () => { if (innerWidth === relW && Math.abs(innerHeight - relH) < 160) return; relW = innerWidth; relH = innerHeight; relSoon(); portraits(); }); addEventListener('load', relSoon);
 if (document.fonts) document.fonts.ready.then(relSoon);
 if (window.ResizeObserver) { const ro = new ResizeObserver(relSoon); document.querySelectorAll('.card').forEach((c) => ro.observe(c)); }
 
@@ -251,12 +251,16 @@ const glass = document.getElementById('glass');
 const hud = { clock: document.querySelector('.hud-clock'), count: document.querySelector('.hud-count'), year: document.querySelector('.hud-year'), depth: document.querySelector('.hud-depth'), tip: document.querySelector('.hud-tip') };
 const labelsEl = document.getElementById('labels');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPR = new Map(); // 쌀알 그림 미리 그려 두기 (색·크기별)
 let W = 0, H = 0, DPR = Math.min(devicePixelRatio, 2), CX = 0, CY = 0, R = 0, mobile = false;
 function resize() {
-  W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  W = innerWidth; H = innerHeight; DPR = Math.min(devicePixelRatio, W < 820 ? 1.5 : 2); SPR.clear(); // 휴대폰은 1.5배로 (쌀알은 작아서 차이가 거의 없고 훨씬 가벼움)
+  cv.width = W * DPR; cv.height = H * DPR; g.setTransform(DPR, 0, 0, DPR, 0, 0);
   mobile = W < 820; CX = mobile ? W / 2 : W * 0.64; CY = mobile ? H * 0.38 : H * 0.5; /* 휴대폰: 아래쪽은 체험 안내 자리 */ R = Math.min(mobile ? W * 0.42 : W * 0.3, H * 0.36);
 }
-resize(); addEventListener('resize', resize);
+// 휴대폰에서 스크롤할 때 주소창이 접히며 높이만 조금 바뀌는 건 무시 (캔버스를 다시 만들면 끊김)
+const smallResize = () => innerWidth === W && Math.abs(innerHeight - H) < 160;
+resize(); addEventListener('resize', () => { if (!smallResize()) resize(); });
 
 const N = 1900;
 const X = new Float32Array(N), Y = new Float32Array(N), A = new Float32Array(N), ROT = new Float32Array(N);
@@ -393,7 +397,7 @@ function sculpt(a = 1) {
   for (let i = 1300; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.05, 0);
 }
 // 흩어진 쌀알: 화면 가득 옅게 떠다님 (모양과 모양 사이)
-function dust(t, a = 1) { for (let i = 0; i < N; i++) setT(i, R1[i] * W + Math.sin(t * 0.17 + R3[i] * 6.28) * 18, R2[i] * H + Math.cos(t * 0.13 + R1[i] * 6.28) * 18, (0.05 + 0.13 * R3[i]) * a, 0); }
+function dust(t, a = 1) { for (let i = 0; i < N; i++) setT(i, R1[i] * W + Math.sin(t * 0.17 + R3[i] * 6.28) * 18, R2[i] * H + Math.cos(t * 0.13 + R1[i] * 6.28) * 18, (i % 3 ? (0.05 + 0.13 * R3[i]) * a : 0), 0); } // 흩어진 쌀알은 2/3만 (가볍게)
 // 장 제목이 지나간 뒤 쌀알이 이루는 그 장의 모양 → 이 모양이 그대로 얼굴로 바뀜
 const SHAPE_OF = { life: 'table', hunger: 'jar', demand: 'grain', street: 'lamp', spread: 'map', erased: 'police', boundary: 'shoes', mine: 'bowl', truth: 'seven', share: 'riceball', light: 'flame' };
 function formShape(name, t) {
@@ -667,12 +671,19 @@ function measure() {
 }
 
 // 쌀알 그리기
-function grain(x, y, rot, a, col, s = 1) {
-  g.save(); g.translate(x, y); g.rotate(rot);
-  g.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-  g.beginPath(); g.ellipse(0, 0, 3.4 * s, 1.5 * s, 0, 0, 6.283); g.fill();
-  g.restore();
+function grainSprite(col, s) {
+  let m = SPR.get(col); if (!m) SPR.set(col, (m = new Map()));
+  let c = m.get(s);
+  if (!c) { const w = Math.ceil(7 * s * DPR) + 2, h = Math.ceil(3.2 * s * DPR) + 2; c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`; x.beginPath(); x.ellipse(w / 2, h / 2, 3.4 * s * DPR, 1.5 * s * DPR, 0, 0, 6.283); x.fill(); c._w = w / DPR; c._h = h / DPR; m.set(s, c); }
+  return c;
 }
+// 쌀알 그리기: 미리 그린 쌀알을 회전해서 찍기만 함 (매번 도형을 새로 그리지 않음)
+function grain(x, y, rot, a, col, s = 1) {
+  if (a < 0.015 || y < -12 || y > H + 12 || x < -12 || x > W + 12) return; // 화면 밖·안 보이는 쌀알은 건너뜀
+  const c = grainSprite(col, s), cs = Math.cos(rot) * DPR, sn = Math.sin(rot) * DPR;
+  g.globalAlpha = a; g.setTransform(cs, sn, -sn, cs, x * DPR, y * DPR); g.drawImage(c, -c._w / 2, -c._h / 2, c._w, c._h);
+}
+const gReset = () => { g.setTransform(DPR, 0, 0, DPR, 0, 0); g.globalAlpha = 1; }; // 쌀알을 다 찍은 뒤 한 번만 되돌림
 
 // ---------------- 장면별 배경 일러스트 ----------------
 function drawBackdrop(id, p, t) {
@@ -877,6 +888,7 @@ function draw(now) {
   [...prog.children].forEach((b, i) => b.classList.toggle('on', i <= cur));
   prog.children[cur].querySelector('i').style.width = Math.round(p * 100) + '%';
 
+  gReset();
   if (!state.ar) { g.fillStyle = id === 'mine' ? '#020202' : '#050505'; g.fillRect(0, 0, W, H); }
   g.globalAlpha = mobile ? state.bdK : 1 - Math.max(0.97 * state.readK, 0.95 * state.openK); if (g.globalAlpha > 0.01) { g.save(); if (mobile && state.offY) g.translate(0, state.offY); if (mobile && (id === 'life' || id === 'hunger' || id === 'erased')) drawMobBackdrop(id, t); else drawBackdrop(id, pp, t); g.restore(); } g.globalAlpha = 1; // 읽는 동안 장면 그림은 뒤로 물러남
   const wander = TOUCH && !ptr.in; // 터치: 누르지 않을 땐 손전등이 천천히 바닥을 훑음
@@ -938,7 +950,8 @@ function draw(now) {
     if (al < 0.01) continue;
     const k = 0.4 + R1[i], jx = sh ? (Math.random() - 0.5) * sh * 16 : 0, jy = sh ? (Math.random() - 0.5) * sh * 16 : 0;
     grain(X[i] + ox * k + jx, Y[i] + oy * k + jy, ROT[i] + jx * 0.1, Math.min(1, al), COLORS[C[i]], i === 0 && id === 'prologue' ? 3 : 1);
-  }
+  }  gReset();
+
   if (id === 'prologue' && !mobile) { // 첫 쌀알의 빛
     const hg = g.createRadialGradient(X[0], Y[0], 0, X[0], Y[0], 120); hg.addColorStop(0, 'rgba(255,240,210,.22)'); hg.addColorStop(1, 'rgba(255,240,210,0)'); g.fillStyle = hg; g.fillRect(X[0] - 120, Y[0] - 120, 240, 240);
   }
@@ -947,10 +960,11 @@ function draw(now) {
   if (id === 'light') state.lamps.forEach((l0) => { l0.y -= l0.v * (1 + sensor.blow * 7 + (IS_MOBILE && sensor.on ? Math.max(0, sensor.tiltY - 0.35) * 6 : 0)); l0.x += Math.sin(t + l0.ph) * 0.3; const l = { x: l0.x + (l0.ar ? ax : 0), y: l0.y + (l0.ar ? ay : 0) }; const r = 10 + Math.sin(t * 3 + l0.ph) * 2; const lg = g.createRadialGradient(l.x, l.y, 0, l.x, l.y, r * 2.4); lg.addColorStop(0, 'rgba(255,240,205,.95)'); lg.addColorStop(1, 'rgba(255,214,150,0)'); g.fillStyle = lg; g.beginPath(); g.arc(l.x, l.y, r * 2.4, 0, 6.283); g.fill(); if (l0.y < -40) l0.y = H + 40; });
   if (state.ar && id !== 'light') stopAR();
   // 밥상: 위에서 쏟아지는 쌀 줄기
-  if (id === 'life' && state.pour >= 0) { const q = bowlPos(state.pour), sx = CX, sy = CY - R * 1.35; for (let k = 0; k < 26; k++) { const u = ((t * 1.6 + k / 26) % 1), x = lerp(sx, q.x, u) + Math.sin(k * 7.1) * 5, y = lerp(sy, q.y - 6, u * u); grain(x, y, k, 0.9, WARM, 1); } const gl = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, 46); gl.addColorStop(0, 'rgba(255,214,150,.35)'); gl.addColorStop(1, 'rgba(255,214,150,0)'); g.fillStyle = gl; g.fillRect(q.x - 46, q.y - 46, 92, 92); }
+  if (id === 'life' && state.pour >= 0) { const q = bowlPos(state.pour), sx = CX, sy = CY - R * 1.35; for (let k = 0; k < 26; k++) { const u = ((t * 1.6 + k / 26) % 1), x = lerp(sx, q.x, u) + Math.sin(k * 7.1) * 5, y = lerp(sy, q.y - 6, u * u); grain(x, y, k, 0.9, WARM, 1); } gReset(); const gl = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, 46); gl.addColorStop(0, 'rgba(255,214,150,.35)'); gl.addColorStop(1, 'rgba(255,214,150,0)'); g.fillStyle = gl; g.fillRect(q.x - 46, q.y - 46, 92, 92); }
   if (id === 'life' && state.bowls.every((v) => v >= 1)) BOWLS.forEach((b, k) => { const q = bowlPos(k); g.strokeStyle = `rgba(255,214,150,${0.45 + 0.25 * Math.sin(t * 2 + k)})`; g.lineWidth = 2; g.beginPath(); g.ellipse(q.x, q.y, 30, 16, 0, 0, 6.283); g.stroke(); g.lineWidth = 1; g.fillStyle = 'rgba(255,248,230,.8)'; g.font = '12px Pretendard, sans-serif'; g.textAlign = 'center'; g.fillText(UI.family[k], q.x, q.y + 32); });
   // 쌀독에서 튀어 오르는 쌀알
   for (let k = fly.length - 1; k >= 0; k--) { const f = fly[k]; f.vy += 0.42; f.x += f.vx; f.y += f.vy; f.r += 0.2; f.t += dt; grain(f.x, f.y, f.r, Math.max(0, 1 - f.t / 1.4), RICE, 1.3); if (f.t > 1.4 || id !== 'hunger') fly.splice(k, 1); }
+  gReset();
   // 쌀: 몸을 돈 만큼 둘레에 고리가 차오름
   if (id === 'demand' && (state.turned || 0) > 2) { const a = Math.min(1, state.turned / 360); g.strokeStyle = 'rgba(255,214,150,.6)'; g.lineWidth = 3; g.beginPath(); g.arc(CX, CY, R * 1.08, -Math.PI / 2, -Math.PI / 2 + a * 6.283); g.stroke(); g.lineWidth = 1; }
   if (id === 'hunger' && !hold && state.hold > 0.05) { g.strokeStyle = `rgba(255,248,230,${0.5 * state.hold})`; g.beginPath(); g.arc(ptr.x, ptr.y, 26 + state.hold * 10, -Math.PI / 2, -Math.PI / 2 + state.hold * 6.283); g.stroke(); }
