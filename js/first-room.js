@@ -72,6 +72,10 @@ const WORDS = {
   '꾹 누르거나, 폰을 엎어 두기': ['Press and hold, or lay your phone face down', '按住，或把手机朝下放', '長押しするか、スマホを伏せる'],
   '놓아 주는 중…': ['Letting go…', '正在放下…', '手放しています…'],
   '어느 별이었는지, 이제 찾을 수 없어요.': ['You can no longer tell which star it was.', '已经找不到是哪一颗星了。', 'どの星だったのか、もう見つけられません。'],
+  '별을 눌러 보세요': ['Tap the star', '点一下那颗星', '星を押してみてください'],
+  '별을 눌러 보세요 · 기울이면 하늘이 움직여요': ['Tap the star · tilt to move the sky', '点一下那颗星 · 倾斜，天空会移动', '星を押してみてください · 傾けると空が動きます'],
+  '오늘의 별자리': ["Today's constellation", '今天的星座', '今日の星座'],
+  '여기 있어요': ['Here it is', '在这里', 'ここにあります'],
   '지금, 그 고민의 무게는 얼마인가요?': ['Right now, how heavy is that worry?', '现在，这个烦恼有多重？', 'いま、その悩みの重さはどれくらいですか？'],
   '들어올 때 {a} → 지금 {b}': ['When you came in {a} → now {b}', '进来时 {a} → 现在 {b}', '入ったとき {a} → いま {b}'],
   '지금 {b}': ['Now {b}', '现在 {b}', 'いま {b}'],
@@ -139,6 +143,11 @@ export function renderers({ esc, paras }) {
       <div class="br-row"><button type="button" class="fr-btn sp-hold">${tr('마시는 동안 꾹 누르기')}</button></div>
       <p class="sp-msg fr-say" aria-live="polite"></p>
     </div></section>`,
+    // 피날레: 손끝에 적은 고민이 밤하늘의 별 하나로 (별자리로 이어짐)
+    finale: (b) => `<section class="b-finale"><div class="fn-sticky"><canvas class="fn-cv" aria-hidden="true"></canvas>
+      <div class="fn-text">${b.title ? `<h2>${esc(b.title)}</h2>` : ''}${paras(b.body)}</div>
+      <p class="fn-hint">${tr(IS_MOBILE ? '별을 눌러 보세요 · 기울이면 하늘이 움직여요' : '별을 눌러 보세요')}</p>
+    </div></section>`,
     release: (b) => `<section class="b-release"><canvas class="rl-cv" aria-hidden="true"></canvas>
       <div class="rl-inner">${head(b)}
         <button type="button" class="fr-btn rl-hold"><i></i><span>${tr(IS_MOBILE ? '꾹 누르거나, 폰을 엎어 두기' : '꾹 눌러 놓아 주기')}</span></button>
@@ -152,7 +161,7 @@ export function renderers({ esc, paras }) {
 
 export function setup() {
   fillWords();
-  setupWorry(); setupBreath(); setupZoom(); setupSip(); setupRelease();
+  setupWorry(); setupBreath(); setupZoom(); setupSip(); setupRelease(); setupFinale();
 }
 
 // 길게 누르기 공용: 버튼을 누르고 있는 동안 onTick(초), 떼면 onEnd(초). 스페이스·엔터 꾹도 됨
@@ -485,5 +494,76 @@ function setupRelease() {
       cmp.innerHTML = `<b>${line}</b><br />${say}`;
       cmp.classList.remove('in'); requestAnimationFrame(() => cmp.classList.add('in'));
     }));
+  });
+}
+
+// ---------- 피날레: 당신의 별 ----------
+function setupFinale() {
+  document.querySelectorAll('.b-finale').forEach((sec) => {
+    const cv = sec.querySelector('.fn-cv'), g = cv.getContext('2d'), text = sec.querySelector('.fn-text'), hint = sec.querySelector('.fn-hint');
+    const dpr = Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2);
+    let w = 0, h = 0, visible = false, tap = 0, dragX = 0, dragY = 0;
+    const R = rng(23), N = IS_MOBILE ? 1100 : 1800;
+    const stars = Array.from({ length: N }, () => ({ x: R() * 1.3 - 0.15, y: R() * 1.3 - 0.15, z: 0.2 + R() * 0.8, b: 0.15 + R() * 0.75, s: R() < 0.05 ? 1.9 : 1.1, ph: R() * 6.283 }));
+    const ME = { x: 0.6, y: 0.36, z: 0.7 };
+    // 고민 별 둘레의 별 다섯 개로 작은 별자리
+    let near = [], chain = [];
+    const pick = () => { // 화면 비율에 맞춰 다섯 방향에서 하나씩, 조금 떨어진 별로 작은 별자리
+      const m = Math.min(w, h), r0 = m * 0.16, r1 = m * 0.34, rm = m * 0.24;
+      near.forEach((q) => { q.b = q.b0; q.s = q.s0; });
+      near = [0, 1, 2, 3, 4].map((k) => {
+        const a0 = k * 1.2566 - 1.2, cand = stars.filter((q) => { const dx = (q.x - ME.x) * w, dy = (q.y - ME.y) * h, d = Math.hypot(dx, dy), da = Math.abs(((Math.atan2(dy, dx) - a0) % 6.283 + 9.425) % 6.283 - 3.1416); q._d = d; return d > r0 && d < r1 && da < 0.45; });
+        return cand.sort((x, y) => Math.abs(x._d - rm) - Math.abs(y._d - rm))[0];
+      }).filter(Boolean);
+      near.forEach((q) => { q.b0 = q.b0 ?? q.b; q.s0 = q.s0 ?? q.s; q.b = Math.max(q.b, 0.8); q.s = 1.7; });
+      chain = near.length > 2 ? [...near, near[0]] : [];
+    };
+    const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size(); pick(); addEventListener('resize', () => { size(); pick(); });
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) requestAnimationFrame(draw); }).observe(sec);
+    const progress = () => { const r = sec.getBoundingClientRect(); return clamp(-r.top / Math.max(1, r.height - innerHeight), 0, 1); };
+    const pos = (q) => { const ox = (IS_MOBILE && sensor.on ? sensor.tiltX * 30 : 0) + dragX, oy = (IS_MOBILE && sensor.on ? sensor.tiltY * 30 : 0) + dragY; return [q.x * w + ox * q.z, q.y * h + oy * q.z]; };
+    let mx = -1, my = -1, said = false;
+    sec.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; if (!IS_MOBILE) { dragX = (mx / w - 0.5) * -24; dragY = (my / h - 0.5) * -24; } });
+    sec.addEventListener('pointerdown', (e) => {
+      const r = cv.getBoundingClientRect(), [sx, sy] = pos(ME);
+      if (Math.hypot(e.clientX - r.left - sx, e.clientY - r.top - sy) < 60) {
+        wake(); tap = performance.now(); hint.classList.add('hide');
+        tone(784, { dur: 4, vol: 0.04 }); tone(1175, { dur: 3.5, vol: 0.025 }); setTimeout(() => tone(1568, { dur: 4, vol: 0.02 }), 260);
+        if (IS_MOBILE) sensor.vibrate([20, 60, 10]);
+      }
+    });
+    function draw(now) {
+      if (!visible) return;
+      const p = progress(), t = now / 1000;
+      g.fillStyle = '#02030a'; g.fillRect(0, 0, w, h);
+      const sky = clamp(p * 4, 0, 1); // 별이 먼저 돋고
+      for (const q of stars) { const [x, y] = pos(q); if (x < -2 || x > w + 2 || y < -2 || y > h + 2) continue; g.globalAlpha = sky * q.b * (0.75 + Math.sin(t * 1.3 + q.ph) * 0.25); g.fillStyle = '#eef1ff'; g.fillRect(x, y, q.s, q.s); }
+      g.globalAlpha = 1;
+      const me = clamp((p - 0.15) * 4, 0, 1), line = clamp((p - 0.35) * 3, 0, 1); // 그다음 내 별, 별자리
+      const [sx, sy] = pos(ME);
+      if (line > 0 && chain.length > 3) {
+        g.strokeStyle = 'rgba(255,226,190,.35)'; g.lineWidth = 1; g.beginPath();
+        const segs = chain.length - 1, upto = line * segs;
+        for (let i = 0; i < segs && i < upto; i++) { const [ax, ay] = pos(chain[i]), [bx, by] = pos(chain[i + 1]), f = Math.min(1, upto - i); g.moveTo(ax, ay); g.lineTo(ax + (bx - ax) * f, ay + (by - ay) * f); }
+        g.stroke();
+        if (line >= 1) { g.globalAlpha = 0.55; g.fillStyle = '#ffe2c2'; g.font = '500 11px Pretendard, sans-serif'; g.textAlign = 'center'; const low = near.reduce((m, q) => (q.y > m.y ? q : m), near[0]), [lx, ly] = pos(low); g.fillText(tr('오늘의 별자리'), lx, ly + 22); g.globalAlpha = 1; }
+      }
+      if (me > 0) {
+        const since = tap ? (now - tap) / 1000 : 9, burst = Math.max(0, 1 - since / 2.2);
+        const pulse = 0.5 + Math.sin(t * 1.8) * 0.5, gr = (14 + pulse * 6 + burst * 50) * me;
+        const gl = g.createRadialGradient(sx, sy, 0, sx, sy, gr); gl.addColorStop(0, `rgba(255,236,210,${0.95 * me})`); gl.addColorStop(0.25, `rgba(255,214,170,${0.45 * me})`); gl.addColorStop(1, 'rgba(255,214,170,0)');
+        g.fillStyle = gl; g.beginPath(); g.arc(sx, sy, gr, 0, 6.283); g.fill();
+        g.strokeStyle = `rgba(255,236,210,${0.5 * me})`; g.lineWidth = 1; g.beginPath(); g.moveTo(sx - 9 - burst * 20, sy); g.lineTo(sx + 9 + burst * 20, sy); g.moveTo(sx, sy - 9 - burst * 20); g.lineTo(sx, sy + 9 + burst * 20); g.stroke();
+        if (burst > 0) { g.strokeStyle = `rgba(255,236,210,${burst * 0.5})`; g.beginPath(); g.arc(sx, sy, 20 + (1 - burst) * 90, 0, 6.283); g.stroke(); }
+        // 별 옆에 고민 글자 (누르면 잠깐 밝게)
+        g.globalAlpha = me * (0.75 + burst * 0.25); g.fillStyle = '#fff4e6'; g.font = `600 ${15 + burst * 3}px Pretendard, sans-serif`; g.textAlign = 'center'; g.fillText(worryText(), sx, sy - 28 - burst * 10);
+        g.globalAlpha = me * 0.6; g.font = '500 11px Pretendard, sans-serif'; g.fillStyle = '#ffe2c2'; g.fillText(tr('여기 있어요'), sx, sy + 34); g.globalAlpha = 1;
+        if (me >= 1 && !said) { said = true; if (IS_MOBILE) sensor.vibrate(12); tone(659, { dur: 5, vol: 0.03 }); }
+      }
+      text.classList.toggle('in', p > 0.5);
+      hint.classList.toggle('in', p > 0.25 && !tap);
+      requestAnimationFrame(draw);
+    }
   });
 }

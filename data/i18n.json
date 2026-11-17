@@ -1054,6 +1054,23 @@
     "body": "そろそろ、あなたの部屋へ戻る時間です。悩みはまだそこにあるかもしれません。でも、もうあなたは知っています。少し遠くから見れば、それは見えないほど小さいということを。\n悩みが小さくなったのではなく、あなたが見た世界が大きくなったのです。",
     "caption": ""
    }
+  },
+  "g001:18": {
+   "en": {
+    "title": "Your star",
+    "body": "Look up again, and the star is there. Small, but clearly shining.\nToday's worry is now one star in the night sky.",
+    "caption": ""
+   },
+   "zh": {
+    "title": "你的星",
+    "body": "再抬头看，那颗星就在那里。很小，却清楚地亮着。\n今天的烦恼，如今也是夜空中的一颗星。",
+    "caption": ""
+   },
+   "ja": {
+    "title": "あなたの星",
+    "body": "もう一度見上げると、その星はそこにあります。小さくても、たしかに光りながら。\n今日の悩みも、いまは夜空の星のひとつです。",
+    "caption": ""
+   }
   }
  }
 }

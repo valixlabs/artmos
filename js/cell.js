@@ -352,7 +352,7 @@ async function renderFlow(g, blocks) {
   document.title = `${g.title} — ARTMOS`;
   document.documentElement.style.setProperty('--accent', g.color);
   document.getElementById('cell-label').textContent = g.title;
-  const FR = await import('./first-room.js?v=1');
+  const FR = await import('./first-room.js?v=2');
   Object.assign(R, FR.renderers({ esc, paras }));
   const c = { flow: true, id: g.id, code: g.code, title: g.title, subtitle: g.subtitle, artist: g.artist, period: g.period, color: g.color };
   let bs = blocks.filter((b) => b.type !== 'end');

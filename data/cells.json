@@ -1077,6 +1077,18 @@
    "bg": "",
    "align": "center",
    "extra": true
+  },
+  {
+   "cell_id": "g001",
+   "order": 18,
+   "type": "finale",
+   "title": "당신의 별",
+   "body": "다시 올려다보면, 그 별은 거기 있습니다. 작지만, 분명히 빛나면서.\n오늘의 고민도 이제 밤하늘의 별 하나입니다.",
+   "media": "",
+   "caption": "",
+   "bg": "",
+   "align": "",
+   "extra": true
   }
  ]
 }
