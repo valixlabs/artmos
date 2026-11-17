@@ -672,7 +672,7 @@ function onAction(e) {
   if ((b = q('[data-acct]'))) {
     const k = b.dataset.acct;
     if (k === 'login') showOB('login');
-    else if (k === 'logout') AU.signOut().then(() => { toast(AU.at('loggedOut')); go('my', true); });
+    else if (k === 'logout') AU.signOut().then(() => { toast(AU.at('loggedOut')); showOB('login'); }); // 로그아웃하면 로그인 화면으로
     else if (k === 'delete') sheet.open(AU.deleteConfirmHTML(), 'confirm');
     else if (k === 'delete-go') { b.disabled = true; AU.deleteAccount().then(() => { sheet.close(); store.set('valix-onboarded', false); store.set('valix-me', null); toast(AU.at('deleted')); showOB('login'); }).catch(() => { b.disabled = false; toast(AU.at('eNet')); }); }
     return true;
@@ -1004,6 +1004,8 @@ function firstValidData(promises) {
   if (qs.has('login') && !user) showOB('login'); // 다른 페이지에서 '로그인하러 가기'로 온 경우
   else if (user && qs.get('next') && !(await AU.needsConsent()) && returnAfterLogin()) return; // 이미 로그인돼 있으면 바로 돌아감
   else if (user && await AU.needsConsent()) showOB('agree'); // 동의 없이 들어온 소셜 계정(마이 탭에서 로그인한 경우 포함)
+  // 로그인 안 했으면 늘 로그인 화면부터(2026-11-17 소유자). '로그인 없이 둘러보기'는 이 화면을 연 동안만 — 나갔다 오면 다시 로그인 화면
+  else if (!user && AU.AUTH_ON) showOB('login');
   else if (!store.get('valix-onboarded', false)) { if (user) afterLogin(); else showOB('login'); } else go('home');
   AU.onAuth(() => { if (tab === 'my' && !view.hidden) go('my', true); });
   if (location.hash === '#orders') { history.replaceState(null, '', location.pathname + location.search); go('my'); SHOP.loadShop().then(() => SHOP.openOrders(sheet)); } // 결제 후 돌아옴
