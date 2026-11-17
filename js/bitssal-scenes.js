@@ -11,7 +11,7 @@ const T = {
   ko: {
     titles: { prologue: '한 톨', work: '작품', life: '밥상', hunger: '쌀독', demand: '쌀', street: '밤', spread: '번짐', erased: '낮은 목소리', boundary: '1950', mine: '한 그릇 더', truth: '7월', share: '주먹밥', light: '빛', records: "기록", archive: '아카이브' },
     heads: { prologue: ['한 그릇 더'], life: ['열 식구의 밥상'], hunger: ['아홉, 열'], demand: ['쌀 달라고 하러 간다'], street: ['등잔을 켜지 않은 밤'], spread: ['대구 일'], erased: ['낮아진 목소리'], boundary: ['저녁밥 해 놔라'], mine: ['돌아오지 않은 저녁'], truth: ['7월의 밥 한 그릇', '127명'], share: ['서로를 살리는 밥'], light: ['한 톨만큼만'] },
-    chap: { life: '01', hunger: '02', demand: '03', street: '04', spread: '05', erased: '06', boundary: '07', mine: '08', truth: '09', share: '10', light: '11' },
+    chap: { life: '01', hunger: '02', demand: '03', street: '04', spread: '05', erased: '06', boundary: '07', mine: '08', truth: '09', light: '10' },
     p0: (touch) => `<p class="kicker">A-003 · 진시영 · 김동선 《빛쌀》</p><h1>빛쌀</h1><p class="lead">한 톨의 쌀알에 얽힌 이야기<br>아흔 살 순이가 대구에서 겪은 일</p><p class="hint">${touch ? '천천히 아래로 내려 보세요. 이야기가 시작됩니다.' : '어둠 속 쌀알에 커서를 가져가 눌러 보세요. 이야기가 시작됩니다.'}</p>`,
     part1: "PART 1 · 순이의 이야기",
     part2: "<p class=\"kicker\">PART 2 · 작품과 기록</p><h2>이야기가 시작된 곳</h2><p>여기까지가 순이의 이야기입니다. 이제 이 이야기가 흘러나온 유리 조형물 《빛쌀》과, 이야기 뒤에 있는 실제 기록을 봅니다.</p>",
@@ -248,7 +248,7 @@ export function buildScenes({ lang, IS_MOBILE: M, TOUCH, PH, VD, photo, vid, SRC
     { id: 'boundary', part: 1, h: 240, cards: [open('boundary'), { at: 0.04, html: L.bTitle }, story('boundary', 0, 0.26), { at: 0.7, kind: 'choice', html: L.choice[0], summary: L.choice[1] }] },
     { id: 'mine', part: 1, h: 400, cards: [open('mine'), story('mine', 0, 0.05), ...(M ? [] : [{ at: 0.4, play: true, html: L.ia.mine(M, TOUCH) }]), { at: 0.86, html: L.mineEnd + (M ? `<p class="try center">${L.mob.bow}</p>` : '') }] },
     { id: 'truth', part: 1, h: 340, cards: [open('truth'), story('truth', 0, 0.04), ia('truth', 0.36), story('truth', 1, 0.64)] },
-    { id: 'share', part: 1, h: 240, cards: [open('share'), story('share', 0, 0.05), ...(M ? [] : [ia('share', 0.48)]), { at: 0.76, html: L.quote }] },
+    // 'share'(1980 광주 주먹밥) 장은 뺌 — 2026-11-18 소유자 결정. 글·체험 문구는 파일에 남겨 둠
     { id: 'light', part: 1, h: 340, cards: [open('light'), story('light', 0, 0.04), { at: 0.3, play: true, html: L.ia.light() }, { at: 0.55, kind: 'input' }, { at: 0.86, html: L.end }] },
     { id: 'work', part: 2, h: 420, cards: [{ at: 0.03, html: L.part2 }, { at: 0.16, html: L.work0 }, ...(M ? [{ at: 0.2, play: true, html: `<p class="try">${L.workTilt}</p>` }] : []), { at: 0.3, kind: 'carousel', items: L.workItems.map(([t, d], k) => ({ id: PH[k], t, d })) }, { at: 0.52, ...vid(VD.main, L.workVid[1], L.workVid[0]) }, V('acc', VD.acc, 0.66), V('dark', VD.dark, 0.78), V('light', VD.light, 0.9)] },
     { id: 'records', part: 2, h: 420, cards: [{ at: 0.03, html: L.recIntro }, ...['hunger', 'demand', 'street', 'spread', 'erased', 'mine', 'truth'].map((k, i) => { const r = L.rec[k]; return { at: 0.14 + i * 0.11, kind: 'record', title: r[0], html: `<p>${r[1]}</p>`, src: ['mine', 'truth'].includes(k) ? SRC2 : SRC1 }; }), { at: 0.94, html: `<p class="note">${L.recNote}</p>` }] },
