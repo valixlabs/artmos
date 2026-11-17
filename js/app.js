@@ -457,8 +457,11 @@ function allLinks() {
 }
 const isNewCell = (c) => { const s = startOf(c), n = new Date(); return isOpen(c) && s.getFullYear() === n.getFullYear() && s.getMonth() === n.getMonth(); };
 // 전시 포스터·로고 (시트에 poster·logo 칸이 있으면 그게 우선)
-const POSTERS = { c005: { poster: 'assets/posters/c005-poster.webp', thumb: 'assets/posters/c005-poster-s.webp', logo: 'assets/posters/c005-logo.webp' } };
-const artOf = (c) => { const d = POSTERS[c.id] || {}; return { poster: c.poster || d.poster || '', thumb: c.poster || d.thumb || d.poster || '', logo: c.logo || d.logo || '' }; };
+const POSTERS = {
+  c005: { poster: 'assets/posters/c005-poster.webp', thumb: 'assets/posters/c005-poster-s.webp', logo: 'assets/posters/c005-logo.webp' },
+  g001: { poster: 'assets/posters/g001-poster.webp', thumb: 'assets/posters/g001-poster-s.webp', logo: 'assets/posters/g001-logo.webp', by: 'ARTMOS' },
+};
+const artOf = (c) => { const d = POSTERS[c.id] || {}; return { poster: c.poster || d.poster || '', thumb: c.poster || d.thumb || d.poster || '', logo: c.logo || d.logo || '', by: d.by || c.artist || '' }; };
 const tvPoster = (c, extra = '') => `<span class="tv-poster${isOpen(c) ? '' : ' soon'}${artOf(c).thumb ? ' has-art' : ''}">${artOf(c).thumb ? `<img class="tv-art" src="${esc(artOf(c).thumb)}" loading="lazy" decoding="async" alt="" draggable="false">` : `<img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false">`}${isNewCell(c) ? '<em class="tv-new">NEW</em>' : !isOpen(c) ? `<em class="tv-new soon">${esc(ht('공개 예정'))}</em>` : ''}<span class="tv-pt"><small>${esc(c.code || '')}</small><b>${esc(name(c))}</b></span>${extra}</span>`;
 const rowH = (title, more) => `<div class="tv-rh"><h2>${esc(title)}</h2>${more ? `<button ${more}>${esc(ht('더보기'))}</button>` : ''}</div>`;
 const ytCard = (l) => { const id = ytId(l.url); return `<button class="tv-yt" data-yt="${id}" data-ytt="${esc(l.title)}"><span class="tv-yt-th"><img loading="lazy" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" decoding="async"><i></i></span><b>${esc(l.title)}</b><small>${esc(l.source || '')}</small></button>`; };
@@ -495,7 +498,7 @@ function homeHTML() {
       <button class="tv-hcard tv-hposter" data-detail="${esc(c.id)}" aria-label="${esc(name(c))}">
         <img class="tv-hp-img" src="${esc(A.poster)}" decoding="async" alt="" draggable="false">
         <span class="tv-hp-shade"></span>
-        <span class="tv-hp-copy">${A.logo ? `<img class="tv-hp-logo" src="${esc(A.logo)}" decoding="async" alt="${esc(name(c))}" draggable="false">` : `<b class="tv-hp-title">${esc(name(c))}</b>`}<i>${esc(playOf(c).q || c.subtitle || '')}</i>${c.artist ? `<small class="tv-hp-by">${esc(c.artist)}</small>` : ''}</span>
+        <span class="tv-hp-copy">${A.logo ? `<img class="tv-hp-logo" src="${esc(A.logo)}" decoding="async" alt="${esc(name(c))}" draggable="false">` : `<b class="tv-hp-title">${esc(name(c))}</b>`}<i>${esc(playOf(c).q || c.subtitle || '')}</i>${A.by ? `<small class="tv-hp-by">${esc(A.by)}</small>` : ''}</span>
       </button>` : `
       <button class="tv-hcard" data-detail="${esc(c.id)}" style="--c:${esc(c.color || '#b7b7b7')}">
         <span class="tv-hstage"><img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false"></span>
