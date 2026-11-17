@@ -4,7 +4,7 @@
 // 적은 고민은 이 화면의 메모리에만 있고, 저장·전송하지 않습니다.
 import { IS_MOBILE, sensor, startMic } from './sensors.js?v=4';
 import { DICT } from './i18n-dict.js?v=6';
-import { tr } from './i18n.js?v=6';
+import { tr } from './i18n.js?v=7';
 
 // 이 파일의 화면 문구 번역 (한국어 = 키) [en, zh, ja]
 const WORDS = {

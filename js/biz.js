@@ -1,6 +1,7 @@
+import { web } from './web-base.js?v=1';
 // 사업자 정보 표시(전자상거래법·카카오 비즈 앱 심사용) — 앱 마이·로그인 화면, 웹 컬렉트·주문 페이지 아래에 공통으로.
 // 값은 사업자등록증과 같게. 통신판매업 신고번호·고객센터 연락처는 생기면 여기에 채움(빈 값은 표시하지 않음).
-import { lang } from './i18n.js?v=6';
+import { lang } from './i18n.js?v=7';
 
 export const BIZ = {
   name: '주식회사 밸릭스랩', nameEn: 'VALIX LAB',
@@ -23,6 +24,6 @@ export function bizHTML(base = '') {
     BIZ.phone && [ko ? '고객센터' : 'Support', BIZ.phone],
   ].filter(Boolean);
   const links = [['terms.html', ko ? '이용약관' : 'Terms'], ['privacy.html', ko ? '개인정보처리방침' : 'Privacy'], ['refund.html', ko ? '환불 정책' : 'Refunds']];
-  return `<footer class="biz-info"><p class="biz-links">${links.map(([h, l]) => `<a href="${base}${h}" target="_blank" rel="noopener">${esc(l)}</a>`).join('<span>·</span>')}</p>
+  return `<footer class="biz-info"><p class="biz-links">${links.map(([h, l]) => `<a href="${base ? base + h : web(h)}" target="_blank" rel="noopener">${esc(l)}</a>`).join('<span>·</span>')}</p>
     <p class="biz-rows">${rows.map(([k, v]) => `<span><b>${esc(k)}</b> ${esc(v)}</span>`).join('')}</p><p class="biz-copy">© ${new Date().getFullYear()} ${esc(BIZ.nameEn)}. ARTMOS</p></footer>`;
 }

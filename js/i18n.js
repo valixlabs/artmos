@@ -16,6 +16,23 @@ export const lang = (() => {
   const n = (navigator.language || 'ko').slice(0, 2).toLowerCase();
   return ok(n) ? n : 'ko';
 })();
+// 앱 틀(껍데기 안)에서 전시를 열 때: 앱과 전시의 기기 저장소가 따로라서 앱이 소리·항해명을 주소로 넘겨줌(?app=1&snd=off&me=…)
+(() => {
+  try {
+    const P = new URLSearchParams(location.search);
+    if (P.get('app') === '1') sessionStorage.setItem('artmos-in-app', '1');
+    const s = P.get('snd'); if (P.get('app') === '1') localStorage.setItem('xpace-sound', s === 'off' ? 'off' : 'on');
+    const m = P.get('me'); if (m) localStorage.setItem('valix-me', JSON.stringify({ nick: m.slice(0, 20) }));
+    // 앱 안 전시에서 홈(index.html·app.html)으로 가는 링크는 페이지를 옮기지 않고 앱에 '전시 닫기'를 알림
+    if (window.parent !== window && sessionStorage.getItem('artmos-in-app') === '1') {
+      document.addEventListener('click', (e) => {
+        const a = e.target && e.target.closest && e.target.closest('a[href]'); if (!a || a.target === '_blank') return;
+        const u = new URL(a.href, location.href);
+        if (u.origin === location.origin && /\/(?:index\.html|app\.html)?$/.test(u.pathname)) { e.preventDefault(); parent.postMessage({ type: 'artmos:close-exhibit' }, '*'); }
+      }, true);
+    }
+  } catch (e) {}
+})();
 document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
 document.documentElement.dataset.lang = lang;
 

@@ -1,5 +1,6 @@
-import { CONFIG } from './config.js?v=34';
-import { lang, tr } from './i18n.js?v=6';
+import { CONFIG } from './config.js?v=35';
+import { lang, tr } from './i18n.js?v=7';
+import { web } from './web-base.js?v=1';
 
 // 응답 본문을 읽는 동안에도 제한 시간을 유지 (느린 연결에서 시작이 멈추지 않게)
 async function fetchBody(url, type, timeout, label = 'data') {
@@ -33,7 +34,7 @@ export async function fetchSheet(id, tab) {
 let fallbackPromise, translationsPromise;
 function fetchFallback() {
   if (!fallbackPromise) {
-    fallbackPromise = fetchBody(CONFIG.fallbackUrl, 'json', 5000).then((fb) => {
+    fallbackPromise = fetchBody(web(CONFIG.fallbackUrl), 'json', 5000).then((fb) => {
       if (!Array.isArray(fb.cells) || !Array.isArray(fb.blocks)) throw new Error('invalid fallback');
       return fb;
     }).catch((e) => { fallbackPromise = undefined; throw e; });
@@ -43,7 +44,7 @@ function fetchFallback() {
 function fetchTranslations() {
   if (lang === 'ko') return Promise.resolve({});
   if (!translationsPromise) {
-    translationsPromise = fetchBody('data/i18n.json?v=2', 'json', 5000).catch((e) => {
+    translationsPromise = fetchBody(web('data/i18n.json?v=2'), 'json', 5000).catch((e) => {
       translationsPromise = undefined;
       throw e;
     });
@@ -152,7 +153,7 @@ export function imageUrl(v, w = 2000) {
   if (!v) return '';
   const id = driveId(v);
   if (id) return `https://lh3.googleusercontent.com/d/${id}=w${w}`;
-  return v;
+  return web(v);
 }
 export function videoEmbed(v) {
   if (!v) return '';

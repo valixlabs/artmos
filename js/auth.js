@@ -2,8 +2,9 @@
 // config.auth.supabaseUrl · supabaseAnonKey 를 채우면 실제로 동작. 비어 있으면 '곧 열려요' 안내 후 둘러보기.
 // ?authtest=1 → 이 기기에서만 로그인·가입을 흉내 냄(실제 계정 아님). 설정·순서: docs/auth/README.md
 // 비밀번호는 이 코드에서 저장하지 않음(Supabase가 암호화해 보관). 개인정보 동의 기록은 서버 profiles 표에.
-import { CONFIG } from './config.js?v=34';
-import { lang } from './i18n.js?v=6';
+import { CONFIG } from './config.js?v=35';
+import { lang } from './i18n.js?v=7';
+import { web, IN_SHELL } from './web-base.js?v=1';
 
 const A = CONFIG.auth || {};
 export const AUTH_TEST = new URLSearchParams(location.search).has('authtest') || (() => { try { return sessionStorage.getItem('artmos-authtest') === '1'; } catch (e) { return false; } })();
@@ -57,7 +58,7 @@ async function supa() {
   sb.auth.onAuthStateChange(() => listeners.forEach((f) => f()));
   return sb;
 }
-const back = () => A.redirectTo || (location.origin + location.pathname); // 로그인 뒤 돌아올 주소(앱 껍데기는 자체 스킴 사용, docs 참고)
+const back = () => A.redirectTo || (IN_SHELL ? web('app.html') : location.origin + location.pathname); // 로그인 뒤 돌아올 주소. 앱 틀(껍데기 안)에서는 메일 인증·비밀번호 재설정 링크가 웹 앱으로 열림(소셜은 artmos://auth)
 const supaProvider = {
   async user() { const c = await supa(); const { data } = await c.auth.getUser(); const u = data && data.user; return u ? { id: u.id, email: u.email, provider: (u.app_metadata && u.app_metadata.provider) || 'email' } : null; },
   async oauth(p) {
@@ -76,6 +77,16 @@ const supaProvider = {
 };
 const P = AUTH_TEST ? testProvider : supaProvider;
 const listeners = new Set();
+// 앱: 시스템 브라우저에서 소셜 로그인을 마치고 artmos://auth?code=… 로 돌아오면 로그인 완료
+export async function finishDeepLink(url) {
+  if (!AUTH_ON || !/^artmos:\/\/auth/i.test(String(url || ''))) return false;
+  const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser; if (B) B.close().catch(() => {});
+  const u = new URL(String(url).replace(/^artmos:\/\/auth\/?/i, 'https://x/?').replace('?#', '?').replace('#', '&'));
+  const code = u.searchParams.get('code');
+  try { const c = await supa(); if (code) { const { error } = await c.auth.exchangeCodeForSession(code); if (error) throw error; } else if (u.searchParams.get('access_token')) { await c.auth.setSession({ access_token: u.searchParams.get('access_token'), refresh_token: u.searchParams.get('refresh_token') || '' }); } else return false; }
+  catch (e) { return false; }
+  await currentUser(); emit(); return true;
+}
 export const onAuth = (f) => { listeners.add(f); return () => listeners.delete(f); };
 const emit = () => listeners.forEach((f) => f());
 let cached = null;
@@ -151,7 +162,7 @@ export function loginHTML() {
       <button class="link au-browse" data-au="browse">${esc(at('browse'))} ›</button>
     </div>`;
 }
-const agreeRow = (n, k, href) => `<label class="au-chk"><input type="checkbox" name="${n}"><span>${esc(at(k))}</span>${href ? `<a href="${href}" target="_blank" rel="noopener">${esc(at('view'))}</a>` : ''}</label>`;
+const agreeRow = (n, k, href) => `<label class="au-chk"><input type="checkbox" name="${n}"><span>${esc(at(k))}</span>${href ? `<a href="${web(href)}" target="_blank" rel="noopener">${esc(at('view'))}</a>` : ''}</label>`;
 const agreeBox = () => `<div class="au-agree">
         <label class="au-chk au-all"><input type="checkbox" name="all"><span>${esc(at('all'))}</span></label>
         ${agreeRow('a1', 'a1', 'terms.html')}${agreeRow('a2', 'a2', 'privacy.html')}${agreeRow('a3', 'a3')}${agreeRow('a4', 'a4')}

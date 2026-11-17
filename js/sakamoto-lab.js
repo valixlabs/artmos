@@ -5,7 +5,7 @@
 //  silence : 고요 — 폰을 엎어 두거나 버튼을 누르고 10초. 끝나면 한 음(라 A)과 문장
 // 센서 값은 기기 안에서만 쓰고 저장·전송하지 않음
 import { IS_MOBILE, sensor } from './sensors.js?v=4';
-import { lang } from './i18n.js?v=6';
+import { lang } from './i18n.js?v=7';
 
 const W = {
   ko: { start: '눌러서 소리 켜기', drift: '어긋남', resync: '다시 맞추기', synced: '맞춤', quiet: '고요', mute: '추를 누르면 그 소리만 끄고 켤 수 있어요',

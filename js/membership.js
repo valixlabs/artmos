@@ -3,8 +3,9 @@
 // 지금은 CONFIG.paywall.enabled = false 라서 모든 전시가 열려 있고, 멤버십 화면은 '준비 중' 안내만 함.
 // 주소에 ?paytest=1 을 붙이면 이 기기에서만 결제를 흉내 내어 잠금·구매·복원 흐름을 시험할 수 있음(실제 결제 아님).
 // 실제 결제를 붙일 때는 아래 provider 를 서버(Supabase)·RevenueCat·웹 결제 구현으로 바꾸면 됨 → docs/paid/README.md
-import { CONFIG } from './config.js?v=34';
-import { lang } from './i18n.js?v=6';
+import { CONFIG } from './config.js?v=35';
+import { lang } from './i18n.js?v=7';
+import { web } from './web-base.js?v=1';
 
 const PW = CONFIG.paywall || {};
 export const TEST = new URLSearchParams(location.search).has('paytest') || (() => { try { return sessionStorage.getItem('nebula-paytest') === '1'; } catch (e) { return false; } })();
@@ -103,7 +104,7 @@ export function resetTest() { if (provider.reset) { provider.reset(); emit(); } 
 
 // ---------- 화면 조각 ----------
 export const badge = (c) => (ENABLED && c ? `<span class="mb-badge${isPaid(c) ? ' paid' : ''}">${isPaid(c) ? (canView(c) ? '✓ ' : '') + mt('paid') : mt('free')}</span>` : '');
-const legalLinks = () => `<p class="mb-legal">${mt('legal')} ${mt('passLegal')}</p><p class="mb-links"><a href="terms.html?lang=${lang}" target="_blank" rel="noopener">${mt('terms')}</a> · <a href="privacy.html?lang=${lang}" target="_blank" rel="noopener">${mt('privacy')}</a></p>`;
+const legalLinks = () => `<p class="mb-legal">${mt('legal')} ${mt('passLegal')}</p><p class="mb-links"><a href="${web(`terms.html?lang=${lang}`)}" target="_blank" rel="noopener">${mt('terms')}</a> · <a href="${web(`privacy.html?lang=${lang}`)}" target="_blank" rel="noopener">${mt('privacy')}</a></p>`;
 // 멤버십 화면(시트 안에 들어감). cell 을 주면 '이 전시만 구매'도 보여 줌
 export function membershipHTML(cell) {
   const s = state(), plan = (k, sub, hot) => `<button class="mb-plan${hot ? ' hot' : ''}" data-mb-buy="${k}"><span><b>${mt(k)}</b><small>${mt(sub)}</small></span><em>${price(PRODUCTS[k])}</em></button>`;

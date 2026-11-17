@@ -1,9 +1,9 @@
-import { loadData, imageUrl, videoEmbed, esc, paras } from './data.js?v=33';
-import { tr, langSwitcher } from './i18n.js?v=6';
+import { loadData, imageUrl, videoEmbed, esc, paras } from './data.js?v=34';
+import { tr, langSwitcher } from './i18n.js?v=7';
 import { IS_MOBILE, sensor, keepAwake } from './sensors.js?v=4';
 import { videoHTML, mountVideos } from './video.js?v=2';
-import { labRenderers, setupSakamotoLab } from './sakamoto-lab.js?v=2';
-import * as MB from './membership.js?v=12';
+import { labRenderers, setupSakamotoLab } from './sakamoto-lab.js?v=3';
+import * as MB from './membership.js?v=13';
 
 const story = document.getElementById('story');
 const wipe = document.getElementById('wipe');
@@ -234,7 +234,7 @@ langSwitcher(document.querySelector('.topbar'));
 // 모바일: 첫 탭에서 기울기 권한 · 흔들면 화면에 보이는 양자 실험을 관측
 if (IS_MOBILE) {
   document.body.classList.add('is-mobile');
-  import('./cell-mobile.js?v=7');
+  import('./cell-mobile.js?v=8');
   addEventListener('click', function once() { removeEventListener('click', once, true); sensor.enable(); keepAwake(); }, true);
   sensor.onShake(() => {
     const q = [...document.querySelectorAll('.q-stage')].find((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.7 && r.bottom > innerHeight * 0.3; });
@@ -273,7 +273,7 @@ if (IS_MOBILE) {
   story.innerHTML = bs.map((b) => (R[b.type] || R.text)(b, cell, idx, cells)).join('') + (locked ? MB.paywallHTML(cell) : '');
   if (!locked) MB.enter(cell).then(MB.passChip);
   // 이 전시에 연결된 소장 가능 작품이 있으면 끝에 '컬렉트' 안내 (앱 안에서는 컬렉트 탭이 있으니 생략)
-  if (window === window.top) import('./app-shop.js?v=17').then((SHOP) => SHOP.loadShop().then(() => { const end = story.querySelector('.b-end'), html = SHOP.collectBannerHTML(cell.id); if (end && html) end.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만 불러옴(앱 안에서는 받지 않아 가볍게) // 입장권이면 이때 24시간 시작, 남은 시간 표시 (보는 중에 끊지 않음)
+  if (window === window.top) import('./app-shop.js?v=18').then((SHOP) => SHOP.loadShop().then(() => { const end = story.querySelector('.b-end'), html = SHOP.collectBannerHTML(cell.id); if (end && html) end.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만 불러옴(앱 안에서는 받지 않아 가볍게) // 입장권이면 이때 24시간 시작, 남은 시간 표시 (보는 중에 끊지 않음)
   if (locked) story.addEventListener('click', (e) => { MB.handleMembershipClick(e, { notify: (m) => { const el = document.querySelector('#paywall .mb-state'); if (el) el.textContent = m; }, refresh: () => location.reload() }); });
   mountVideos(story);
   setupAll(cell.color);
@@ -352,7 +352,7 @@ async function renderFlow(g, blocks) {
   document.title = `${g.title} — ARTMOS`;
   document.documentElement.style.setProperty('--accent', g.color);
   document.getElementById('cell-label').textContent = g.title;
-  const FR = await import('./first-room.js?v=2');
+  const FR = await import('./first-room.js?v=3');
   Object.assign(R, FR.renderers({ esc, paras }));
   const c = { flow: true, id: g.id, code: g.code, title: g.title, subtitle: g.subtitle, artist: g.artist, period: g.period, color: g.color };
   let bs = blocks.filter((b) => b.type !== 'end');

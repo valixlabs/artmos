@@ -1,8 +1,8 @@
 // ARTMOS 앱 화면 — 시작 화면 → 소개 → 로그인 → 닉네임 → 탭(홈·플레이·컬렉트·마이)
 // 전시 내용은 기존 ARTMOS 페이지(cell.html, bitssal.html)를 같은 주소에서 그대로 불러옵니다.
 // 데이터는 기존 data.js(구글 시트 → 백업 JSON)를 그대로 씁니다. 개인 기록은 기기 안(localStorage)에만 저장합니다.
-import { loadData, loadLocalData, esc } from './data.js?v=33';
-import { lang, LANGS } from './i18n.js?v=6';
+import { loadData, loadLocalData, esc } from './data.js?v=34';
+import { lang, LANGS } from './i18n.js?v=7';
 import { hasRing } from './planets.js?v=4';
 import { planetSrc, planetKey, onPlanet, planetBitmap, warm } from './planet-store.js?v=2';
 import { videoHTML, mountVideos, playVideo, stopVideos } from './video.js?v=2';
@@ -11,13 +11,14 @@ import { createAppSky } from './app-sky.js?v=3';
 import { createAppSheet } from './app-sheet.js?v=2';
 import { createAppLanding } from './app-landing.js?v=5';
 import { createMotionPreference } from './app-preferences.js?v=2';
-import { createAppDiscover } from './app-discover.js?v=3';
+import { createAppDiscover } from './app-discover.js?v=4';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=2';
-import * as MB from './membership.js?v=12';
-import * as SHOP from './app-shop.js?v=17';
-import * as AU from './auth.js?v=12';
-import { bizHTML } from './biz.js?v=1';
+import * as MB from './membership.js?v=13';
+import * as SHOP from './app-shop.js?v=18';
+import * as AU from './auth.js?v=13';
+import { bizHTML } from './biz.js?v=2';
+import { web, IN_SHELL } from './web-base.js?v=1';
 const motionQuery = createMotionPreference();
 let nativeActive = true;
 
@@ -463,7 +464,7 @@ const POSTERS = {
   c005: { poster: 'assets/posters/c005-poster.webp', thumb: 'assets/posters/c005-poster-s.webp', logo: 'assets/posters/c005-logo.webp' },
   g001: { poster: 'assets/posters/g001-poster.webp', thumb: 'assets/posters/g001-poster-s.webp', logo: 'assets/posters/g001-logo.webp', by: 'ARTMOS' },
 };
-const artOf = (c) => { const d = POSTERS[c.id] || {}; return { poster: c.poster || d.poster || '', thumb: c.poster || d.thumb || d.poster || '', logo: c.logo || d.logo || '', by: d.by || c.artist || '' }; };
+const artOf = (c) => { const d = POSTERS[c.id] || {}; return { poster: web(c.poster || d.poster || ''), thumb: web(c.poster || d.thumb || d.poster || ''), logo: web(c.logo || d.logo || ''), by: d.by || c.artist || '' }; }; // 포스터는 웹에서(앱 틀 안에서도)
 const tvPoster = (c, extra = '') => `<span class="tv-poster${isOpen(c) ? '' : ' soon'}${artOf(c).thumb ? ' has-art' : ''}">${artOf(c).thumb ? `<img class="tv-art" src="${esc(artOf(c).thumb)}" loading="lazy" decoding="async" alt="" draggable="false">` : `<img data-pl="${esc(planetKey(c))}" src="${planetSrc(c)}" decoding="async" alt="" draggable="false">`}${isNewCell(c) ? '<em class="tv-new">NEW</em>' : !isOpen(c) ? `<em class="tv-new soon">${esc(ht('공개 예정'))}</em>` : ''}<span class="tv-pt"><small>${esc(c.code || '')}</small><b>${esc(name(c))}</b></span>${extra}</span>`;
 const rowH = (title, more) => `<div class="tv-rh"><h2>${esc(title)}</h2>${more ? `<button ${more}>${esc(ht('더보기'))}</button>` : ''}</div>`;
 const ytCard = (l) => { const id = ytId(l.url); return `<button class="tv-yt" data-yt="${id}" data-ytt="${esc(l.title)}"><span class="tv-yt-th"><img loading="lazy" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" decoding="async"><i></i></span><b>${esc(l.title)}</b><small>${esc(l.source || '')}</small></button>`; };
@@ -710,9 +711,18 @@ function replaceFrame(url) {
   try { frame.contentWindow.location.replace(url); }
   catch { frame.src = url; }
 }
+// 전시 주소. 앱 틀(껍데기 안)에서는 전시가 웹 주소(다른 출처)라 기기 저장값이 따로 놀아서 언어·소리·항해명을 주소로 넘겨줌
+function exhibitUrl(c) {
+  if (!IN_SHELL) return href(c);
+  const u = new URL(web(href(c)));
+  u.searchParams.set('lang', lang); u.searchParams.set('app', '1');
+  try { if (localStorage.getItem('xpace-sound') === 'off') u.searchParams.set('snd', 'off'); } catch (e) {}
+  const m = me(); if (m && m.nick) u.searchParams.set('me', m.nick);
+  return u.href;
+}
 function loadExhibitFrame(c) {
   cancelAnimationFrame(frameRaf); replaceFrame('about:blank');
-  frameRaf = requestAnimationFrame(() => { frameRaf = 0; if (current === c && !viewer.hidden) replaceFrame(href(c)); });
+  frameRaf = requestAnimationFrame(() => { frameRaf = 0; if (current === c && !viewer.hidden) replaceFrame(exhibitUrl(c)); });
 }
 function openExhibit(c) {
   if (!c || !isOpen(c) || !viewer.hidden) return;
@@ -743,7 +753,7 @@ addEventListener('popstate', () => {
 frame.addEventListener('load', () => {
   if (!current) return;
   let path = '', full = '';
-  try { full = frame.contentWindow.location.href; path = frame.contentWindow.location.pathname; } catch (e) {}
+  try { full = frame.contentWindow.location.href; path = frame.contentWindow.location.pathname; } catch (e) { full = 'cross-origin'; } // 앱 틀 안: 전시가 웹 주소라 안을 못 읽음 → 열린 것으로 봄(나가기는 postMessage)
   if (!full || full === 'about:blank') return;
   if (/\/(index\.html)?$/.test(path) || path.endsWith('/app.html')) { closeExhibit(); return; }
   landing.loaded();
@@ -754,6 +764,7 @@ if (CapApp) {
     if (sheet.isOpen) sheet.close(); else if (!viewer.hidden) closeExhibit();
     else if (!ob.hidden) showOB('login'); else if (tab !== 'home') go('home'); else CapApp.exitApp();
   });
+  CapApp.addListener('appUrlOpen', async ({ url }) => { if (await AU.finishDeepLink(url)) afterLogin(); }); // 소셜 로그인 뒤 artmos://auth 로 돌아옴
   CapApp.addListener('appStateChange', ({ isActive }) => {
     nativeActive = isActive; syncRuntime(); if (isActive) applyPendingData();
   });
@@ -957,7 +968,7 @@ async function loadIssues() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await fetch('data/issues.json', { cache: 'no-cache', signal: controller.signal });
+    const response = await fetch(web('data/issues.json'), { cache: 'no-cache', signal: controller.signal });
     if (!response.ok) return null;
     const issues = await response.json();
     return issues && typeof issues === 'object' && !Array.isArray(issues) ? issues : null;

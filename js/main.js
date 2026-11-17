@@ -1,10 +1,10 @@
 // ARTMOS — 메인: 성운 가운데에서 태어난 전시 행성계
 import * as THREE from 'three';
-import { loadData, imageUrl, esc } from './data.js?v=33';
+import { loadData, imageUrl, esc } from './data.js?v=34';
 import { hsound } from './home-sound.js?v=7';
-import { tr, lang, langSwitcher } from './i18n.js?v=6';
+import { tr, lang, langSwitcher } from './i18n.js?v=7';
 import { IS_MOBILE } from './sensors.js?v=4';
-import { initHomeInterface } from './home-interface.js?v=4';
+import { initHomeInterface } from './home-interface.js?v=5';
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 let calm = motionQuery.matches;
 try { calm ||= localStorage.getItem('nebula-calm') === 'true'; } catch (e) {}
@@ -559,7 +559,7 @@ document.querySelector('.orbit-dock').setAttribute('aria-busy', 'true');
     </li>`).join('');
   resize();
   last = performance.now();
-  if (IS_MOBILE) { const { initHomeMobile } = await import('./home-mobile.js?v=6'); initHomeMobile(Object.assign(M, { state, planets, world, camera, THREE, enter, hsound, code, shortTitle, canvas })); }
+  if (IS_MOBILE) { const { initHomeMobile } = await import('./home-mobile.js?v=7'); initHomeMobile(Object.assign(M, { state, planets, world, camera, THREE, enter, hsound, code, shortTitle, canvas })); }
   document.querySelector('.orbit-dock').setAttribute('aria-busy', 'false');
   document.body.dataset.loaded = 'true';
   autoSound();

@@ -7,8 +7,8 @@
 //  ?shoptest=1    → 서버·결제창 없이 이 기기에서만 흉내(로그인 없이도, 예시 작품도)
 //  ?shoptest=toss → 실제 서버 + 토스 '테스트' 결제창(돈이 나가지 않음). 로그인 필요, clientKey가 test_ck_일 때만
 // 소장(결제)은 로그인한 회원만(2026-11-16 소유자 결정). 주문은 계정에 묶여 서버 orders 표에 남음.
-import { CONFIG } from './config.js?v=34';
-import { cachedUser, currentUser, accessToken, AUTH_ON } from './auth.js?v=12';
+import { CONFIG } from './config.js?v=35';
+import { cachedUser, currentUser, accessToken, AUTH_ON } from './auth.js?v=13';
 
 const SH = CONFIG.shop || {}, PAY = SH.pay || {};
 const qMode = new URLSearchParams(location.search).get('shoptest');

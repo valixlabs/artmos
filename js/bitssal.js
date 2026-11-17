@@ -2,13 +2,13 @@
 // 사실 서술 출처: 진실·화해를위한과거사정리위원회 「대구10월사건 관련 민간인 희생 사건」(jinsil.go.kr/KoreanWar/30.do),
 //                「경산 코발트광산 사건」(jinsil.go.kr/KoreanWar/36.do)
 import { sound } from './bitssal-sound.js?v=7';
-import { lang, tr, langSwitcher } from './i18n.js?v=6';
+import { lang, tr, langSwitcher } from './i18n.js?v=7';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=4';
 import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=9';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
-import * as MB from './membership.js?v=12';
+import * as MB from './membership.js?v=13';
 // 화면 문구 (읽기 → 체험 · 내레이션)
 const LX = ({
   ko: { play: '체험', wait: '위의 이야기를 다 읽으면 체험이 열려요', next: '이야기를 다 읽으면, 아래에서 직접 해 볼 수 있어요.', narr: '내레이션', listen: '듣기', stop: '멈춤', chapter: '장' },
@@ -53,7 +53,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 story.innerHTML = SCENES.map((s, si) => `<section class="scene" id="s-${s.id}" data-i="${si}" data-h="${s.h}" style="height:${s.h}vh">${s.cards.map((c, ci) => cardHTML(s, c, si, ci)).join('')}</section>`).join('') + (LOCKED ? MB.paywallHTML(CELL) : '') + CREDITS;
 if (LOCKED) story.addEventListener('click', (e) => { MB.handleMembershipClick(e, { notify: (m) => { const el = document.querySelector('#paywall .mb-state'); if (el) el.textContent = m; }, refresh: () => location.reload() }); });
 else MB.enter(CELL).then(MB.passChip); // 입장권이면 이때 24시간 시작
-if (window === window.top) import('./app-shop.js?v=17').then((SHOP) => SHOP.loadShop().then(() => { const box = document.querySelector('.bs-credits > div'), html = SHOP.collectBannerHTML(CELL.id); if (box && html) box.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만
+if (window === window.top) import('./app-shop.js?v=18').then((SHOP) => SHOP.loadShop().then(() => { const box = document.querySelector('.bs-credits > div'), html = SHOP.collectBannerHTML(CELL.id); if (box && html) box.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만
 // 카드가 길어져도(작은 화면·번역·이야기 카드) 서로 겹치지 않게: 원래 자리보다 위로는 안 올리고, 앞 카드 밑으로만 밀어냄. 모자라면 장면을 늘림
 function relayout() {
   const gap = Math.max(40, innerHeight * 0.1);

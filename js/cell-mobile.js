@@ -2,7 +2,7 @@
 // 각 블록의 센서 효과 자체는 cell.js 안에 있고, 이 파일은 '지금 할 수 있는 동작' 안내와 공통 제스처를 맡습니다.
 import { sensor } from './sensors.js?v=4';
 import { DICT } from './i18n-dict.js?v=6';
-import { tr } from './i18n.js?v=6';
+import { tr } from './i18n.js?v=7';
 
 // 이 파일에서 쓰는 문구 번역 (한국어 = 키) [en, zh, ja]
 const WORDS = {

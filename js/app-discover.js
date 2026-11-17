@@ -1,4 +1,4 @@
-import { lang } from './i18n.js?v=6';
+import { lang } from './i18n.js?v=7';
 
 // Local copy is intentional: new discovery strings never fall back to Korean
 // through the parent app's smaller translation dictionary.
