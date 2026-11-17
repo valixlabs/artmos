@@ -387,7 +387,7 @@ body.phase-open #hud > div, body.phase-open #labels { opacity: 0 !important; poi
 .card.story .st-stage { display: none; }
 @media (max-width: 819px) {
   .card.story { padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-  .card.story .st-stage { display: block; height: 70vh; height: 70svh; } /* 2026-11-17: 82 → 70 (얼굴 크기는 화면 폭으로 정해져 그대로) */
+  .card.story .st-stage { display: block; height: 44vh; height: 44svh; } /* 2026-11-18: 70 → 44, 얼굴을 이 자리에 맞춰 그려서 얼굴과 글이 한 화면에 같이 보임 */
   .card.story .st-box { padding: 20px 20px 16px; background: linear-gradient(180deg, rgba(36,29,20,.95), rgba(20,16,11,.95)); border: 1px solid rgba(255,214,150,.22); border-radius: 6px; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
   .card.story[data-face] .st-face { display: none; } /* 큰 얼굴이 바로 위에 따로 그려지니 작은 초상은 숨김 */
   .card.story[data-face] .st-top { gap: 0; }

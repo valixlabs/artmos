@@ -56,7 +56,7 @@ else MB.enter(CELL).then(MB.passChip); // 입장권이면 이때 24시간 시작
 if (window === window.top) import('./app-shop.js?v=21').then((SHOP) => SHOP.loadShop().then(() => { const box = document.querySelector('.bs-credits > div'), html = SHOP.collectBannerHTML(CELL.id); if (box && html) box.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만
 // 카드가 길어져도(작은 화면·번역·이야기 카드) 서로 겹치지 않게: 원래 자리보다 위로는 안 올리고, 앞 카드 밑으로만 밀어냄. 모자라면 장면을 늘림
 // 휴대폰 간격(화면 높이 배수) — 2026-11-17 소유자: 빈칸을 줄여 스크롤 속도를 맞춤(79화면 → 약 50화면). 이야기 카드 위에는 이미 얼굴 자리(82svh)가 있어서 그 앞 빈칸은 짧아도 됨
-const GAP_M = { chapToFace: 0.35, chapToStory: 0.55, storyToNext: 0.4, playToNext: 0.4, toStory: 0.45, otherToStory: 0.5, toPlay: 0.45, tailPlay: 0.6, tail: 0.45, base: 0.75 }; // chapToFace: 얼굴 있는 이야기는 얼굴 자리가 있어 짧게, 얼굴 없는 이야기는 장 모양이 보일 자리를 남김 · base: 장면 기본 길이(작품·기록 장의 카드 간격)
+const GAP_M = { chapToFace: 0.5, chapToStory: 0.55, storyToNext: 0.4, playToNext: 0.4, toStory: 0.45, otherToStory: 0.5, toPlay: 0.45, tailPlay: 0.6, tail: 0.45, base: 0.75 }; // chapToFace: 얼굴 있는 이야기는 얼굴 자리가 있어 짧게, 얼굴 없는 이야기는 장 모양이 보일 자리를 남김 · base: 장면 기본 길이(작품·기록 장의 카드 간격)
 function relayout() {
   const M = innerWidth < 820, Hh = innerHeight, gap = Math.max(M ? 32 : 40, Hh * (M ? 0.07 : 0.1));
   document.querySelectorAll('.scene').forEach((sc) => {
@@ -432,7 +432,7 @@ function applyFace(id) {
   const want = wantFace(id);
   const fs = FR * (1 + SCR); // 화면 주사율과 상관없이 같은 속도 + 빨리 스크롤하면 더 빨리 모임
   if (want && want.kind !== face.kind) { if (face.k > 0.04) face.k = Math.max(0, face.k - 0.06 * fs); else { face.kind = want.kind; face.pts = facePoints(want.kind, FN); } }
-  else if (want) face.k = face.k > (want.max ?? 1) ? Math.max(want.max ?? 1, face.k - 0.06 * fs) : Math.min(want.max ?? 1, face.k + 0.025 * fs);
+  else if (want) face.k = face.k > (want.max ?? 1) ? Math.max(want.max ?? 1, face.k - 0.06 * fs) : Math.min(want.max ?? 1, face.k + (state.faceFromShape ? 0.012 : 0.025) * fs); // 장 모양에서 얼굴로는 천천히 (약 1.4초)
   else face.k = Math.max(0, face.k - 0.04 * fs);
   if (want) face.col = want.col;
   if (face.k <= 0 || !face.pts) { face.lastFy = null; face.fy = null; return; }
@@ -440,7 +440,7 @@ function applyFace(id) {
   let sc = R * (mobile ? 0.55 : 0.62), fx = CX, fy = mobile ? CY - R * 0.32 : CY - R * 0.05; const k = face.k;
   // 이야기 카드 위쪽의 얼굴 자리(.st-stage, 한 화면)에 얼굴을 그림 → 스크롤하면 카드와 함께 올라가고, 글 상자는 그 아래라 겹치지 않음
   const stage = mobile && faceCard ? faceCard.querySelector('.st-stage') : null;
-  if (stage) { const r = rect(stage); sc = Math.min(r.height * 0.36, W * 0.42); fy = Math.min(r.top + r.height / 2, H * 0.42) - sc * 0.1; face.fy = fy; face.sc = sc; } // 화면 42% 높이에서 모이고, 얼굴 자리가 올라가면 함께 올라감
+  if (stage) { const r = rect(stage); sc = Math.min(r.height / 2.2, W * 0.42); /* 얼굴(위아래 약 2배 크기)이 얼굴 자리 안에 꼭 맞게 → 아래 글 상자와 한 화면에 같이 보임 */ fy = Math.min(r.top + r.height / 2, H * 0.42) - sc * 0.1; face.fy = fy; face.sc = sc; } // 화면 42% 높이에서 모이고, 얼굴 자리가 올라가면 함께 올라감
   else if (mobile && face.fy != null) { fy = face.fy; sc = face.sc; }
   if (mobile && face.lastFy != null && Math.abs(fy - face.lastFy) < 600) { const dy = fy - face.lastFy; for (let i = 1; i <= FN; i++) Y[i] += dy; } // 카드와 함께 그대로 따라 움직임
   face.lastFy = mobile ? fy : null;
@@ -869,6 +869,7 @@ function placeLabels(id, p) {
 
 // ---------------- 루프 ----------------
 let last = performance.now();
+const SHAPE_MIN = 2400; // 장 모양을 보여 주는 최소 시간(ms)
 let FR = 1, SCR = 0, scrollV = 0, lastSY = scrollY; // 프레임 길이 보정 · 스크롤 빠르기
 // 지금 읽고 있는 이야기 카드 (화면 가운데 띠에 걸친 것) → 읽기 단계
 // 체험 진행도: 체험 카드가 화면 아래에 닿은 때(0)부터 장이 끝날 때(1)까지. 장면 움직임은 이 값으로 → 읽는 동안이 아니라 체험할 때 펼쳐짐
@@ -930,6 +931,9 @@ function draw(now) {
     const p0 = id === 'prologue' ? secEl.querySelector(':scope > .card:not(.story)') : null, p0r = p0 && rect(p0);
     const textOn = [...secEl.querySelectorAll(':scope > .card:not(.story):not(.chap-open):not(.play)')].some((el) => { const r = rect(el); return r.bottom > innerHeight * 0.12 && r.top < innerHeight * 0.88; }); // 그 밖의 글(예: '4년 뒤')이 보이면 모양을 띄우지 않음
     mm = titleOn ? 'title' : faceCard ? 'face' : playing ? 'play' : passed && storyAhead && !textOn && SHAPE_OF[id] ? 'shape' : p0r && p0r.bottom > innerHeight * 0.12 ? 'intro' : 'dust';
+    // 장 모양은 나타나면 적어도 SHAPE_MIN 동안 그대로 두고 그다음 얼굴·글로 바뀜 (2026-11-18 소유자: 너무 빨리 사라짐). 빨리 내려와도 한 번은 보여 줌
+    if (SHAPE_OF[id] && passed && !titleOn && !playing && (mm === 'shape' || mm === 'face' || mm === 'dust') && state.shapeId !== id) { state.shapeId = id; state.shapeAt = now; }
+    if (state.shapeId === id && now - state.shapeAt < SHAPE_MIN && (mm === 'face' || mm === 'dust') && passed && !titleOn && !playing && !textOn) { mm = 'shape'; faceCard = null; }
     state.faceFromShape = mm === 'face' && faceCard === st1 && passed && !!SHAPE_OF[id];
     state.offY = mm === 'intro' ? Math.min(0, p0r.top - innerHeight * 0.6) : 0;
   }
