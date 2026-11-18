@@ -2,7 +2,7 @@
 // 사실 서술 출처: 진실·화해를위한과거사정리위원회 「대구10월사건 관련 민간인 희생 사건」(jinsil.go.kr/KoreanWar/30.do),
 //                「경산 코발트광산 사건」(jinsil.go.kr/KoreanWar/36.do)
 import { sound } from './bitssal-sound.js?v=7';
-import { lang, tr, langSwitcher } from './i18n.js?v=7';
+import { lang, tr, langSwitcher } from './i18n.js?v=8';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=6';
 import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=11';
@@ -59,6 +59,8 @@ const CREDITS = `<footer class="bs-credits"><div>
 // ---------------- DOM 구성 ----------------
 const story = document.getElementById('story');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 장 제목이 지나간 뒤 쌀알이 이루는 그 장의 모양 → 이 모양이 그대로 얼굴로 바뀜 · 얼굴 없는 이야기는 이 물건이 얼굴 자리에 올라감
+const SHAPE_OF = { life: 'table', hunger: 'jar', demand: 'grain', street: 'lamp', spread: 'map', erased: 'police', boundary: 'shoes', mine: 'bowl', truth: 'seven', share: 'riceball', light: 'flame' };
 story.innerHTML = SCENES.map((s, si) => `<section class="scene" id="s-${s.id}" data-i="${si}" data-h="${s.h}" style="height:${s.h}vh">${s.cards.map((c, ci) => cardHTML(s, c, si, ci)).join('')}</section>`).join('') + (LOCKED ? MB.paywallHTML(CELL) : '') + CREDITS;
 if (LOCKED) story.addEventListener('click', (e) => { MB.handleMembershipClick(e, { notify: (m) => { const el = document.querySelector('#paywall .mb-state'); if (el) el.textContent = m; }, refresh: () => location.reload() }); });
 else MB.enter(CELL).then(MB.passChip); // 입장권이면 이때 24시간 시작
@@ -117,7 +119,8 @@ if (window.ResizeObserver) { const ro = new ResizeObserver(relSoon); document.qu
 function cardHTML(s, c, si, ci) {
   const pos = `style="top:${c.at * 100}%" data-at="${c.at}"`;
   const src = c.src ? `<p class="src">${tr('출처: ')}${esc(c.src)}</p>` : '';
-  if (c.kind === 'story') return `<article class="card story" ${pos}${c.face ? ` data-face="${c.face}"` : ''}${c.nk ? ` data-nk="${c.nk}"` : ''}>${c.face ? '<div class="st-stage" aria-hidden="true"></div>' : ''}<div class="st-box">${c.chap ? `<p class="chap">${esc(c.chap)}</p>` : ''}<div class="st-top">${c.face ? `<canvas class="st-face" data-face="${c.face}" aria-hidden="true"></canvas>` : ''}<div><p class="st-who"><b>${esc(LABEL)}</b>${esc(c.who)}</p><h2>${esc(c.head)}</h2></div></div>${c.html}${c.first ? `<p class="note st-note">${esc(NOTE)}</p>` : ''}${s.cards.some((d) => d.play && d.at > c.at) ? `<p class="st-next">↓ ${esc(LX.next)}</p>` : ''}</div></article>`;
+  const obj = c.kind === 'story' && !c.face && SHAPE_OF[s.id] ? SHAPE_OF[s.id] : ''; // 얼굴 없는 이야기 → 그 장의 물건을 얼굴 자리에 (휴대폰)
+  if (c.kind === 'story') return `<article class="card story" ${pos}${c.face ? ` data-face="${c.face}"` : ''}${obj ? ` data-obj="${obj}"` : ''}${c.nk ? ` data-nk="${c.nk}"` : ''}>${c.face || obj ? '<div class="st-stage" aria-hidden="true"></div>' : ''}<div class="st-box">${c.chap ? `<p class="chap">${esc(c.chap)}</p>` : ''}<div class="st-top">${c.face ? `<canvas class="st-face" data-face="${c.face}" aria-hidden="true"></canvas>` : ''}<div><p class="st-who"><b>${esc(LABEL)}</b>${esc(c.who)}</p><h2>${esc(c.head)}</h2></div></div>${c.html}${c.first ? `<p class="note st-note">${esc(NOTE)}</p>` : ''}${s.cards.some((d) => d.play && d.at > c.at) ? `<p class="st-next">↓ ${esc(LX.next)}</p>` : ''}</div></article>`;
   if (c.kind === 'record') return `<article class="card rec brief ${c.tone || ''}" ${pos}><p class="rec-label">${tr('기록')}</p><h3>${esc(c.title)}</h3>${c.html}${src}</article>`;
   if (c.kind === 'reveal') return `<article class="card rec reveal-rec" ${pos}><p class="rec-label">${tr('기록')}</p><h3>${esc(c.title)}</h3><div class="blur">${c.html}</div><button class="rv-btn">${tr('기록 읽기')}</button>${src}</article>`;
   if (c.kind === 'correct') return `<article class="card rec reveal-rec correct" ${pos}><p class="rec-label">${tr('기록')}</p><h3>${esc(c.title)}</h3><div class="blur">${c.html}</div><button class="rv-btn">${tr('기록 읽기')}</button><button class="fix-btn" hidden>${tr('기록 바로잡기')}</button><p class="fix-note" hidden>${esc(c.fix)}</p>${src}</article>`;
@@ -369,6 +372,7 @@ const seg = (p, a, b) => sm((p - a) / (b - a));
 // 상태 (인터랙션)
 let stopARref = null;
 const state = { entered: false, share: 0, balls: [], memories: [], bowls: new Array(10).fill(0), voice: 0, hold: 0, lamps: [], rub: new Float32Array(900), carK: 0, flowT: 0, jar: 0, jarOut: 0, wait: 0, dawn: false, july: 0, brotherLight: false };
+if (location.hash === '#debug') window.__bs = state; // 시험용
 const TROT = new Float32Array(N);
 let ptrDown = false;
 addEventListener('pointerdown', (e) => { if (!e.target.closest('.card, .bs-top, .bs-menu, .bs-progress, .lab, .lb')) { ptrDown = true; state.ptrDownAt = performance.now(); ptr.x = e.clientX; ptr.y = e.clientY; } });
@@ -388,6 +392,21 @@ const REGIONS = [
   { name: tr('경기 · 황해'), x: -0.35, y: -0.75, day: 20 }, { name: tr('강원'), x: 0.3, y: -0.7, day: 29 },
   { name: tr('전남'), x: -0.5, y: 0.6, day: 29 }, { name: tr('전북'), x: -0.5, y: 0.18, day: 79 },
 ];
+// 위도·경도 → 번짐 지도 좌표(R 단위). 지역 덩어리 자리에 맞춘 대략의 약도 투영 (대구 ≈ 0.45, 0.1)
+const geoXY = (lat, lon) => { let x = (lon - 127.7) * 0.5, y = -0.52 * (lat - 36.06); const gx = 0.45, gy = 0.1, dx = x - gx, dy = y - gy, d = Math.hypot(dx, dy);
+  const far = Math.hypot(x, y) > 1.15; if (far) { const k = 1.05 / Math.max(d, 1e-6); x = gx + dx * k; y = gy + dy * k; } return { x, y, far }; }; // 지도 밖(해외 등)이면 대구에서 그 방향으로 지도 끝에 둠
+const DAEGU_XY = { x: 0.45, y: 0.1 };
+const GEO_T = { ko: ['지금 나', '대구', '약도 · 실제 위치와 조금 다를 수 있어요.'], en: ['You are here', 'Daegu', 'Sketch map · may differ slightly from actual positions.'], zh: ['我在这里', '大邱', '示意图 · 可能与实际位置略有不同。'], ja: ['今の私', '大邱', '略図 · 実際の位置と少し異なる場合があります。'] }[lang] || ['지금 나', '대구', '약도 · 실제 위치와 조금 다를 수 있어요.'];
+function geoTrail(now) { // 내 자리에서 대구까지 쌀알이 한 줄로 이어짐 (2.5초에 걸쳐 그려지고, 그 뒤엔 대구 쪽으로 천천히 흐름)
+  const G = state.geo; if (!G) return;
+  const mx = CX + G.x * R, my = CY + G.y * R, dx = CX + DAEGU_XY.x * R, dy = CY + DAEGU_XY.y * R, pr = Math.min(1, (now - G.t0) / 2500), L = Math.hypot(dx - mx, dy - my) || 1, nx = -(dy - my) / L, ny = (dx - mx) / L;
+  const M = 360, base = 420;
+  for (let j = 0; j < M; j++) { const i = base + j, f = ((j / M) + (pr >= 1 ? (now / 9000) % (1 / M * 6) : 0)) % 1, on = f <= pr, w = Math.sin(f * 40 + R1[i] * 6) * 2 + (R2[i] - 0.5) * 5;
+    setT(i, lerp(mx, dx, f) + nx * w, lerp(my, dy, f) + ny * w, on ? 0.95 : 0, 3); TROT[i] = Math.atan2(dy - my, dx - mx) + (R3[i] - 0.5) * 0.8; }
+  for (let j = 0; j < 40; j++) { const i = base + M + j, a = R1[i] * 6.28, r = Math.sqrt(R2[i]) * 13; setT(i, mx + Math.cos(a) * r, my + Math.sin(a) * r, 1, 3); } // 나
+  const pulse = 0.6 + 0.4 * Math.sin(now / 400);
+  for (let j = 0; j < 40; j++) { const i = base + M + 40 + j, a = R1[i] * 6.28, r = 16 + R2[i] * 4; setT(i, dx + Math.cos(a) * r, dy + Math.sin(a) * r * 0.9, pr >= 1 ? pulse : 0.3, 0); } // 대구 고리
+}
 const YEARS = [1993, 2000, 2001, 2007, 2009].map((y) => ({ y, at: YEARS_AT[y] }));
 const labelEls = {};
 function label(key, text, cls = '') {
@@ -435,12 +454,25 @@ const FN = 1000;
 function wantFace(id) {
   if (id === 'light' && state.brotherLight) return { kind: 'brother', col: 3 };
   if (id === 'street' && state.dawn && !mobile) return { kind: 'brother', col: 0, max: 0.92 };
-  return faceCard ? { kind: faceCard.dataset.face, col: 0, max: faceMax } : null; // 얼굴은 얼굴 자리에만, 글이 올라오면 사라짐
+  return faceCard ? { kind: faceCard.dataset.face || (mobile && faceCard.dataset.obj ? 'obj:' + faceCard.dataset.obj : null), col: 0, max: faceMax } : null; // 얼굴은 얼굴 자리에만, 글이 올라오면 사라짐
+}
+// 얼굴 자리에 올릴 물건(등잔·지도·경찰·밥그릇): 얼굴처럼 위아래 -1~1에 맞춰 둠
+const OBJ = new Map();
+function objPoints(name) {
+  if (OBJ.has(name)) return OBJ.get(name);
+  let raw;
+  if (name === 'map') { raw = []; let gi = 0; REGIONS.forEach((rg) => { for (let j = 0; j < 40; j++, gi++) { const a = R1[gi] * 6.28, r = Math.sqrt(R2[gi]) * 0.16; raw.push({ x: rg.x + Math.cos(a) * r, y: rg.y + Math.sin(a) * r * 0.8, r: R3[gi] * 6.28 }); } }); }
+  else raw = name === 'seven' ? inkPoints('seven', 220, 220, [{ text: '7', size: 210, weight: 800, x: 110, y: 116, align: 'center' }], 900) : shapePoints(name, 900);
+  if (!raw || !raw.length) { OBJ.set(name, null); return null; }
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity; raw.forEach((q) => { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); });
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, k = 2 / Math.max(y1 - y0, (x1 - x0) / 1.05, 1e-6); // 높이 2, 폭은 2.1까지(화면 양옆에 닿지 않게)
+  const pts = raw.map((q, j) => ({ x: (q.x - cx) * k, y: (q.y - cy) * k + 0.1, a: 0.6 + 0.4 * R3[j + 1], c: 0, r: q.r || 0 }));
+  OBJ.set(name, pts); return pts;
 }
 function applyFace(id) {
   const want = wantFace(id);
   const fs = FR * (1 + SCR); // 화면 주사율과 상관없이 같은 속도 + 빨리 스크롤하면 더 빨리 모임
-  if (want && want.kind !== face.kind) { if (face.k > 0.04) face.k = Math.max(0, face.k - 0.06 * fs); else { face.kind = want.kind; face.pts = facePoints(want.kind, FN); } }
+  if (want && want.kind !== face.kind) { if (face.k > 0.04) face.k = Math.max(0, face.k - 0.06 * fs); else { face.kind = want.kind; face.pts = want.kind.startsWith('obj:') ? objPoints(want.kind.slice(4)) : facePoints(want.kind, FN); } }
   else if (want) face.k = face.k > (want.max ?? 1) ? Math.max(want.max ?? 1, face.k - 0.06 * fs) : Math.min(want.max ?? 1, face.k + (state.faceFromShape ? 0.012 : 0.025) * fs); // 장 모양에서 얼굴로는 천천히 (약 1.4초)
   else face.k = Math.max(0, face.k - 0.04 * fs);
   if (want) face.col = want.col;
@@ -486,7 +518,6 @@ function sculpt(a = 1) {
 // 흩어진 쌀알: 화면 가득 옅게 떠다님 (모양과 모양 사이)
 function dust(t, a = 1) { for (let i = 0; i < N; i++) setT(i, R1[i] * W + Math.sin(t * 0.17 + R3[i] * 6.28) * 18, R2[i] * H + Math.cos(t * 0.13 + R1[i] * 6.28) * 18, (i % 3 ? (0.05 + 0.13 * R3[i]) * a : 0), 0); } // 흩어진 쌀알은 2/3만 (가볍게)
 // 장 제목이 지나간 뒤 쌀알이 이루는 그 장의 모양 → 이 모양이 그대로 얼굴로 바뀜
-const SHAPE_OF = { life: 'table', hunger: 'jar', demand: 'grain', street: 'lamp', spread: 'map', erased: 'police', boundary: 'shoes', mine: 'bowl', truth: 'seven', share: 'riceball', light: 'flame' };
 function formShape(name, t) {
   if (name === 'map') { TARGETS.spread(0.6); return; }
   const pts = name === 'seven' ? inkPoints('seven', 220, 220, [{ text: '7', size: 210, weight: 800, x: 110, y: 116, align: 'center' }], 900) : shapePoints(name, 900);
@@ -523,8 +554,8 @@ const MOB = {
     for (let i = 660; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.03, 0);
   },
   hunger() {
-    const jp = jarPos(), s0 = JAR_S(), fill = 1 - (state.jarOut / 40) * 0.92;
-    for (let i = 0; i < 320; i++) { const y = 34 - R2[i] * 58 * fill, w = 34 * Math.sqrt(Math.max(0, 1 - ((y - 6) / 32) ** 2)); setT(i, jp.x + (R1[i] * 2 - 1) * w * s0, jp.y + y * s0, 0.85, 0); }
+    const jp = jarPos(), s0 = JAR_S(), left = 1 - state.jarOut / 40, fill = Math.max(0.06, left), keep = Math.round(320 * left); // 털어낸 만큼 쌀독 안 쌀알이 줄어듦 → 다 털면 빈 독
+    for (let i = 0; i < 320; i++) { const y = 34 - R2[i] * 58 * fill, w = 34 * Math.sqrt(Math.max(0, 1 - ((y - 6) / 32) ** 2)); setT(i, jp.x + (R1[i] * 2 - 1) * w * s0, jp.y + y * s0, i < keep ? 0.85 : 0, 0); }
     const out = Math.min(280, state.jarOut * 7);
     for (let j = 0; j < 280; j++) { const i = 320 + j; setT(i, jp.x + (R1[i] - 0.5) * R * 1.7 * Math.sqrt(R3[i]), jp.y + 46 * s0 + R2[i] * 12, j < out ? 0.9 : 0, j < out ? 3 : 0); }
     for (let i = 600; i < N; i++) setT(i, R1[i] * W, R2[i] * H, 0.03, 0);
@@ -873,7 +904,11 @@ function drawBackdrop(id, p, t) {
 function placeLabels(id, p) {
   Object.values(labelEls).forEach((l) => (l.style.opacity = 0, l.style.pointerEvents = 'none'));
   const put = (key, x, y, op = 1) => { const l = labelEls[key]; l.style.transform = `translate(-50%,-50%) translate(${x}px,${y}px)`; l.style.opacity = op; l.style.pointerEvents = op > 0.3 ? 'auto' : 'none'; };
-  if (id === 'spread') { const day = Math.round(lerp(1, 80, seg(p, 0.1, 0.92))); REGIONS.forEach((r) => put('r-' + r.name, CX + r.x * R, CY + r.y * R - R * 0.2, day >= r.day ? 1 : 0.35)); }
+  if (id === 'spread') { const day = Math.round(lerp(1, 80, seg(p, 0.1, 0.92))); const G = state.geo; REGIONS.forEach((r) => put('r-' + r.name, CX + r.x * R, CY + r.y * R - R * 0.2, (day >= r.day ? 1 : 0.35) * (G ? 0.35 : 1)));
+    if (G && mobile) { label('geo-me', GEO_T[0], 'region geo'); label('geo-dg', GEO_T[1], 'region geo'); label('geo-km', '', 'region geo km');
+      { const kt = `${G.km.toLocaleString()}km`; if (labelEls['geo-km'].textContent !== kt) labelEls['geo-km'].textContent = kt; }
+      const mx = CX + G.x * R, my = CY + G.y * R, dx = CX + DAEGU_XY.x * R, dy = CY + DAEGU_XY.y * R, on = Math.min(1, (performance.now() - G.t0) / 2500);
+      put('geo-me', mx, my + 24, 1); put('geo-dg', dx, dy - 30, on); put('geo-km', (mx + dx) / 2, (my + dy) / 2 - 16, on >= 1 ? 1 : 0); } }
 }
 
 // ---------------- 루프 ----------------
@@ -898,7 +933,7 @@ function findStory() {
   const H0 = innerHeight, band0 = H0 * 0.22, band1 = H0 * 0.78; let best = null, bd = 1e9, fc = null;
   sections[cur].querySelectorAll(':scope > .card.story').forEach((el) => {
     const r = rect(el), br = rect(el.querySelector(':scope > .st-box') || el);
-    if (el.dataset.face && r.top < H0 * 0.92 && br.bottom > H0 * 0.3) fc = el; // 얼굴 자리가 들어오면 모이고, 글까지 다 지나가면 흩어짐
+    if ((el.dataset.face || el.dataset.obj) && r.top < H0 * 0.92 && br.bottom > H0 * 0.3) fc = el; // 얼굴 자리가 들어오면 모이고, 글까지 다 지나가면 흩어짐
     if (br.bottom < band0 || br.top > band1) return; const d = Math.abs(br.top + br.height / 2 - H0 / 2); if (d < bd) { bd = d; best = el; }
   });
   const fm = 1;
@@ -936,7 +971,7 @@ function draw(now) {
     // 장 제목 → (제목이 지나가면) 그 장의 모양 → 그 모양이 얼굴로 → 글 → 흩어짐 → 체험
     let titleOn = false, passed = false;
     secEl.querySelectorAll(':scope > .card.chap-open').forEach((el) => { const b = rect(el.querySelector(':scope > b') || el), c = (b.top + b.bottom) / 2; if (c > innerHeight * 0.32 && c < innerHeight * 1.02) titleOn = true; else if (c <= innerHeight * 0.32) passed = true; });
-    const st0 = secEl.querySelector(':scope > .card.story'), st1 = st0 && st0.dataset.face ? st0 : null, storyAhead = !!st0 && rect(st0).top > innerHeight * (st1 ? 0.92 : 0.86); // 얼굴 없는 이야기는 글이 올라올 때까지 모양 유지
+    const st0 = secEl.querySelector(':scope > .card.story'), st1 = st0 && (st0.dataset.face || st0.dataset.obj) ? st0 : null, storyAhead = !!st0 && rect(st0).top > innerHeight * (st1 ? 0.92 : 0.86); // 얼굴 없는 이야기는 글이 올라올 때까지 모양 유지
     const p0 = id === 'prologue' ? secEl.querySelector(':scope > .card:not(.story)') : null, p0r = p0 && rect(p0);
     const textOn = [...secEl.querySelectorAll(':scope > .card:not(.story):not(.chap-open):not(.play)')].some((el) => { const r = rect(el); return r.bottom > innerHeight * 0.12 && r.top < innerHeight * 0.88; }); // 그 밖의 글(예: '4년 뒤')이 보이면 모양을 띄우지 않음
     mm = titleOn ? 'title' : faceCard ? 'face' : playing ? 'play' : passed && storyAhead && !textOn && SHAPE_OF[id] ? 'shape' : p0r && p0r.bottom > innerHeight * 0.12 ? 'intro' : 'dust';
@@ -960,7 +995,7 @@ function draw(now) {
   const pp = playProgress(cur, p);
   state.freeze = false; // 밤 장면에서만 켜짐 (다른 장으로 넘어가면 풀림)
   if (!mobile) TARGETS[id](pp);
-  else if (mm === 'play') { if (MOB[id]) MOB[id](); else TARGETS[id](pp); if (id === 'life' && !hold && sensor.on) watchScoop(now); }
+  else if (mm === 'play') { if (MOB[id]) MOB[id](); else TARGETS[id](pp); if (id === 'life' && !hold && sensor.on) watchScoop(now); if (id === 'spread') geoTrail(now); }
   else if (mm === 'shape' || state.faceFromShape) formShape(SHAPE_OF[id], t); // 얼굴은 이 모양에서 바로 모임
   else if (mm === 'intro') sculpt(1);
   else dust(t, readCard ? 0.6 : 1);
@@ -1196,8 +1231,9 @@ if (IS_MOBILE) {
     e.stopPropagation(); const out = btn.parentElement.querySelector('.geo-out');
     try {
       const c = await getPosition(); const km = Math.round(distanceKm({ lat: c.latitude, lon: c.longitude }, DAEGU));
+      state.geo = { ...geoXY(c.latitude, c.longitude), km, t0: performance.now() }; sound.ping && sound.ping('bowl'); // 지도 위 내 자리 → 대구까지 쌀알 길 (기기 안에서만, 저장·전송 없음)
       out.textContent = km < 30 ? tr('지금 당신은 이 이야기가 시작된 대구 가까이(약 {n}km)에 있습니다.', { n: km }) : tr('지금 당신은 1946년 10월의 대구에서 약 {n}km 떨어진 곳에서 이 이야기를 보고 있습니다.', { n: km.toLocaleString() });
-      btn.remove(); sensor.vibrate(15);
+      out.textContent += ' ' + GEO_T[2]; btn.remove(); sensor.vibrate(15);
     } catch (err) { out.textContent = tr('위치를 알 수 없어요 (권한을 확인해 주세요)'); }
   }));
   const vid = document.createElement('video'); vid.className = 'ar-video'; vid.setAttribute('playsinline', ''); vid.muted = true; vid.hidden = true; document.body.prepend(vid);
