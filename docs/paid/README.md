@@ -25,6 +25,15 @@
 - 전시 잠금: `cell.html?id=c004&paytest=1&paid=c004`
 - 시험 구매는 이 기기에만 저장되고, 멤버십 화면의 '테스트 구매 지우기'로 지웁니다.
 
+## 결제 시트와 앱 인앱결제 (2026-11-18)
+- **화면(티빙처럼)**: 전시 상세에서 유료인데 아직 못 보는 전시는 '착륙하기' 대신 **'결제하기'** + '먼저 미리 보기'. 결제하기 → 아래 시트: ① 이 전시 하루 입장권 2,900원 ② 멤버십 · 월 5,900원 ③ 멤버십 · 1년 59,000원(모든 전시 자유 관람) → 아래 고정 '○○원 결제하기'. 결제가 끝나면 바로 전시로 들어감. 전시 안 미리 보기 끝의 '결제하고 이어 보기'를 누르면 앱이 전시를 닫고 같은 시트를 엶(앱 안 결제는 앱 화면에서만).
+- **앱(껍데기)**: `@revenuecat/purchases-capacitor` 설치됨(2026-11-18, 껍데기 workflow '인앱결제 플러그인 넣기'). 웹 코드 `membership.js`의 `storeProvider`·`initStore()`가 앱 안에서 플러그인을 찾아 씀.
+  - 켜지는 조건: 앱 안 + `config.iap.iosKey`/`androidKey`(RevenueCat **공개 SDK 키**) + `paywall.enabled: true`(시험은 주소에 `?paytest=store`).
+  - 멤버십 = RevenueCat 권한 `members`(`config.iap.entitlement`). 하루 입장권 = 소모성 상품, 산 전시는 이 기기(`artmos-iap-state`)에 기록 → 나중에 Supabase로.
+  - 회원 id(Supabase)를 RevenueCat appUserID로 씀 → 로그인해야 결제(멤버십이 계정에 묶임).
+  - 앱이 결제를 확인한 전시는 전시 틀 주소에 `ent=1`을 붙여 엶(전시 틀은 저장소가 따로라). 공개 파일이라 화면 잠금일 뿐 — 6번 참고.
+- **소유자가 할 일(순서대로)**: ① RevenueCat 가입·프로젝트 만들기 ② App Store Connect에서 구독 그룹 'ARTMOS 멤버십'에 `artmos.member.monthly`·`artmos.member.yearly`, 소모성 `artmos.pass.day` 만들기(가격 2,900/5,900/59,000원) ③ 구글 플레이 콘솔에 같은 id로 만들기(앱을 한 번 올려야 상품을 만들 수 있음) ④ RevenueCat에 두 스토어 연결(App Store Connect API 키·구글 서비스 계정), 상품 가져오기, 권한 `members`에 두 구독 붙이기 ⑤ 공개 SDK 키 두 개(appl_…, goog_…)를 알려 주면 `config.iap`에 넣음 ⑥ 샌드박스 계정으로 `?paytest=store` 시험.
+
 ## 실제로 켜려면
 1. **권리**: 유료로 팔 전시의 작가·권리자 계약(해외 온라인 판매 포함). 계약 전 전시는 `paid`로 지정하지 않기.
 2. **사업자**: 사업자등록, 통신판매업 신고, 애플·구글 개발자 계정, 애플 소규모 개발자 할인 신청.

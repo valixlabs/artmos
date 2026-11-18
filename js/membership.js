@@ -84,7 +84,15 @@ let provider = TEST ? testProvider : offProvider;
 // 켜지는 조건: 앱 껍데기 안 + 플러그인 설치됨 + config.iap 키 있음 + paywall.enabled(또는 ?paytest=store).
 // 멤버십 = RevenueCat 권한(entitlement) config.iap.entitlement('members'), 하루 입장권 = 소모성 상품(산 전시는 이 기기에 기록 → 나중에 Supabase로).
 const IAP = CONFIG.iap || {};
-const RC = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases) || null;
+let rcPlugin = null;
+const RC = () => { // 앱 껍데기의 RevenueCat 플러그인(이름 'Purchases', 예전 이름 'CapacitorPurchases')
+  const C = window.Capacitor; if (!C || rcPlugin) return rcPlugin;
+  for (const n of ['Purchases', 'CapacitorPurchases']) {
+    if (C.Plugins && C.Plugins[n]) return (rcPlugin = C.Plugins[n]);
+    if (C.isPluginAvailable && C.isPluginAvailable(n) && C.registerPlugin) return (rcPlugin = C.registerPlugin(n));
+  }
+  return null;
+};
 const IAP_KEY = 'artmos-iap-state';
 const iapState = () => { let s; try { s = JSON.parse(localStorage.getItem(IAP_KEY)); } catch (e) {} s = s || {}; return { member: s.member || null, passes: Array.isArray(s.passes) ? s.passes : [] }; };
 const iapSave = (s) => { try { localStorage.setItem(IAP_KEY, JSON.stringify(s)); } catch (e) {} };
