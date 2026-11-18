@@ -39,7 +39,7 @@ const main = $('#ml');
 main.innerHTML = `
 <section class="sc" id="s0" data-i="0">
   <div>
-    <h1 class="s0-name">MUCH<br>LOVED</h1>
+    <h1 class="s0-name"><img src="assets/posters/c008-logo.webp" alt="MUCH LOVED" width="900" height="391"></h1>
     <p class="s0-by">김규진 · KIM GYUZIN</p>
     <div class="ring"><svg viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="39"/><circle class="fg" cx="42" cy="42" r="39"/></svg></div>
     <p class="hint" id="h0">화면을 꾹 누르고 있어 보세요</p>
