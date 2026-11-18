@@ -1,0 +1,126 @@
+/* MUCH LOVED (c008) — 검은 바탕·흰 글자. 색은 작품 사진에만. */
+:root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); --g1: #9a9a9a; --g2: #5c5c5c; --g3: #2a2a2a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; color: #fff; }
+html, body { overflow-x: hidden; } @supports (overflow: clip) { html, body { overflow-x: clip; } }
+body.ml-page { font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; overflow-x: hidden; }
+html:lang(ja) body, html:lang(zh) body { word-break: normal; line-break: strict; }
+button { font: inherit; color: inherit; }
+
+/* 겹 순서: 바탕(0) → 3D 캔버스(1) → 장면 글·버튼(2) → 가장자리 박동(3) → 상단(4) → 잠듦(5) */
+.ml-back { position: fixed; inset: 0; z-index: 0; background: #000; transition: background-color 1.2s ease; }
+.ml-gl { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+.ml-gl.on { opacity: 1; }
+.ml-edge { position: fixed; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 0 rgba(255,255,255,0); }
+.ml-edge.beat { animation: mlBeat .9s ease-out; }
+@keyframes mlBeat { 0% { box-shadow: inset 0 0 0 0 rgba(255,255,255,0); } 12% { box-shadow: inset 0 0 60px 6px rgba(255,255,255,.22); } 30% { box-shadow: inset 0 0 20px 2px rgba(255,255,255,.06); } 42% { box-shadow: inset 0 0 50px 4px rgba(255,255,255,.16); } 100% { box-shadow: inset 0 0 0 0 rgba(255,255,255,0); } }
+
+.ml-top { position: fixed; z-index: 4; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 12px; padding: calc(var(--sat) + 12px) 16px 10px; background: linear-gradient(#000 40%, rgba(0,0,0,0)); transition: transform .3s ease; }
+.ml-top.hide { transform: translateY(-110%); }
+.ml-logo { color: #fff; text-decoration: none; font-size: 12px; letter-spacing: .22em; font-weight: 700; }
+.ml-title { font-size: 12px; letter-spacing: .14em; color: var(--g1); flex: 1; }
+.ml-dots { display: flex; gap: 5px; }
+.ml-dots i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid #fff; opacity: .5; }
+.ml-dots i.done { background: #fff; opacity: .7; }
+.ml-dots i.now { background: #fff; opacity: 1; transform: scale(1.25); }
+
+/* 장면 */
+.sc { position: relative; z-index: 2; min-height: 100svh; padding: calc(var(--sat) + 64px) 22px calc(var(--sab) + 28px); display: flex; flex-direction: column; }
+.sc-head { margin: 0 0 6px; font-size: 11px; letter-spacing: .2em; color: var(--g1); }
+.sc-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; line-height: 1.35; }
+.sc-lead { margin: 10px 0 0; font-size: 15px; line-height: 1.7; color: #d6d6d6; max-width: 34em; }
+.stage { position: relative; flex: 1; min-height: 52svh; touch-action: none; -webkit-user-select: none; user-select: none; }
+.stage.free { touch-action: pan-y; }
+.under { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.chip { appearance: none; background: #000; border: 1px solid var(--g2); border-radius: 999px; padding: 8px 14px; font-size: 13px; color: #ddd; cursor: pointer; }
+.chip.on { background: #fff; color: #000; border-color: #fff; }
+.chip:disabled { opacity: .4; }
+.hint { min-height: 1.5em; font-size: 14px; color: #cfcfcf; text-align: center; transition: opacity .3s; }
+.hint.warn { color: #fff; font-weight: 700; }
+.btn { appearance: none; background: #fff; color: #000; border: 0; border-radius: 999px; padding: 14px 26px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.btn.line { background: #000; color: #fff; border: 1px solid #fff; }
+.btn[hidden] { display: none; }
+.nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--g2); background: rgba(0,0,0,.4); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; z-index: 2; }
+.nav.l { left: 0; } .nav.r { right: 0; }
+#st3 { overflow: hidden; border-radius: 18px; }
+.count { font-size: 11px; letter-spacing: .14em; color: var(--g1); }
+
+/* 이름표: 작품 옆 천 라벨을 닮게 (흰 천, 바느질 테두리) */
+.tag { position: relative; display: inline-block; background: #f2f0ec; color: #111; padding: 12px 18px 11px; border-radius: 3px; text-align: center; min-width: 200px;
+  transform: translateY(8px) scale(.96); opacity: 0; transition: transform .5s ease, opacity .5s ease; }
+.tag::before { content: ""; position: absolute; inset: 5px; border: 1.5px dashed #8d8a84; border-radius: 2px; pointer-events: none; }
+.tag.show { transform: none; opacity: 1; }
+.tag b { display: block; font-size: 16px; letter-spacing: .12em; }
+.tag span { display: block; margin-top: 4px; font-size: 11px; color: #555; letter-spacing: .04em; }
+
+/* 0 쥐기 */
+#s0 { justify-content: center; text-align: center; touch-action: none; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.s0-name { font-size: 40px; font-weight: 800; letter-spacing: .06em; line-height: 1.05; margin: 0; }
+.s0-by { margin: 12px 0 0; font-size: 13px; letter-spacing: .2em; color: var(--g1); }
+.ring { width: 84px; height: 84px; margin: 34px auto 14px; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 2; }
+.ring .bg { stroke: #333; } .ring .fg { stroke: #fff; stroke-dasharray: 245; stroke-dashoffset: 245; transition: stroke-dashoffset .25s linear; }
+.lines { min-height: 220px; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: flex-start; }
+.lines p { margin: 0; font-size: 17px; line-height: 1.6; opacity: 0; transform: translateY(6px); transition: opacity 1s ease, transform 1s ease; }
+.lines p.in { opacity: 1; transform: none; }
+.lines p.big { font-size: 13px; letter-spacing: .2em; color: var(--g1); margin-top: 10px; }
+
+/* 2 서랍 */
+.drawer { position: relative; width: min(100%, 520px); margin: 18px auto 0; aspect-ratio: 1595 / 1190; overflow: hidden; border-radius: 4px; background: #111; touch-action: none; }
+.drawer, .slide, .hug, .hug-pad { -webkit-user-select: none; user-select: none; }
+.drawer img, .slide img { -webkit-user-drag: none; }
+.drawer img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.drawer .front { position: absolute; left: 0; right: 0; top: 0; height: 100%; background: linear-gradient(#2e2e2e, #232323); border-top: 1px solid #444; transform: translateY(0); will-change: transform; box-shadow: 0 -12px 30px rgba(0,0,0,.6); }
+.drawer .front::after { content: ""; position: absolute; left: 50%; top: 18%; width: 64px; height: 8px; margin-left: -32px; border-radius: 4px; background: #777; }
+.drawer.stuck .front { animation: mlStuck .35s ease; }
+@keyframes mlStuck { 0%,100% { margin-top: 0; } 30% { margin-top: -6px; } 60% { margin-top: 3px; } }
+
+/* 3 소파: 쿠션은 3D 위에 덮이는 회색 면 */
+.cush { position: absolute; top: 4%; bottom: 4%; width: 54%; background: radial-gradient(120% 90% at 50% 40%, #8c8c8c, #6b6b6b 70%, #5a5a5a); border-radius: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.08); transition: transform .12s linear; will-change: transform; pointer-events: none; }
+.cush.l { left: -2%; } .cush.r { right: -2%; }
+.hug { position: relative; z-index: 2; background: #000; margin-top: 26px; padding: 22px 18px; border: 1px solid var(--g3); border-radius: 18px; text-align: center; touch-action: none; }
+.hug-pad { margin: 14px auto 6px; width: 180px; height: 180px; border-radius: 50%; border: 1px dashed var(--g2); display: grid; place-items: center; font-size: 13px; color: var(--g1); transition: background-color .6s, border-color .6s; }
+.hug-pad.held { background: #1d1d1d; border-color: #fff; color: #fff; }
+
+/* 4 은빛 바닥 */
+.slide { position: relative; width: min(100%, 520px); margin: 16px auto 0; aspect-ratio: 3 / 4; overflow: hidden; border-radius: 4px; background: #111; touch-action: pan-y; }
+.slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s ease; }
+.slide img.on { opacity: 1; }
+.space { width: 100%; margin: 14px 0 0; border-radius: 4px; display: block; }
+.ml-sleep { position: fixed; inset: 0; z-index: 5; background: #0b0b0b; display: grid; place-content: center; text-align: center; touch-action: none; }
+.ml-sleep[hidden] { display: none; }
+.ml-sleep-t { margin: 0; font-size: 28px; font-weight: 300; letter-spacing: .12em; color: #4a4a4a; font-variant-numeric: tabular-nums; }
+.ml-sleep-h { margin: 12px 0 0; font-size: 13px; color: #3c3c3c; }
+
+/* 5 나의 인형 */
+.my { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 18px; }
+.my input { width: min(100%, 320px); background: #000; color: #fff; border: 1px solid var(--g2); border-radius: 12px; padding: 14px 16px; font-size: 17px; text-align: center; outline: none; }
+.my input:focus { border-color: #fff; }
+.my canvas { width: min(100%, 320px); height: auto; border-radius: 4px; }
+.skip { background: none; border: 0; color: var(--g1); font-size: 13px; text-decoration: underline; cursor: pointer; }
+
+/* 6 맺음 */
+.end-msg { font-size: 26px; font-weight: 700; line-height: 1.45; margin: 8vh 0 6vh; }
+.note { font-size: 15px; line-height: 1.85; color: #d0d0d0; max-width: 34em; }
+.note p { margin: 0 0 14px; }
+.note small { display: block; font-size: 11px; color: var(--g2); margin-top: -4px; }
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 26px 0; }
+@media (min-width: 720px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+.grid figure { margin: 0; }
+.grid img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 3px; background: #111; display: block; }
+.grid figcaption { margin-top: 6px; font-size: 11px; line-height: 1.5; color: var(--g1); }
+.grid figcaption b { color: #fff; letter-spacing: .08em; font-size: 12px; }
+.bio, .credit { font-size: 13px; line-height: 1.8; color: #bdbdbd; }
+.bio h3, .credit h3 { font-size: 11px; letter-spacing: .2em; color: var(--g1); font-weight: 400; margin: 28px 0 8px; }
+.exit { margin: 36px auto 10px; display: block; }
+
+@media (min-width: 900px) {
+  .sc { padding-left: max(22px, calc(50vw - 380px)); padding-right: max(22px, calc(50vw - 380px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lines p, .tag, .ml-back, .slide img { transition: none; }
+  .ml-edge.beat { animation-duration: .01s; }
+}
