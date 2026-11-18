@@ -3,7 +3,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #000; color: #fff; }
 html, body { overflow-x: hidden; } @supports (overflow: clip) { html, body { overflow-x: clip; } }
-body.ml-page { font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; overflow-x: hidden; }
+body.ml-page { font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; overflow-x: clip; }
 html:lang(ja) body, html:lang(zh) body { word-break: normal; line-break: strict; }
 button { font: inherit; color: inherit; }
 
@@ -125,3 +125,37 @@ button { font: inherit; color: inherit; }
   .lines p, .tag, .ml-back, .slide img { transition: none; }
   .ml-edge.beat { animation-duration: .01s; }
 }
+
+/* ── v3: 세로 스크롤 하나로 (2026-11-19) ── */
+.sc.dsec, .sc.tsec, .sc.fsec { display: block; padding: 0; min-height: 0; }
+.dsec { height: 230svh; -webkit-user-select: none; user-select: none; }
+.tsec { height: 200svh; }
+.fsec { height: 170svh; }
+.stk { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; justify-content: space-between; padding: calc(var(--sat) + 58px) 22px calc(var(--sab) + 22px); pointer-events: none; }
+.stk > * { pointer-events: auto; }
+.d-top { text-align: center; }
+.d-top .tag { min-width: 0; padding: 9px 16px 8px; }
+.d-top .tag b { font-size: 14px; }
+.d-bot { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.d-verb { margin: 0; font-size: 15px; line-height: 1.5; }
+.d-verb b { display: block; font-size: 17px; }
+.d-verb span { color: #bdbdbd; font-size: 13px; }
+.d-meter { margin: 0; min-height: 1.4em; font-size: 12px; color: #9a9a9a; font-variant-numeric: tabular-nums; }
+.chip.hold { -webkit-user-select: none; user-select: none; touch-action: none; }
+.chap { min-height: 80svh; justify-content: center; }
+.scroll-cue { margin-top: 28px; font-size: 12px; letter-spacing: .2em; color: #777; animation: mlCue 2.4s ease-in-out infinite; }
+@keyframes mlCue { 0%,100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(6px); opacity: 1; } }
+.dsec .cush { position: absolute; top: 24%; bottom: 30%; width: 54%; pointer-events: none !important; }
+.dsec .cush.l { left: -2%; } .dsec .cush.r { right: -2%; }
+.dsec[data-doll="jake"] .stk, .dsec[data-doll="peanut"] .stk, .dsec[data-doll="mas"] .stk { overflow: hidden; }
+.tsec .drawer { margin: auto; }
+.fsec .ph { position: relative; width: min(100%, 520px); margin: 0 auto; flex: 1; max-height: 64svh; overflow: hidden; border-radius: 4px; background: #111; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.fsec .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; will-change: transform; -webkit-user-drag: none; }
+.fsec .fog { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.fsec .sheen { position: absolute; inset: -20% -40%; background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.18) 50%, transparent 62%); pointer-events: none; mix-blend-mode: screen; }
+.fsec .d-bot { margin-top: 14px; }
+.marks ul { list-style: none; padding: 0; margin: 16px 0 10px; display: grid; gap: 8px; }
+.marks li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #2a2a2a; border-radius: 12px; font-size: 13px; }
+.marks li b { letter-spacing: .1em; }
+.marks li span { color: #bdbdbd; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .scroll-cue { animation: none; } }
