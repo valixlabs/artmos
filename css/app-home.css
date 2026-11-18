@@ -166,3 +166,6 @@
 .vx .vx-sensor-ask svg { width: 18px; height: 18px; fill: none; stroke: #000; stroke-width: 1.8; }
 .vx .vx-sensor-ask[hidden] { display: none; }
 .vx .ob-sensor-p { margin: 18px 0 0; color: #cfcfcf; font-size: 15px; line-height: 1.6; } .vx .ob-sensor-p.dim { margin-top: 10px; color: #8a8a8a; font-size: 13px; }
+
+/* 결제(2026-11-18): 상세의 '먼저 미리 보기' */
+.vx .dt-preview { display: block; margin: 14px 0 0; padding: 8px 0; background: none; border: 0; color: #bdbdbd; font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

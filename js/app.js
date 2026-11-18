@@ -14,7 +14,7 @@ import { createMotionPreference } from './app-preferences.js?v=2';
 import { createAppDiscover } from './app-discover.js?v=4';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=2';
-import * as MB from './membership.js?v=15';
+import * as MB from './membership.js?v=16';
 import * as SHOP from './app-shop.js?v=21';
 import * as AU from './auth.js?v=16';
 import { bizHTML } from './biz.js?v=2';
@@ -268,6 +268,8 @@ function notiSheet() {
 const startOf = (c) => { const m = String(c.period || '').match(/(\d{4})\.(\d{1,2})/); return m ? new Date(+m[1], +m[2] - 1, 1) : new Date(0); };
 
 /* ---------- 전시 상세 ---------- */
+const needPay = (c) => MB.ENABLED && isOpen(c) && MB.isPaid(c) && !MB.canView(c); // 유료 전시인데 아직 결제 전
+const landBtn = (c) => needPay(c) ? `<button class="btn black" data-pay="${esc(c.id)}">${esc(MB.mt('payBtn'))}</button>` : `<button class="btn black" data-land="${esc(c.id)}" ${isOpen(c) ? '' : 'disabled'}>${t(isOpen(c) ? '착륙하기' : '준비 중')}</button>`;
 function detailSheet(c) {
   if (!c) return;
   const p = playOf(c), liked = isLiked(c.id);
@@ -280,10 +282,11 @@ function detailSheet(c) {
       <p class="dt-meta">${esc(c.artist || '')}${c.period ? ' · ' + esc(c.period) : ''}</p>
       ${c.summary ? `<p class="dt-sum">${esc(c.summary)}</p>` : ''}
       ${c.rooms && c.rooms.length && !c.single ? `<div class="dt-rooms"><h4>${t('방')}</h4>${c.rooms.map((r, i) => `<div><em>${String(i + 1).padStart(2, '0')}</em><span><b>${esc(r.short || name(r))}</b><small>${esc(r.subtitle || '')}</small></span></div>`).join('')}</div>` : ''}
+      ${needPay(c) ? `<button class="dt-preview" data-land="${esc(c.id)}">${esc(MB.mt('preview'))} ›</button>` : ''}
       ${SHOP.worksForCellHTML(c.id)}
       <div class="dt-how"><h4>${t('이렇게 체험해요')}</h4><p>${esc(p.how)}</p><p class="small">${t('휴대폰을 기울이고, 흔들고, 엎어 보세요. 권한은 입장할 때 한 번 물어봐요.')}</p></div>
     </div>
-    <div class="dt-cta"><button class="like${liked ? ' on' : ''}" data-like="${esc(c.id)}" aria-label="${t('좋아요')}" aria-pressed="${liked}">${heart(liked)}</button><button class="nb-share" data-share="${esc(c.id)}" aria-label="${t('공유하기')}">${shareIcon}</button><button class="btn black" data-land="${esc(c.id)}" ${isOpen(c) ? '' : 'disabled'}>${t(isOpen(c) ? '착륙하기' : '준비 중')}</button></div>`, 'detail');
+    <div class="dt-cta"><button class="like${liked ? ' on' : ''}" data-like="${esc(c.id)}" aria-label="${t('좋아요')}" aria-pressed="${liked}">${heart(liked)}</button><button class="nb-share" data-share="${esc(c.id)}" aria-label="${t('공유하기')}">${shareIcon}</button>${landBtn(c)}</div>`, 'detail');
   return el;
 }
 
@@ -632,6 +635,9 @@ function onAction(e) {
   const byId = (id) => cells.find((x) => x.id === id);
   let b;
   if (SHOP.shopAction(e, { sheet, toast, refresh: shopRefresh, login: () => showOB('login') })) return true;
+  if ((b = q('[data-pay]'))) { openPay(byId(b.dataset.pay)); return true; }
+  if ((b = q('[data-pay-opt]'))) { const c = byId(payCell); if (c) sheet.open(MB.paySheetHTML(payView(c), b.dataset.payOpt, artOf(c).thumb), 'pay'); return true; }
+  if ((b = q('[data-pay-go]'))) { doPay(b); return true; }
   if (q('[data-membership]')) { sheet.open(MB.membershipHTML(), 'membership'); return true; }
   if (q('[data-mb-buy], [data-mb-restore], [data-mb-reset]')) { MB.handleMembershipClick(e, { notify: toast, refresh: () => { if (sheet.isOpen) sheet.open(MB.membershipHTML(), 'membership'); if (tab === 'my') go('my', true); } }); return true; }
   if ((b = q('[data-land]'))) { const c = byId(b.dataset.land); sheet.close({ restoreFocus: false }); openExhibit(c); return true; }
@@ -736,6 +742,7 @@ function exhibitUrl(c) {
   if (!IN_SHELL) return href(c);
   const u = new URL(web(href(c)));
   u.searchParams.set('lang', lang); u.searchParams.set('app', '1');
+  if (MB.ENABLED && MB.isPaid(c) && MB.canView(c)) u.searchParams.set('ent', '1'); // 결제 확인됨(멤버십·입장권)
   try { if (localStorage.getItem('xpace-sound') === 'off') u.searchParams.set('snd', 'off'); } catch (e) {}
   const m = me(); if (m && m.nick) u.searchParams.set('me', m.nick);
   return u.href;
@@ -759,6 +766,27 @@ function startSensorRelay(fromTap = true) {
   addEventListener('deviceorientationabsolute', (e) => relay({ type: 'artmos:sensor', a: { alpha: e.alpha } }), true);
   addEventListener('devicemotion', (e) => relay({ type: 'artmos:sensor', m: { acceleration: xyz(e.acceleration), accelerationIncludingGravity: xyz(e.accelerationIncludingGravity), rotationRate: e.rotationRate ? { alpha: e.rotationRate.alpha, beta: e.rotationRate.beta, gamma: e.rotationRate.gamma } : null } }), true);
 }
+/* ---------- 결제(전시 하루 입장권·멤버십) ---------- */
+let payCell = '';
+const cellById = (id) => cells.find((x) => x.id === id);
+const payView = (c) => ({ id: c.id, title: name(c), code: c.code, artist: c.artist });
+async function openPay(c) {
+  if (!c) return;
+  // 실제 결제(스토어)는 로그인한 회원만 — 멤버십이 계정에 묶여 웹·앱 어디서나 이어지게
+  if (MB.STORE_READY() && AU.AUTH_ON && !(await AU.currentUser())) { toast(MB.mt('needLogin')); sheet.close({ restoreFocus: false }); showOB('login'); return; }
+  payCell = c.id; sheet.open(MB.paySheetHTML(payView(c), 'pass', artOf(c).thumb), 'pay');
+}
+async function doPay(b) {
+  const c = cellById(b.dataset.mbCell); if (!c || b.disabled) return;
+  b.disabled = true;
+  const ok = await MB.purchase(b.dataset.payGo, c.id);
+  b.disabled = false;
+  if (!ok) { if (MB.purchaseError()) toast(MB.mt('fail')); return; } // 취소는 조용히
+  toast(MB.mt(b.dataset.payGo === 'pass' ? 'passDone' : 'done'));
+  sheet.close({ restoreFocus: false }); openExhibit(c);
+}
+MB.initStore().catch(() => {});
+AU.onAuth?.((u) => { MB.initStore(u && u.id).catch(() => {}); });
 function openExhibit(c) {
   if (!c || !isOpen(c) || !viewer.hidden) return;
   startSensorRelay();
@@ -766,6 +794,7 @@ function openExhibit(c) {
   stopVideos(); current = c; enteredAt = 0;
   const h = hist(); h[c.id] = { ...(h[c.id] || {}), last: Date.now(), visits: ((h[c.id] && h[c.id].visits) || 0) + 1 }; store.set('valix-history', h);
   const v = visits(); v.push({ id: c.id, at: Date.now() }); store.set('valix-visits', v.slice(-500));
+  if (MB.ENABLED && MB.isPaid(c)) MB.enter(c).catch(() => {});
   $('#toast').hidden = true; viewer.hidden = false; landing.start(c); loadExhibitFrame(c);
   history.pushState({ viewer: true }, ''); syncRuntime();
 }
@@ -781,7 +810,7 @@ if (sensorAsk) sensorAsk.addEventListener('click', () => {
   sensorAsk.disabled = true;
   sensor.enable().then((on) => { sensorAsk.disabled = false; showSensorAsk(!on); toast(on ? t('센서가 켜졌어요. 폰을 기울여 보세요.') : t('센서를 켜지 못했어요. 앱을 완전히 닫았다가 다시 열고 허용을 눌러 주세요.')); });
 });
-addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(false); }); // 전시 안 '전시 행성 나가기'
+addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(false); else if (e.data.type === 'artmos:pay') { const c = cellById(e.data.cell) || current; closeExhibit(); openPay(c); } }); // 전시 안 '전시 행성 나가기'
 $('#land-cancel').addEventListener('click', () => closeExhibit());
 addEventListener('popstate', () => {
   if (waitingForBack) {

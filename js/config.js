@@ -21,6 +21,10 @@ export const CONFIG = {
   // 닫힌 전시(2026-11-17 소유자): 권리 정리 전이라 앱·웹 어디에도 보이지 않게. 시트에 있어도 숨김.
   // ★ 실제로는 data/remote.json 의 closed 가 우선(앱 안에 넣어 둔 이 파일은 앱을 다시 내야 바뀌므로). 여기는 그 파일을 못 받을 때의 기본값
   closed: ['c004', 'c006'], // c004 async(류이치 사카모토 가상 기획), c006 산사(조계종 협의 전)
+  // iap: 앱 인앱결제(RevenueCat). iosKey·androidKey = RevenueCat '공개 SDK 키'(appl_… / goog_…, 공개해도 되는 키). 시크릿 키는 넣지 말 것.
+  //      entitlement = RevenueCat에서 만든 멤버십 권한 이름. 상품 id는 membership.js PRODUCTS(artmos.pass.day / artmos.member.monthly / artmos.member.yearly)와 스토어에 똑같이.
+  //      paywall.enabled가 false면 결제는 안 켜짐(시험: ?paytest=store). 설명 docs/paid/README.md
+  iap: { iosKey: '', androidKey: '', entitlement: 'members' },
   paywall: { enabled: false, paid: ['c005'], previewBlocks: 3 }, // 유료 지정: c005 빛쌀(진시영·김동선, 작가 계약 완료). enabled가 false면 아무것도 잠기지 않음
   // 온라인 아트 판매(앱 '컬렉트' 탭) — 작품은 data/artworks.json, 또는 cells 시트에 'artworks' 탭을 만들면 그게 우선
   // inquiryEmail: 구매 문의를 받을 메일 주소(비어 있으면 '문의 창구 준비 중'), showSamples: 예시 작품 보이기(실제 작품이 생기면 false)

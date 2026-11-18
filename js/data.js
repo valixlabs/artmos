@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js?v=37';
+import { CONFIG } from './config.js?v=38';
 import { lang, tr } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';
 

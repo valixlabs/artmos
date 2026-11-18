@@ -2,7 +2,7 @@
 // 지금은 '문의' 방식만(결제 없음). 실물 작품은 애플·구글 인앱결제 대상이 아니라 나중에 일반 결제(토스페이먼츠 등)를 붙일 수 있음.
 // 작품 데이터: cells 시트의 'artworks' 탭(work_id 칸이 있어야 함) → 없으면 data/artworks.json. 칸 설명은 docs/shop/README.md
 // 저장·팔로우·문의 기록은 이 기기(localStorage nebula-shop-*)에만.
-import { CONFIG } from './config.js?v=37';
+import { CONFIG } from './config.js?v=38';
 import { fetchSheet, imageUrl, esc } from './data.js?v=36';
 import { lang } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';

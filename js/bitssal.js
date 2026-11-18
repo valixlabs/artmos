@@ -8,7 +8,7 @@ import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keep
 import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=11';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
-import * as MB from './membership.js?v=15';
+import * as MB from './membership.js?v=16';
 // 앱 안(전시 틀 iframe)에서는 아이폰이 상태 표시줄 높이(safe-area)를 0으로 줌 → 상단 바가 시계 줄과 겹침. 기기 화면 높이로 어림해 채움
 { const inApp = (() => { try { return window.parent !== window && (sessionStorage.getItem('artmos-in-app') === '1' || /[?&]app=1(?:&|$)/.test(location.search)); } catch (e) { return false; } })();
   const setSat = (px) => document.documentElement.style.setProperty('--sat', `${Math.round(px)}px`);
