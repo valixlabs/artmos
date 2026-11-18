@@ -31,13 +31,23 @@ const SOFA = ['jake', 'peanut', 'mas'];
 const FLOOR = ['pin', 'moa', 'jelly', 'bread'];
 const ORDER = ['tommy', ...WALL, ...SOFA, ...FLOOR];
 // 인형마다 앞세우는 동작 (모든 동작은 어디서나 됨)
-const FOCUS = { snow: 'rub', dino: 'blow', floopy: 'press', hobby: 'shake', fufu: 'rub', 'peanut-frame': 'blow', moon: 'press', jake: 'rub', peanut: 'shake', mas: 'blow' };
-const VERB = {
+// 인형마다 체험 하나씩 (2026-11-19 소유자: 각 인형별로 다른 체험, 하나씩만)
+const MODE = { snow: 'rub', dino: 'blow', floopy: 'press', hobby: 'shake', fufu: 'hug', 'peanut-frame': 'tap', moon: 'stretch', jake: 'roll', peanut: 'pull', mas: 'call' };
+const TEXT = {
   rub: ['문질러 보세요', '만질수록 손때가 묻어요'],
-  blow: ['후~ 불어 보세요', '해진 곳이 더 벌어지고 솜이 날려요'],
-  press: ['꾹 누르고 있어 보세요', '끌어안던 자리가 납작해져요'],
+  blow: ['후~ 불어 보세요', '해진 곳이 벌어지고 솜이 날려요'],
+  press: ['꾹 누르고 있어 보세요', '눌린 자리가 납작하게 남아요'],
   shake: [IS_MOBILE ? '휴대폰을 흔들어 보세요' : '흔들기를 눌러 보세요', '해진 틈으로 솜이 빠져나와요'],
+  hug: [IS_MOBILE ? '두 손가락으로 감싸 보세요' : '꾹 누르고 있어 보세요', '폭 안기며 심장이 뛰어요'],
+  tap: ['톡톡 두드려 보세요', '두드린 자리가 반들반들 닳아요'],
+  stretch: ['잡아당겨 보세요', '천이 늘어나요 · 세게 당기면 실밥이 터져요'],
+  roll: [IS_MOBILE ? '휴대폰을 좌우로 기울여 보세요' : '인형을 좌우로 끌어 보세요', '소파 위를 구르며 먼지가 일어요'],
+  pull: ['위로 끌어 꺼내 보세요', '쿠션 틈에 끼어 있어요'],
+  call: ['이름을 불러 보세요', '목소리에 귀를 기울여요'],
 };
+const BTN = { blow: '후~ 불기', shake: IS_MOBILE ? '흔들기 (버튼)' : '흔들기', call: '이름 부르기 (누르고 있기)' };
+const MARKS = new Set(['rub', 'blow', 'press', 'shake', 'tap', 'stretch', 'roll']); // 자국이 남는 체험 → '원래대로'
+const TOUCH = new Set(['rub', 'press', 'hug', 'tap', 'stretch', 'pull', ...(IS_MOBILE ? [] : ['roll'])]); // 인형 위 터치로 하는 체험(이때만 스크롤 대신 체험)
 const tagHTML = (id) => `<b>${W[id][0]}</b><span>${W[id][2]}mm · ${W[id][1]} · 2025</span>`;
 
 // ── 진동 + 화면 박동 (아이폰 웹은 진동이 없어서 가장자리가 박동에 맞춰 밝아짐)
@@ -53,13 +63,9 @@ const dollSec = (id, ch, extra = '') => `
     <div class="d-top"><div class="tag show">${tagHTML(id)}${id === 'peanut' ? '<span style="color:#888">액자 작품과 이름이 같아요 · 작가 확인 중</span>' : ''}</div></div>
     ${extra}
     <div class="d-bot">
-      <p class="d-verb"><b>${VERB[FOCUS[id]][0]}</b><span>${VERB[FOCUS[id]][1]}</span></p>
+      <p class="d-verb"><b>${TEXT[MODE[id]][0]}</b><span>${TEXT[MODE[id]][1]}</span></p>
       <p class="d-meter" aria-live="polite"></p>
-      <div class="chip-row">
-        <button class="chip hold" data-act="blow">후~ 불기</button>
-        <button class="chip hold" data-act="shake">${IS_MOBILE ? '흔들기 (버튼)' : '흔들기'}</button>
-        <button class="chip" data-act="reset">원래대로</button>
-      </div>
+      <div class="chip-row">${BTN[MODE[id]] ? `<button class="chip hold" data-act="${MODE[id]}">${BTN[MODE[id]]}</button>` : ''}${MARKS.has(MODE[id]) ? '<button class="chip ghost" data-act="reset">원래대로</button>' : ''}</div>
     </div>
   </div>
 </section>`;
@@ -84,7 +90,7 @@ main.innerHTML = `
     <div class="under"><button class="btn" id="go1" hidden>들어가기</button></div>
   </div>
 </section>
-${chapter(1, '1 · 액자 속 인형들', '많이 사랑받은 것은 닳는다', '인형을 직접 만져 보세요. 문지르면 손때가 묻고, 후~ 불면 해진 곳이 벌어지고, 꾹 누르면 납작해져요. 언제든 ‘원래대로’를 누르면 작품의 원래 모습으로 돌아가요.')}
+${chapter(1, '1 · 액자 속 인형들', '많이 사랑받은 것은 닳는다', '인형마다 만나는 방법이 하나씩 달라요. 문지르고, 불고, 누르고, 흔들고, 껴안고, 두드리고, 잡아당겨 보세요. ‘원래대로’를 누르면 언제든 작품의 원래 모습으로 돌아가요.')}
 ${WALL.map((id) => dollSec(id, 1)).join('')}
 ${chapter(2, '2 · 서랍', '넣어 둔 기억', '천천히 내려가면 서랍이 열려요.')}
 <section class="sc tsec" id="s2" data-i="2">
@@ -93,8 +99,8 @@ ${chapter(2, '2 · 서랍', '넣어 둔 기억', '천천히 내려가면 서랍�
     <div class="d-bot"><div class="tag" id="d-tag">${tagHTML('tommy')}</div><p class="d-verb" id="h2"><span>${IS_MOBILE ? '천천히 내려 보세요 · 휴대폰을 몸 쪽으로 당겨 세워도 열려요' : '천천히 내려 보세요'}</span></p></div>
   </div>
 </section>
-${chapter(3, '3 · 소파', '생활 속에 숨은 인형', '내려가면 쿠션 틈이 벌어져요. 찾은 인형은 마음껏 만져 보세요.')}
-${SOFA.map((id) => dollSec(id, 3, '<div class="cush l"></div><div class="cush r"></div>')).join('')}
+${chapter(3, '3 · 소파', '생활 속에 숨은 인형', '소파에 놓인 인형들이에요. 굴리고, 꺼내고, 불러 보세요.')}
+${SOFA.map((id) => dollSec(id, 3, id === 'peanut' ? '<div class="cush f"></div>' : '<div class="cush l"></div><div class="cush r"></div>')).join('')}
 <section class="sc" id="s3h" data-i="3">
   <div class="hug" id="hug">
     <p class="sc-title" style="font-size:18px">두 손으로 감싸 보세요</p>
@@ -186,15 +192,19 @@ function wearMaterial(d) {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWear = { value: d.wearTex };
     sh.uniforms.uPress = { value: d.press };
+    sh.uniforms.uPull = { value: d.pull };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform sampler2D uWear; uniform vec4 uPress; varying vec2 vWUv; varying float vDent;')
+      .replace('#include <common>', '#include <common>\nuniform sampler2D uWear; uniform vec4 uPress; uniform vec4 uPull; varying vec2 vWUv; varying float vDent;')
       .replace('#include <displacementmap_vertex>', `#include <displacementmap_vertex>
         vWUv = uv;
         vec3 wv = texture2D(uWear, uv).rgb; float flat_ = wv.b;
         vec2 dd = (uv - uPress.xy) * vec2(uPress.w, 1.0);
         float dent = uPress.z * exp(-dot(dd, dd) / 0.012);
         vDent = dent + flat_ * 0.6;
-        transformed -= normalize(objectNormal) * (flat_ * 0.22 + dent * 0.45 - smoothstep(0.35, 0.7, wv.g) * 0.07);`);
+        transformed -= normalize(objectNormal) * (flat_ * 0.22 + dent * 0.45 - smoothstep(0.35, 0.7, wv.g) * 0.07);
+        vec2 pd = (uv - uPull.xy) * vec2(uPress.w, 1.0); transformed.xy += uPull.zw * exp(-dot(pd, pd) / 0.02);`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = mix(roughnessFactor, 0.3, clamp(texture2D(uWear, vWUv).b * 1.6, 0.0, 1.0));`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform sampler2D uWear; varying vec2 vWUv; varying float vDent;
@@ -216,7 +226,7 @@ function wearMaterial(d) {
         // 눌린 자리: 오목하게 그늘
         diffuseColor.rgb *= 1.0 - clamp(vDent, 0.0, 1.0) * 0.6;`);
   };
-  m.customProgramCacheKey = () => 'wear4';
+  m.customProgramCacheKey = () => 'wear5';
   return m;
 }
 
@@ -239,7 +249,7 @@ function makeDoll(id) {
     const grid = new Uint8Array(mc.width * mc.height);
     for (let y = 0; y < mc.height; y++) for (let x = 0; x < mc.width; x++) if (md[(y * mc.width + x) * 4 + 3] > 200) { inside.push([(x + 0.5) / mc.width, 1 - (y + 0.5) / mc.height]); grid[y * mc.width + x] = 1; }
     const isIn = (u, v) => { const x = Math.floor(u * mc.width), y = Math.floor((1 - v) * mc.height); return x >= 0 && y >= 0 && x < mc.width && y < mc.height && grid[y * mc.width + x] === 1; };
-    const d = { id, col, dep, nor, asp, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false };
+    const d = { id, mode: MODE[id], col, dep, nor, asp, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), pull: new THREE.Vector4(0.5, 0.5, 0, 0), seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false, rz: 0, rollT: 0, hug: 0, hugT: 0, out: 0, outT: 0, call: 0, n: 0, m: 0, note: '' };
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(asp, 1, 200, Math.max(64, Math.round(200 / asp))), wearMaterial(d));
     const g = new THREE.Group(); g.add(mesh); g.visible = false; scene.add(g);
     Object.assign(d, { mesh, g, w: asp, h: 1 });
@@ -258,7 +268,7 @@ function stamp(d, u, v, r, ch, a) {
   c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 6.3); c.fill();
   d.wearTex.needsUpdate = true; d.touched = true; d.dirty = true;
 }
-function resetDoll(d) { d.wx.globalCompositeOperation = 'source-over'; d.wx.fillStyle = '#000'; d.wx.fillRect(0, 0, d.wc.width, d.wc.height); d.wearTex.needsUpdate = true; d.seeds = []; d.dirty = true; d.stats = { dirt: 0, tear: 0, flat: 0 }; }
+function resetDoll(d) { Object.assign(d, { n: 0, m: 0, note: '', rollT: 0 }); d.wx.globalCompositeOperation = 'source-over'; d.wx.fillStyle = '#000'; d.wx.fillRect(0, 0, d.wc.width, d.wc.height); d.wearTex.needsUpdate = true; d.seeds = []; d.dirty = true; d.stats = { dirt: 0, tear: 0, flat: 0 }; }
 function measure(d) {
   const px = d.wx.getImageData(0, 0, d.wc.width, d.wc.height).data, W2 = d.wc.width, H2 = d.wc.height; let n = 0, r = 0, g = 0, b = 0;
   for (const [u, v] of d.inside) { const i = (Math.min(H2 - 1, Math.floor((1 - v) * H2)) * W2 + Math.min(W2 - 1, Math.floor(u * W2))) * 4; n++; if (px[i] > 70) r++; if (px[i + 1] > 110) g++; if (px[i + 2] > 25) b++; }
@@ -322,7 +332,7 @@ addEventListener('resize', layout); layout();
 let tx = 0, ty = 0, rx = 0, ry = 0, mouse = null;
 addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') mouse = { x: e.clientX / innerWidth * 2 - 1, y: e.clientY / innerHeight * 2 - 1 }; });
 const clock = new THREE.Clock();
-let anyOn = false;
+let anyOn = false, lastActive = null;
 function frame() {
   requestAnimationFrame(frame);
   const H = innerHeight, t = clock.getElapsedTime(), VW = VH * camera.aspect;
@@ -342,11 +352,20 @@ function frame() {
     d.g.scale.setScalar(hT); d.g.position.set(0, (0.5 - anchor / H) * VH, 0);
     d.g.rotation.x = (sofa ? -0.15 : 0) + rx + Math.sin(t * 0.5 + d.asp) * 0.025 * idle;
     d.g.rotation.y = ry + Math.sin(t * 0.37 + d.asp) * 0.07 * idle;
+    d.g.rotation.z = 0;
+    if (d.mode === 'roll') { d.g.rotation.z = -d.rz * 0.55; d.g.position.x += d.rz * Math.min(hT * 0.3, VW * 0.18); }
+    if (d.mode === 'hug') d.g.scale.set(hT * (1 + 0.07 * d.hug), hT * (1 - 0.09 * d.hug), hT);
+    if (d.mode === 'pull') d.g.position.y += -(1 - d.out) * hT * 0.5 + d.out * hT * 0.16;
+    if (d.mode === 'call') { d.g.rotation.y += d.call * 0.45; d.g.position.y += Math.sin(t * 9) * d.call * hT * 0.015; }
+    if (!(press && press.d === d)) { d.pull.z *= 0.86; d.pull.w *= 0.86; }
     s.style.setProperty('--p', clamp(-r.top / Math.max(1, r.height - H), 0, 1).toFixed(3));
     if (r.top <= 2 && r.bottom >= H - 2) active = { s, d };
     if (!(press && press.d === d)) d.press.z *= 0.9;
   }
   key.position.set(1.2 - ry * 6, 1.6 + rx * 5, 3);
+  // 만지는 인형이 바뀌면 지난 인형의 솜은 치움
+  const aid = active && active.d.id; if (aid !== lastActive) { lastActive = aid; if (aid) { pLife.fill(0); for (let i = 0; i < PN; i++) pPos[i * 3 + 2] = -99; pGeo.attributes.position.needsUpdate = true; } }
+  key.intensity = 1.7 + (active && active.d.mode === 'call' ? active.d.call * 0.9 : 0);
   if (show !== anyOn) { anyOn = show; cv.classList.toggle('on', show); }
   if (!show) return;
   interact();
@@ -355,84 +374,146 @@ function frame() {
 }
 requestAnimationFrame(frame);
 
-// ── 만지기: 인형 위에서 시작한 터치는 스크롤 대신 문지르기·누르기
+// ── 만지기: 인형 위에서 시작한 터치는(그 인형이 터치로 하는 체험일 때만) 스크롤 대신 체험
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-function hitDoll(x, y) {
+function hitDoll(x, y, loose) {
   if (!active) return null; const d = active.d;
   d.g.updateMatrixWorld();
   ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const h = ray.intersectObject(d.mesh)[0]; if (!h) return null;
-  const { x: u, y: v } = h.uv; if (!d.isIn(u, v)) return null; // 투명한 곳은 빼기
+  const { x: u, y: v } = h.uv; if (!loose && !d.isIn(u, v)) return null; // 투명한 곳은 빼기
   return { d, u, v };
 }
+const pxToLocal = (px, d) => px * (VH / innerHeight) / d.g.scale.y; // 화면 px → 인형 크기 단위
 let press = null; // { d, u, v, x, y, t0, moved, last }
+const hugIds = new Set();
 const skip = (t) => t.closest && t.closest('button, a, input, .hug, .ph, .drawer');
-document.addEventListener('touchstart', (e) => { if (e.touches.length === 1 && !skip(e.target) && hitDoll(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchstart', (e) => {
+  if (!active || !TOUCH.has(active.d.mode) || skip(e.target)) return;
+  if ([...e.touches].some((t) => hitDoll(t.clientX, t.clientY, true))) e.preventDefault();
+}, { passive: false });
 addEventListener('pointerdown', (e) => {
-  if (skip(e.target)) return;
-  const h = hitDoll(e.clientX, e.clientY); if (!h) return;
+  if (skip(e.target) || !active || !TOUCH.has(active.d.mode)) return;
+  const h = hitDoll(e.clientX, e.clientY, active.d.mode === 'pull' || active.d.mode === 'hug'); if (!h) return;
   e.preventDefault();
-  press = { ...h, x: e.clientX, y: e.clientY, t0: performance.now(), moved: 0, last: { u: h.u, v: h.v } };
-  stamp(h.d, h.u, h.v, 11, 'r', 0.2);
+  if (h.d.mode === 'hug') { hugIds.add(e.pointerId); }
+  if (press) return; // 두 번째 손가락은 껴안기에만
+  press = { ...h, x: e.clientX, y: e.clientY, t0: performance.now(), moved: 0, last: { u: h.u, v: h.v }, out0: h.d.out, burst: false };
+  if (h.d.mode === 'rub') stamp(h.d, h.u, h.v, 11, 'r', 0.2);
 });
 addEventListener('pointermove', (e) => {
-  if (!press) return;
-  let ev = e.getCoalescedEvents ? e.getCoalescedEvents() : []; if (!ev.length) ev = [e];
-  ev.forEach((x) => {
-    const h = hitDoll(x.clientX, x.clientY); if (!h || h.d !== press.d) return;
-    const l = press.last, du = (h.u - l.u) * press.d.wc.width, dv = (h.v - l.v) * press.d.wc.height, n = Math.ceil(Math.hypot(du, dv) / 4);
-    for (let i = 1; i <= n; i++) stamp(press.d, l.u + (h.u - l.u) * i / n, l.v + (h.v - l.v) * i / n, 11, 'r', 0.16);
-    press.moved += Math.hypot(du, dv); press.last = { u: h.u, v: h.v }; press.u = h.u; press.v = h.v;
-    if (Math.random() < 0.04) sensor.vibrate(4);
-  });
+  if (!press) return; const d = press.d, m = d.mode;
+  const dx = e.clientX - press.x, dy = e.clientY - press.y; press.moved = Math.max(press.moved, Math.hypot(dx, dy));
+  if (m === 'rub') {
+    let ev = e.getCoalescedEvents ? e.getCoalescedEvents() : []; if (!ev.length) ev = [e];
+    ev.forEach((x) => {
+      const h = hitDoll(x.clientX, x.clientY); if (!h || h.d !== d) return;
+      const l = press.last, du = (h.u - l.u) * d.wc.width, dv = (h.v - l.v) * d.wc.height, n = Math.ceil(Math.hypot(du, dv) / 4);
+      for (let i = 1; i <= n; i++) stamp(d, l.u + (h.u - l.u) * i / n, l.v + (h.v - l.v) * i / n, 11, 'r', 0.16);
+      press.last = { u: h.u, v: h.v };
+      if (Math.random() < 0.04) sensor.vibrate(4);
+    });
+  } else if (m === 'stretch') {
+    // 잡은 자리를 끌면 천이 늘어남, 많이 당기면 실밥이 터짐(한 번 잡을 때 한 번)
+    let lx = pxToLocal(dx, d), ly = -pxToLocal(dy, d); const L = Math.hypot(lx, ly), MX = 0.22;
+    if (L > MX) { lx *= MX / L; ly *= MX / L; }
+    d.pull.set(press.u, press.v, lx, ly);
+    if (L > 0.2 && !press.burst) { press.burst = true; d.m++; stamp(d, press.u, press.v, 12, 'g', 0.6); stamp(d, press.u, press.v, 7, 'g', 0.5); puff(d, press.u, press.v, 8); beat([25, 50, 25]); }
+    if (Math.random() < 0.05) sensor.vibrate(5);
+  } else if (m === 'roll') {
+    d.rollDrag = clamp(dx / (innerWidth * 0.3), -1, 1);
+  } else if (m === 'pull') {
+    d.outT = clamp(press.out0 + (-dy) / (innerHeight * 0.28), 0, 1);
+  }
 });
-const release = () => {
-  if (!press) return; const d = press.d;
-  if (d.press.z > 0.15) stamp(d, d.press.x, d.press.y, 20, 'b', 0.55 * d.press.z); // 눌린 자리가 조금 남음
+const release = (e) => {
+  if (e && e.pointerId != null) hugIds.delete(e.pointerId);
+  if (!press) return; const d = press.d, now = performance.now();
+  if (d.mode === 'press' && d.press.z > 0.15) { stamp(d, d.press.x, d.press.y, 20, 'b', 0.55 * d.press.z); d.n++; } // 눌린 자리가 조금 남음
+  if (d.mode === 'tap' && now - press.t0 < 320 && press.moved < 12) { stamp(d, press.u, press.v, 7, 'b', 0.35); d.n++; sensor.vibrate(8); }
+  if (d.mode === 'stretch' && press.moved > 30) d.n++;
+  if (d.mode === 'roll') d.rollDrag = 0;
   press = null;
 };
 addEventListener('pointerup', release); addEventListener('pointercancel', release);
 
-// 버튼: 후~ / 흔들기 / 원래대로
+// 버튼: 후~ 불기 / 흔들기 / 이름 부르기 (누르고 있는 동안) · 원래대로
 let micTried = false, holdAct = null;
 document.querySelectorAll('.dsec .chip').forEach((b) => {
   const act = b.dataset.act, sec = b.closest('.dsec');
   if (act === 'reset') { b.onclick = () => { const d = dolls.get(sec.dataset.doll); if (d) { resetDoll(d); $('.d-meter', sec).textContent = '작품의 원래 모습이에요'; } }; return; }
   const on = async (e) => {
     e.preventDefault(); holdAct = { act, s: sec, t: performance.now() }; b.classList.add('on');
-    if (act === 'blow' && !micTried && IS_MOBILE) { micTried = true; try { await startMic(); } catch (err) {} }
+    if ((act === 'blow' || act === 'call') && !micTried && IS_MOBILE) { micTried = true; try { await startMic(); } catch (err) {} }
     if (act === 'shake') shakeNow(0.7, sec);
   };
   const off = () => { holdAct = null; b.classList.remove('on'); };
   b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
 });
 function shakeNow(s, sec) {
-  const d = sec ? dolls.get(sec.dataset.doll) : active && active.d; if (!d) return;
+  const d = sec ? dolls.get(sec.dataset.doll) : active && active.d; if (!d || d.mode !== 'shake') return;
   if (!d.stats.tear) tearStep(d, 0.6);
-  seedsOf(d).forEach((sd) => puff(d, sd.u, sd.v, Math.round(4 + s * 10), true));
+  const k = Math.round(4 + s * 10); seedsOf(d).forEach((sd) => puff(d, sd.u, sd.v, k, true)); d.n++;
   if (s > 0.5) tearStep(d, 0.4);
   sensor.vibrate([20, 40, 20]);
 }
-sensor.onShake((s) => { if (active) shakeNow(Math.min(1, s)); });
+let lastShake = 0;
+sensor.onShake((s) => { const now = performance.now(); if (active && now - lastShake > 350) { lastShake = now; shakeNow(Math.min(1, s)); } });
 
+const holding = (act) => holdAct && holdAct.act === act && holdAct.s === active.s;
 let lastMeter = 0, lastI = 0;
 function interact() {
   const now = performance.now(), dt = Math.min(250, now - (lastI || now)); lastI = now;
-  if (!active) return; const d = active.d;
-  // 꾹 누르기: 300ms 넘게 거의 안 움직이면 그 자리가 눌림
-  if (press && press.d === d && press.moved < 10 && now - press.t0 > 300) {
+  if (!active) return; const d = active.d, m = d.mode;
+  if (m === 'press' && press && press.d === d && press.moved < 10 && now - press.t0 > 300) {
+    // 꾹 누르기: 300ms 넘게 가만히 → 그 자리가 눌림(1.2초면 가장 깊게)
     d.press.x = press.u; d.press.y = press.v; d.press.z = Math.min(1, d.press.z + dt / 1200);
     if (Math.random() < 0.05) sensor.vibrate(6);
   }
-  // 후~: 마이크 세기 또는 버튼 누르는 동안
-  const micBlow = sensor.micOn ? sensor.blow : 0;
-  const btnBlow = holdAct && holdAct.act === 'blow' && holdAct.s === active.s ? 0.8 : 0;
-  const bp = Math.max(micBlow > 0.3 ? micBlow : 0, btnBlow);
-  if (bp > 0 && Math.random() < dt / 32) tearStep(d, bp);
-  if (holdAct && holdAct.act === 'shake' && holdAct.s === active.s && now - holdAct.t > 500 && Math.random() < 0.08) shakeNow(0.5);
+  if (m === 'blow') {
+    const bp = Math.max(sensor.micOn && sensor.blow > 0.3 ? sensor.blow : 0, holding('blow') ? 0.8 : 0);
+    if (bp > 0 && Math.random() < dt / 32) tearStep(d, bp);
+  }
+  if (m === 'shake' && holding('shake') && now - holdAct.t > 500 && Math.random() < dt / 200) shakeNow(0.5);
+  if (m === 'hug') {
+    const on = hugIds.size >= 2 || (press && press.d === d && now - press.t0 > 400);
+    d.hug += ((on ? 1 : 0) - d.hug) * Math.min(1, dt / 160);
+    if (on) { d.hugT += dt; d.touched = true; if (Math.floor(d.hugT / 1100) > Math.floor((d.hugT - dt) / 1100)) beat(); }
+  }
+  if (m === 'roll') {
+    const target = sensor.on ? clamp(sensor.tiltX / 0.6, -1, 1) : (d.rollDrag || 0);
+    const prev = d.rz; d.rz += (target - d.rz) * Math.min(1, dt / 220);
+    const v = Math.abs(d.rz - prev); d.rollT += v;
+    if (v > 0.004 && Math.random() < v * 40) { // 구르면 아래쪽에 먼지 자국·먼지
+      const pts = d.inside.filter(([, y]) => y < 0.35); const [u, y] = pts[(Math.random() * pts.length) | 0] || [0.5, 0.2];
+      stamp(d, u, y, 9, 'r', 0.12); puff(d, u, y, 1, true);
+    }
+  }
+  if (m === 'pull') {
+    d.out += (d.outT - d.out) * Math.min(1, dt / 140);
+    if (d.out > 0.95 && !d.found) { d.found = true; d.touched = true; beat([20, 80, 20]); }
+  }
+  if (m === 'call') {
+    const lv = Math.max(sensor.micOn ? sensor.micLevel : 0, holding('call') ? 0.8 : 0);
+    if (lv > 0.3 && d.call < 0.3) { d.n++; d.touched = true; }
+    d.call += (lv - d.call) * Math.min(1, dt / (lv > d.call ? 120 : 600));
+  }
   if (now - lastMeter > 500) {
     lastMeter = now; if (d.dirty) measure(d);
-    const st = d.stats; if (d.touched && (st.dirt || st.tear || st.flat)) $('.d-meter', active.s).textContent = `손때 ${st.dirt}% · 해진 곳 ${st.tear}% · 납작해진 곳 ${st.flat}%`;
+    const st = d.stats, sec = Math.round(d.hugT / 1000);
+    const note = {
+      rub: st.dirt ? `손때 ${st.dirt}%` : '',
+      blow: st.tear ? `해진 곳 ${st.tear}%` : '',
+      press: d.n ? `${d.n}번 눌렀어요 · 납작해진 곳 ${st.flat}%` : '',
+      shake: d.n ? `${d.n}번 흔들었어요 · 해진 틈 ${st.tear}%` : '',
+      hug: sec ? `${sec}초 동안 안았어요` : '',
+      tap: d.n ? `${d.n}번 두드렸어요 · 반들해진 곳 ${st.flat}%` : '',
+      stretch: d.n || d.m ? `${d.n}번 당겼어요${d.m ? ` · 터진 실밥 ${d.m}곳` : ''}` : '',
+      roll: d.rollT > 0.05 ? `소파 위를 굴렀어요 · 묻은 먼지 ${Math.max(1, st.dirt)}%` : '',
+      pull: d.found ? '찾았다! 쿠션 틈에서 꺼냈어요' : '',
+      call: d.n ? `목소리를 ${d.n}번 들었어요` : '',
+    }[m];
+    if (note) { d.note = note; $('.d-meter', active.s).textContent = note; }
   }
 }
 
@@ -566,7 +647,7 @@ addEventListener('touchend', (e) => { if (palm && e.touches.length === 0) { palm
 // ════════════════ 5 남긴 자국 + 나의 인형 ════════════════
 new IntersectionObserver((es) => {
   if (!es[0].isIntersecting) return; const rows = [];
-  for (const id of [...WALL, ...SOFA]) { const d = dolls.get(id); if (!d || !d.touched) continue; measure(d); if (!(d.stats.dirt || d.stats.tear || d.stats.flat)) continue; rows.push(`<li><b>${W[id][0]}</b><span>손때 ${d.stats.dirt}% · 해진 곳 ${d.stats.tear}% · 납작해진 곳 ${d.stats.flat}%</span></li>`); }
+  for (const id of [...WALL, ...SOFA]) { const d = dolls.get(id); if (!d || !d.note) continue; rows.push(`<li><b>${W[id][0]}</b><span>${d.note}</span></li>`); }
   $('#marks').innerHTML = rows.length ? `<ul>${rows.join('')}</ul><p class="sc-lead">당신의 손이 지나간 자리예요. 인형들은 이렇게 사랑받아 왔어요.</p>` : '<p class="sc-lead">아직 만진 인형이 없어요. 위로 올라가 한 번 만져 보세요.</p>';
 }, { threshold: 0.1 }).observe($('#s5'));
 (() => {
@@ -613,4 +694,4 @@ document.querySelectorAll('.ml-exit').forEach((a) => a.addEventListener('click',
   const top = $('.ml-top'); let y0 = scrollY;
   addEventListener('scroll', () => { if (!IS_MOBILE) return; const y = scrollY; if (y < 120) top.classList.remove('hide'); else if (y - y0 > 24) top.classList.add('hide'); else if (y0 - y > 14) top.classList.remove('hide'); y0 = y; }, { passive: true });
 })();
-if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, get cur() { return cur; } };
+if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, hugIds, get cur() { return cur; } };
