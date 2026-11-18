@@ -14,7 +14,7 @@ import { createMotionPreference } from './app-preferences.js?v=2';
 import { createAppDiscover } from './app-discover.js?v=4';
 import { createExhibitShare } from './app-share.js?v=2';
 import { APP_COPY } from './app-copy.js?v=2';
-import * as MB from './membership.js?v=17';
+import * as MB from './membership.js?v=18';
 import * as SHOP from './app-shop.js?v=21';
 import * as AU from './auth.js?v=16';
 import { bizHTML } from './biz.js?v=2';
@@ -466,7 +466,7 @@ const screens = {
       <section class="sec"><button class="nb-preference" data-motion role="switch" aria-checked="${motionQuery.matches}" ${motionQuery.systemReduced ? 'disabled' : ''}><span><b>${t('모션 줄이기')}</b><small>${t(motionQuery.systemReduced ? '시스템에서 모션 감소를 사용 중이에요.' : '카드 기울기와 장식 애니메이션을 줄여요.')}</small></span><i class="nb-switch" aria-hidden="true"></i></button></section>
       <section class="sec list"><button class="row" data-intro-replay><b>${t('인트로 다시 보기')}</b><span class="v">›</span></button></section>
       <section class="sec"><div class="sec-h"><h2 class="h20">${t('체험 권한')}</h2></div><p class="small">${t('기울기·흔들기·마이크·카메라·위치는 전시 안에서 체험할 때만 쓰고, 기기 밖으로 저장하거나 보내지 않아요.')}</p></section>
-      <section class="sec list"><button class="row" data-clear><b>${t('관람 기록 지우기')}</b></button><div class="row"><b>${t('버전')}</b><span class="v">ARTMOS ${VERSION}</span></div></section>
+      <section class="sec list"><button class="row" data-clear><b>${t('관람 기록 지우기')}</b></button><button class="row" data-ver><b>${t('버전')}</b><span class="v">ARTMOS ${VERSION}</span></button>${MB.TEST ? `<button class="row" data-paytest-off><b>결제 시험 모드 켜짐</b><span class="v">끄기</span></button>` : ''}</section>
       ${bizHTML()}`;
   },
 };
@@ -635,6 +635,12 @@ function onAction(e) {
   const byId = (id) => cells.find((x) => x.id === id);
   let b;
   if (SHOP.shopAction(e, { sheet, toast, refresh: shopRefresh, login: () => showOB('login') })) return true;
+  if (q('[data-ver]')) { // 버전을 7번 누르면 이 기기에서 결제 시험 모드(돈은 안 나감)
+    verTaps = Date.now() - verAt < 1500 ? verTaps + 1 : 1; verAt = Date.now();
+    if (verTaps >= 7) { verTaps = 0; try { localStorage.setItem('artmos-paytest', '1'); } catch (e) {} toast('결제 시험 모드를 켰어요. 실제 결제는 아니에요.'); setTimeout(() => location.reload(), 900); }
+    return true;
+  }
+  if (q('[data-paytest-off]')) { try { localStorage.removeItem('artmos-paytest'); sessionStorage.removeItem('nebula-paytest'); } catch (e) {} toast('결제 시험 모드를 껐어요.'); setTimeout(() => location.replace(location.pathname), 900); return true; }
   if ((b = q('[data-pay]'))) { openPay(byId(b.dataset.pay)); return true; }
   if ((b = q('[data-pay-opt]'))) { const c = byId(payCell); if (c) sheet.open(MB.paySheetHTML(payView(c), b.dataset.payOpt, artOf(c).thumb), 'pay'); return true; }
   if ((b = q('[data-pay-go]'))) { doPay(b); return true; }
@@ -743,6 +749,7 @@ function exhibitUrl(c) {
   const u = new URL(web(href(c)));
   u.searchParams.set('lang', lang); u.searchParams.set('app', '1');
   if (MB.ENABLED && MB.isPaid(c) && MB.canView(c)) u.searchParams.set('ent', '1'); // 결제 확인됨(멤버십·입장권)
+  if (MB.TEST) u.searchParams.set('paytest', '1'); // 시험 모드면 전시 안 잠금·'결제하고 이어 보기'도 보이게
   try { if (localStorage.getItem('xpace-sound') === 'off') u.searchParams.set('snd', 'off'); } catch (e) {}
   const m = me(); if (m && m.nick) u.searchParams.set('me', m.nick);
   return u.href;
@@ -768,6 +775,7 @@ function startSensorRelay(fromTap = true) {
 }
 /* ---------- 결제(전시 하루 입장권·멤버십) ---------- */
 let payCell = '';
+let verTaps = 0, verAt = 0;
 const cellById = (id) => cells.find((x) => x.id === id);
 const payView = (c) => ({ id: c.id, title: name(c), code: c.code, artist: c.artist });
 async function openPay(c) {

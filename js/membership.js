@@ -8,7 +8,8 @@ import { lang } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';
 
 const PW = CONFIG.paywall || {};
-export const TEST = new URLSearchParams(location.search).has('paytest') || (() => { try { return sessionStorage.getItem('nebula-paytest') === '1'; } catch (e) { return false; } })();
+// 시험 결제: ?paytest=1(이 탭 동안) 또는 앱 마이 → '버전'을 7번 눌러 켠 기기(artmos-paytest, 끌 때까지 유지). 실제 결제는 아님.
+export const TEST = new URLSearchParams(location.search).has('paytest') || (() => { try { return sessionStorage.getItem('nebula-paytest') === '1' || localStorage.getItem('artmos-paytest') === '1'; } catch (e) { return false; } })();
 if (TEST) { try { sessionStorage.setItem('nebula-paytest', '1'); } catch (e) {} }
 export const ENABLED = !!PW.enabled || TEST;
 const QS = new URLSearchParams(location.search);

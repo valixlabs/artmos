@@ -8,7 +8,7 @@ import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keep
 import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=12';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
-import * as MB from './membership.js?v=17';
+import * as MB from './membership.js?v=18';
 // 전시 번호 — 닫힌 전시를 빼고 다시 매긴 번호(최초의 방 A-001 · 빛쌀 A-002 · 실낱 같은 희망 A-003). 번호가 바뀌면 여기와 bitssal-scenes.js·bitssal.html을 함께
 const NUM = 'A-002';
 // 앱 안(전시 틀 iframe)에서는 아이폰이 상태 표시줄 높이(safe-area)를 0으로 줌 → 상단 바가 시계 줄과 겹침. 기기 화면 높이로 어림해 채움

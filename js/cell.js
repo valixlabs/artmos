@@ -3,7 +3,7 @@ import { tr, langSwitcher } from './i18n.js?v=7';
 import { IS_MOBILE, sensor, keepAwake } from './sensors.js?v=6';
 import { videoHTML, mountVideos } from './video.js?v=2';
 import { labRenderers, setupSakamotoLab } from './sakamoto-lab.js?v=5';
-import * as MB from './membership.js?v=17';
+import * as MB from './membership.js?v=18';
 
 const story = document.getElementById('story');
 const wipe = document.getElementById('wipe');
