@@ -1,14 +1,16 @@
-// A-003 · 빛쌀 — 한 톨의 쌀을 따라가는 연속 스크롤 이야기
+// A-002 · 빛쌀 — 한 톨의 쌀을 따라가는 연속 스크롤 이야기
 // 사실 서술 출처: 진실·화해를위한과거사정리위원회 「대구10월사건 관련 민간인 희생 사건」(jinsil.go.kr/KoreanWar/30.do),
 //                「경산 코발트광산 사건」(jinsil.go.kr/KoreanWar/36.do)
 import { sound } from './bitssal-sound.js?v=7';
 import { lang, tr, langSwitcher } from './i18n.js?v=8';
 import { videoHTML, mountVideos, playVideo, onVideo, stopVideos } from './video.js?v=2';
 import { IS_MOBILE, sensor, startCamera, startMic, getPosition, distanceKm, keepAwake } from './sensors.js?v=6';
-import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=11';
+import { buildScenes, YEARS_AT } from './bitssal-scenes.js?v=12';
 import { facePoints, drawPortrait } from './bitssal-faces.js?v=3';
 import { shapePoints, inkPoints } from './bitssal-shapes.js?v=1';
 import * as MB from './membership.js?v=16';
+// 전시 번호 — 닫힌 전시를 빼고 다시 매긴 번호(최초의 방 A-001 · 빛쌀 A-002 · 실낱 같은 희망 A-003). 번호가 바뀌면 여기와 bitssal-scenes.js·bitssal.html을 함께
+const NUM = 'A-002';
 // 앱 안(전시 틀 iframe)에서는 아이폰이 상태 표시줄 높이(safe-area)를 0으로 줌 → 상단 바가 시계 줄과 겹침. 기기 화면 높이로 어림해 채움
 { const inApp = (() => { try { return window.parent !== window && (sessionStorage.getItem('artmos-in-app') === '1' || /[?&]app=1(?:&|$)/.test(location.search)); } catch (e) { return false; } })();
   const setSat = (px) => document.documentElement.style.setProperty('--sat', `${Math.round(px)}px`);
@@ -219,7 +221,7 @@ function autoSound() {
   if (sndUserOff) return;
   sound.tryAuto().then((ok) => {
     if (ok) { GEST.forEach((ev) => removeEventListener(ev, firstGesture)); sndUI(); return; }
-    closeGate = sndGate(tr('A-003 · 진시영 · 김동선'), tr('빛쌀 — 80년의 기억'), (withSound) => {
+    closeGate = sndGate(tr('A-003 · 진시영 · 김동선').replace('A-003', NUM), tr('빛쌀 — 80년의 기억'), (withSound) => {
       GEST.forEach((ev) => removeEventListener(ev, firstGesture));
       sensor.enable();
       if (withSound) { sound.start().then(sndUI); narr.unlock(); }
@@ -232,8 +234,8 @@ function autoSound() {
 langSwitcher(document.querySelector('.bs-top'), { before: document.querySelector('.bs-menu-btn'), cls: 'bs-lang' });
 if (lang !== 'ko') {
   document.querySelector('.bs-menu-btn').textContent = tr('이야기 목차');
-  document.querySelector('.bs-title').textContent = 'A-003 · ' + tr('빛쌀 — 80년의 기억').split(' — ')[0];
-  document.title = `A-003 · ${tr('빛쌀 — 80년의 기억')} | ARTMOS`;
+  document.querySelector('.bs-title').textContent = NUM + ' · ' + tr('빛쌀 — 80년의 기억').split(' — ')[0];
+  document.title = `${NUM} · ${tr('빛쌀 — 80년의 기억')} | ARTMOS`;
   sndUI();
 }
 

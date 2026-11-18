@@ -469,3 +469,6 @@ html body.bs-page .bs-menu { top: calc(var(--sat) + 108px); }
 html body.bs-page :where(.hud-clock, .hud-count, .hud-depth) { top: calc(var(--sat) + 116px); }
 html body.bs-page .lb-x { top: max(10px, var(--sat)); }
 @media (max-width: 819px) { html body.bs-page .bs-top { padding-top: max(12px, var(--sat)); } }
+
+/* 일본어·중국어는 띄어쓰기가 없어 keep-all이면 줄이 안 바뀌고 화면 밖으로 넘침(2026-11-18) → 글자 단위로 줄바꿈 */
+html:lang(ja) body *, html:lang(zh-Hans) body *, html:lang(zh) body * { word-break: normal !important; line-break: strict; overflow-wrap: anywhere; }

@@ -592,3 +592,6 @@ body.is-mobile .m-hint .m-btns { display: flex; gap: 6px; }
 .sk-quote span { font-size: 13px; color: var(--muted); letter-spacing: .1em; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 a.nav-btn { color: inherit; text-decoration: none; display: inline-flex; align-items: center; }
+
+/* 일본어·중국어는 띄어쓰기가 없어 keep-all이면 줄이 안 바뀌고 화면 밖으로 넘침(2026-11-18) → 글자 단위로 줄바꿈 */
+html:lang(ja) body *, html:lang(zh-Hans) body *, html:lang(zh) body * { word-break: normal !important; line-break: strict; overflow-wrap: anywhere; }
