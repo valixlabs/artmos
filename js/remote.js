@@ -78,7 +78,11 @@ function onScreen(s, m) {
   if (m.t === 'welcome') { s.welcomed = true; s.machine = m.machine; s.tries = m.tries; if (s.view !== 'play') { s.won = []; playView(s); buzz(30); } }
   else if (m.t === 'queue') { s.welcomed = true; queueView(s, m.pos); }
   else if (m.t === 'aim') { s.tries = m.tries; s.endAt = Date.now() + m.left * 1000; if (s.view !== 'play') playView(s); setBusy(s, ''); }
-  else if (m.t === 'phase') setBusy(s, m.p === 'drop' ? '집게가 내려가요…' : '올라가는 중… 꼭 잡아라!');
+  else if (m.t === 'phase') {
+    const T = { drop: '집게가 내려가요…', close: '집게를 오므리는 중…', rise: '잡았다! 올라가는 중… 꼭 잡아라!', miss: '앗, 헛손질…', slip: '앗, 흔들려요…!', slipped: '미끄러졌어요…' };
+    setBusy(s, T[m.p] || '…');
+    if (m.p === 'slip') buzz([20, 40, 20, 40, 20]); else if (m.p === 'rise') buzz(30); else if (m.p === 'slipped' || m.p === 'miss') buzz(60);
+  }
   else if (m.t === 'result') { s.tries = m.tries; if (m.win) s.won.push(m.prize); resultView(s, m); }
   else if (m.t === 'over') { s.overWon = m.won || s.won; if (s.view !== 'result') overView(s); }
   else if (m.t === 'full') { close(s); enterView('지금 줄이 가득 찼어요. 조금 뒤에 다시 들어와 주세요.'); }
@@ -165,7 +169,7 @@ function resultView(s, m) {
     ? `<section class="rmt-result win"><p class="rmt-kick">행성 캡슐을 뽑았어요</p><h1>뽑았다!</h1>${prizeCard(m.prize)}
         <div class="rmt-row"><button id="go" class="rmt-btn main" type="button">이 전시 보러 가기</button></div>
         <div class="rmt-row">${more ? `<button id="next" class="rmt-btn" type="button">다음 기회 (${s.tries}번 남음)</button>` : `<button id="sum" class="rmt-btn" type="button">내가 뽑은 행성 보기</button>`}</div></section>`
-    : `<section class="rmt-result"><p class="rmt-kick">${more ? `남은 기회 ${s.tries}번` : '기회를 다 썼어요'}</p><h1>아깝다!</h1><p class="rmt-lead">집게 가운데로 캡슐을 잡을수록 덜 미끄러져요.</p>
+    : `<section class="rmt-result"><p class="rmt-kick">${more ? `남은 기회 ${s.tries}번` : '기회를 다 썼어요'}</p><h1>${m.why === 'miss' ? '놓쳤다!' : '아깝다!'}</h1><p class="rmt-lead">${m.why === 'miss' ? '집게가 캡슐을 제대로 못 잡았어요.<br>캡슐 바로 위에 집게를 멈추고 잡아 보세요.' : '잡았는데 미끄러졌어요.<br>캡슐 한가운데를 잡을수록 덜 미끄러져요.'}</p>
         <div class="rmt-row">${more ? `<button id="next" class="rmt-btn main" type="button">다시 도전</button>` : `<button id="sum" class="rmt-btn main" type="button">결과 보기</button>`}</div></section>`;
   $('#go')?.addEventListener('click', () => openPrize(m.prize));
   $('#next')?.addEventListener('click', () => { s.ch.send({ t: 'next' }); s.view = 'wait'; app.innerHTML = `<section class="rmt-wait"><i class="rmt-spin"></i><p>집게를 준비하는 중…</p></section>`; });
