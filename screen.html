@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARTMOS SCREEN · 함께 그리는 별자리</title>
+  <title>ARTMOS SCREEN · 행성 뽑기</title>
   <meta name="description" content="ARTMOS SCREEN — 큰 화면의 우주를 휴대폰으로 움직이는 인터랙티브 스크린" />
   <link rel="icon" href="assets/artmos-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
   <link rel="stylesheet" href="css/artmos-brand.css?v=1" />
-  <link rel="stylesheet" href="css/screen.css?v=1" />
+  <link rel="stylesheet" href="css/screen.css?v=3" />
 </head>
 <body class="scr">
   <canvas id="sky"></canvas>
@@ -17,12 +17,12 @@
   <section id="lobby" class="scr-lobby">
     <div class="scr-copy">
       <p class="scr-kick"><b class="logo">ARTMOS</b><span>SCREEN</span></p>
-      <h1>함께 그리는 별자리</h1>
-      <p class="scr-lead">휴대폰으로 큰 화면의 빛을 움직여<br>나만의 별자리를 남겨 보세요.</p>
+      <h1>행성 뽑기</h1>
+      <p class="scr-lead">휴대폰 조이스틱으로 집게를 움직여<br>ARTMOS 전시 행성을 뽑아 보세요.</p>
       <ol class="scr-steps">
         <li><b>01</b><span>스캔</span><small>휴대폰 카메라로 QR을 비추거나<br>ARTMOS 앱 ‘스크린’ 탭에 숫자 입력</small></li>
-        <li><b>02</b><span>움직이기</span><small>휴대폰을 조이스틱처럼<br>밀거나 기울여 빛을 움직여요</small></li>
-        <li><b>03</b><span>간직하기</span><small>완성한 별자리는<br>내 휴대폰에만 도착해요</small></li>
+        <li><b>02</b><span>뽑기</span><small>조이스틱으로 집게를 옮기고<br>‘잡기’를 눌러요 · 기회 3번</small></li>
+        <li><b>03</b><span>관람하기</span><small>뽑은 행성은 내 휴대폰에 도착,<br>바로 그 전시로 들어가요</small></li>
       </ol>
     </div>
     <div class="scr-join">
@@ -30,7 +30,7 @@
       <p class="scr-code-l">입장 숫자</p>
       <p class="scr-code" id="code">····</p>
       <p class="scr-url" id="url"></p>
-      <p class="scr-note">앱 설치 없이 바로 · 최대 6명 동시에</p>
+      <p class="scr-note">앱 설치 없이 바로 · 기계 3대 · 줄 서기</p>
     </div>
   </section>
 
@@ -47,6 +47,6 @@
     <button id="fs" type="button">전체 화면</button>
   </div>
 
-  <script type="module" src="js/screen.js?v=1"></script>
+  <script type="module" src="js/screen.js?v=2"></script>
 </body>
 </html>

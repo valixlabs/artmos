@@ -464,8 +464,8 @@ const screens = {
         </div>
         <div class="scr-tab-card">
           <small>지금 열린 스크린 체험</small>
-          <h2>함께 그리는 별자리</h2>
-          <p>휴대폰을 밀거나 기울여 큰 화면의 빛을 움직이고, 별을 놓아 나만의 별자리를 그려요. 최대 6명이 함께, 한 사람 75초. 완성한 별자리는 내 휴대폰에만 도착해요.</p>
+          <h2>행성 뽑기</h2>
+          <p>휴대폰 조이스틱으로 큰 화면의 집게를 옮기고 ‘잡기’를 눌러 전시 행성 캡슐을 뽑아요. 기계 3대, 한 사람 기회 3번. 뽑은 행성은 내 휴대폰에 도착하고 바로 그 전시로 들어갈 수 있어요.</p>
         </div>
         <p class="scr-tab-note">움직임·기울기는 큰 화면을 움직이는 데에만 쓰고 저장하지 않아요.</p>
       </section>`;
@@ -860,7 +860,7 @@ if (sensorAsk) sensorAsk.addEventListener('click', () => {
   sensorAsk.disabled = true;
   sensor.enable().then((on) => { sensorAsk.disabled = false; showSensorAsk(!on); toast(on ? t('센서가 켜졌어요. 폰을 기울여 보세요.') : t('센서를 켜지 못했어요. 앱을 완전히 닫았다가 다시 열고 허용을 눌러 주세요.')); });
 });
-addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(false); else if (e.data.type === 'artmos:pay') { const c = cellById(e.data.cell) || current; closeExhibit(); openPay(c); } }); // 전시 안 '전시 행성 나가기'
+addEventListener('message', (e) => { if (e.source !== frame.contentWindow || !e.data) return; if (e.data.type === 'artmos:close-exhibit') closeExhibit(); else if (e.data.type === 'artmos:sensor-want') startSensorRelay(false); else if (e.data.type === 'artmos:open-exhibit') { const c = cellById(e.data.id); if (c && isOpen(c)) { closeExhibit(); openExhibit(c); } } else if (e.data.type === 'artmos:pay') { const c = cellById(e.data.cell) || current; closeExhibit(); openPay(c); } }); // 전시 안 '전시 행성 나가기'
 $('#land-cancel').addEventListener('click', () => closeExhibit());
 addEventListener('popstate', () => {
   if (waitingForBack) {
