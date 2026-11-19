@@ -162,3 +162,5 @@ button { font: inherit; color: inherit; }
 /* 인형마다 체험 하나 (2026-11-19) */
 .dsec .cush.f { position: absolute; left: -4%; right: -4%; top: auto; bottom: 19%; height: 22%; width: auto; border-radius: 30px 30px 18px 18px; background: radial-gradient(120% 100% at 50% 0%, #8f8f8f, #6c6c6c 65%, #585858); box-shadow: 0 -10px 24px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.1); pointer-events: none !important; }
 .chip.ghost { border-color: #333; color: #8a8a8a; font-size: 12px; padding: 7px 12px; }
+.ml-snd { appearance: none; background: #000; color: #9a9a9a; border: 1px solid #444; border-radius: 999px; padding: 5px 10px; font: inherit; font-size: 11px; cursor: pointer; }
+.ml-snd.on { color: #fff; border-color: #fff; }

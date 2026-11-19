@@ -9,6 +9,7 @@
 import * as THREE from './vendor/three.module.js';
 import { sensor, IS_MOBILE, startMic, startCamera, keepAwake } from './sensors.js?v=6';
 import './i18n.js?v=7';
+import { snd } from './muchloved-sound.js?v=1';
 
 const $ = (s, el = document) => el.querySelector(s);
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -52,7 +53,7 @@ const tagHTML = (id) => `<b>${W[id][0]}</b><span>${W[id][2]}mm · ${W[id][1]} ·
 
 // ── 진동 + 화면 박동 (아이폰 웹은 진동이 없어서 가장자리가 박동에 맞춰 밝아짐)
 const edge = $('#ml-edge');
-function beat(p = [30, 120, 30]) { sensor.vibrate(p); if (RM) return; edge.classList.remove('beat'); void edge.offsetWidth; edge.classList.add('beat'); }
+function beat(p = [30, 120, 30]) { sensor.vibrate(p); snd.fx('heart', 0.9); if (RM) return; edge.classList.remove('beat'); void edge.offsetWidth; edge.classList.add('beat'); }
 const back = $('#ml-back');
 const setBack = (c) => { back.style.backgroundColor = c; };
 
@@ -163,7 +164,7 @@ const io = new IntersectionObserver((es) => {
   es.forEach((e) => vis.set(e.target, e.intersectionRatio));
   let best = null, br = 0; vis.forEach((r, el) => { if (r > br) { br = r; best = el; } });
   if (!best) return; const i = +best.dataset.i;
-  if (i !== cur) { cur = i; [...dots.children].forEach((d, k) => d.classList.toggle('now', k === i)); store.set('valix-muchloved-step', String(i)); if (i > 0) mark(i - 1); }
+  if (i !== cur) { cur = i; if (!sleeping) snd.scene(['intro', 'wall', 'drawer', 'sofa', 'floor', 'end', 'end'][i] || 'wall'); [...dots.children].forEach((d, k) => d.classList.toggle('now', k === i)); store.set('valix-muchloved-step', String(i)); if (i > 0) mark(i - 1); }
 }, { threshold: [0, .25, .5, .75, 1] });
 secs.forEach((s) => io.observe(s));
 
@@ -284,6 +285,7 @@ function seedsOf(d) {
   d.seeds = cand.slice(0, 3).map(([u, v]) => ({ u, v, a: Math.random() * 6.28 }));
   return d.seeds;
 }
+let lastRip = 0;
 function tearStep(d, power) {
   if (d.stats.tear > 30) { seedsOf(d).forEach((s) => Math.random() < 0.3 && puff(d, s.u, s.v, 1)); return; } // 인형이 남아 있게 30%까지만
   seedsOf(d).forEach((s) => {
@@ -291,7 +293,8 @@ function tearStep(d, power) {
     const nu = s.u + Math.cos(s.a) * step / d.asp, nv = s.v + Math.sin(s.a) * step;
     if (d.isIn(nu, nv)) { s.u = nu; s.v = nv; } else s.a += Math.PI * 0.7;
     stamp(d, s.u, s.v, 7 + Math.random() * 8 * power, 'g', 0.5);
-    if (Math.random() < 0.45) puff(d, s.u, s.v, 1);
+    if (Math.random() < 0.45) { puff(d, s.u, s.v, 1); if (Math.random() < 0.3) snd.fx('fluff'); }
+    const nw = performance.now(); if (nw - lastRip > 170) { lastRip = nw; snd.fx('rip', 0.5 + power * 0.5); }
   });
 }
 
@@ -386,6 +389,7 @@ function hitDoll(x, y, loose) {
 }
 const pxToLocal = (px, d) => px * (VH / innerHeight) / d.g.scale.y; // 화면 px → 인형 크기 단위
 let press = null; // { d, u, v, x, y, t0, moved, last }
+let rubLevel = 0, creakLevel = 0, callMuteUntil = 0;
 const hugIds = new Set();
 const skip = (t) => t.closest && t.closest('button, a, input, .hug, .ph, .drawer');
 document.addEventListener('touchstart', (e) => {
@@ -410,15 +414,15 @@ addEventListener('pointermove', (e) => {
       const h = hitDoll(x.clientX, x.clientY); if (!h || h.d !== d) return;
       const l = press.last, du = (h.u - l.u) * d.wc.width, dv = (h.v - l.v) * d.wc.height, n = Math.ceil(Math.hypot(du, dv) / 4);
       for (let i = 1; i <= n; i++) stamp(d, l.u + (h.u - l.u) * i / n, l.v + (h.v - l.v) * i / n, 11, 'r', 0.16);
-      press.last = { u: h.u, v: h.v };
+      rubLevel = Math.min(1, rubLevel + Math.hypot(du, dv) / 30); press.last = { u: h.u, v: h.v };
       if (Math.random() < 0.04) sensor.vibrate(4);
     });
   } else if (m === 'stretch') {
     // 잡은 자리를 끌면 천이 늘어남, 많이 당기면 실밥이 터짐(한 번 잡을 때 한 번)
     let lx = pxToLocal(dx, d), ly = -pxToLocal(dy, d); const L = Math.hypot(lx, ly), MX = 0.22;
     if (L > MX) { lx *= MX / L; ly *= MX / L; }
-    d.pull.set(press.u, press.v, lx, ly);
-    if (L > 0.2 && !press.burst) { press.burst = true; d.m++; stamp(d, press.u, press.v, 12, 'g', 0.6); stamp(d, press.u, press.v, 7, 'g', 0.5); puff(d, press.u, press.v, 8); beat([25, 50, 25]); }
+    d.pull.set(press.u, press.v, lx, ly); creakLevel = Math.min(1, L / MX); press.creak = L / MX;
+    if (L > 0.2 && !press.burst) { snd.fx('snap'); press.burst = true; d.m++; stamp(d, press.u, press.v, 12, 'g', 0.6); stamp(d, press.u, press.v, 7, 'g', 0.5); puff(d, press.u, press.v, 8); beat([25, 50, 25]); }
     if (Math.random() < 0.05) sensor.vibrate(5);
   } else if (m === 'roll') {
     d.rollDrag = clamp(dx / (innerWidth * 0.3), -1, 1);
@@ -429,11 +433,11 @@ addEventListener('pointermove', (e) => {
 const release = (e) => {
   if (e && e.pointerId != null) hugIds.delete(e.pointerId);
   if (!press) return; const d = press.d, now = performance.now();
-  if (d.mode === 'press' && d.press.z > 0.15) { stamp(d, d.press.x, d.press.y, 20, 'b', 0.55 * d.press.z); d.n++; } // 눌린 자리가 조금 남음
-  if (d.mode === 'tap' && now - press.t0 < 320 && press.moved < 12) { stamp(d, press.u, press.v, 7, 'b', 0.35); d.n++; sensor.vibrate(8); }
+  if (d.mode === 'press' && d.press.z > 0.15) { stamp(d, d.press.x, d.press.y, 20, 'b', 0.55 * d.press.z); d.n++; snd.fx('unsquish'); } // 눌린 자리가 조금 남음
+  if (d.mode === 'tap' && now - press.t0 < 320 && press.moved < 12) { stamp(d, press.u, press.v, 7, 'b', 0.35); d.n++; sensor.vibrate(8); snd.fx('knock'); }
   if (d.mode === 'stretch' && press.moved > 30) d.n++;
   if (d.mode === 'roll') d.rollDrag = 0;
-  press = null;
+  creakLevel = 0; press = null;
 };
 addEventListener('pointerup', release); addEventListener('pointercancel', release);
 
@@ -441,7 +445,7 @@ addEventListener('pointerup', release); addEventListener('pointercancel', releas
 let micTried = false, holdAct = null;
 document.querySelectorAll('.dsec .chip').forEach((b) => {
   const act = b.dataset.act, sec = b.closest('.dsec');
-  if (act === 'reset') { b.onclick = () => { const d = dolls.get(sec.dataset.doll); if (d) { resetDoll(d); $('.d-meter', sec).textContent = '작품의 원래 모습이에요'; } }; return; }
+  if (act === 'reset') { b.onclick = () => { const d = dolls.get(sec.dataset.doll); if (d) { resetDoll(d); snd.fx('reset'); $('.d-meter', sec).textContent = '작품의 원래 모습이에요'; } }; return; }
   const on = async (e) => {
     e.preventDefault(); holdAct = { act, s: sec, t: performance.now() }; b.classList.add('on');
     if ((act === 'blow' || act === 'call') && !micTried && IS_MOBILE) { micTried = true; try { await startMic(); } catch (err) {} }
@@ -455,7 +459,7 @@ function shakeNow(s, sec) {
   if (!d.stats.tear) tearStep(d, 0.6);
   const k = Math.round(4 + s * 10); seedsOf(d).forEach((sd) => puff(d, sd.u, sd.v, k, true)); d.n++;
   if (s > 0.5) tearStep(d, 0.4);
-  sensor.vibrate([20, 40, 20]);
+  sensor.vibrate([20, 40, 20]); snd.fx('puff', 0.6 + s * 0.5);
 }
 let lastShake = 0;
 sensor.onShake((s) => { const now = performance.now(); if (active && now - lastShake > 350) { lastShake = now; shakeNow(Math.min(1, s)); } });
@@ -464,8 +468,13 @@ const holding = (act) => holdAct && holdAct.act === act && holdAct.s === active.
 let lastMeter = 0, lastI = 0;
 function interact() {
   const now = performance.now(), dt = Math.min(250, now - (lastI || now)); lastI = now;
-  if (!active) return; const d = active.d, m = d.mode;
+  rubLevel *= Math.pow(0.82, dt / 16);
+  if (!active) { ['rustle', 'wind', 'creak', 'rumble', 'squeak'].forEach((k) => snd.set(k, 0)); return; }
+  const d = active.d, m = d.mode;
+  snd.set('rustle', m === 'rub' ? rubLevel : Math.max(0, cushV));
+  snd.set('creak', m === 'stretch' ? creakLevel : 0, creakLevel * 0.8);
   if (m === 'press' && press && press.d === d && press.moved < 10 && now - press.t0 > 300) {
+    if (!press.squished) { press.squished = true; snd.fx('squish'); }
     // 꾹 누르기: 300ms 넘게 가만히 → 그 자리가 눌림(1.2초면 가장 깊게)
     d.press.x = press.u; d.press.y = press.v; d.press.z = Math.min(1, d.press.z + dt / 1200);
     if (Math.random() < 0.05) sensor.vibrate(6);
@@ -473,7 +482,8 @@ function interact() {
   if (m === 'blow') {
     const bp = Math.max(sensor.micOn && sensor.blow > 0.3 ? sensor.blow : 0, holding('blow') ? 0.8 : 0);
     if (bp > 0 && Math.random() < dt / 32) tearStep(d, bp);
-  }
+    snd.set('wind', bp, bp * 0.4);
+  } else snd.set('wind', 0);
   if (m === 'shake' && holding('shake') && now - holdAct.t > 500 && Math.random() < dt / 200) shakeNow(0.5);
   if (m === 'hug') {
     const on = hugIds.size >= 2 || (press && press.d === d && now - press.t0 > 400);
@@ -486,16 +496,18 @@ function interact() {
     const v = Math.abs(d.rz - prev); d.rollT += v;
     if (v > 0.004 && Math.random() < v * 40) { // 구르면 아래쪽에 먼지 자국·먼지
       const pts = d.inside.filter(([, y]) => y < 0.35); const [u, y] = pts[(Math.random() * pts.length) | 0] || [0.5, 0.2];
-      stamp(d, u, y, 9, 'r', 0.12); puff(d, u, y, 1, true);
+      stamp(d, u, y, 9, 'r', 0.12); puff(d, u, y, 1, true); if (Math.random() < 0.25) snd.fx('thud', 0.3);
     }
-  }
+    snd.set('rumble', Math.min(1, v * 70), d.rz * 0.3);
+  } else snd.set('rumble', 0);
   if (m === 'pull') {
-    d.out += (d.outT - d.out) * Math.min(1, dt / 140);
-    if (d.out > 0.95 && !d.found) { d.found = true; d.touched = true; beat([20, 80, 20]); }
-  }
+    const o0 = d.out; d.out += (d.outT - d.out) * Math.min(1, dt / 140);
+    snd.set('squeak', Math.min(1, Math.abs(d.out - o0) * 60), d.out * 0.8);
+    if (d.out > 0.95 && !d.found) { d.found = true; d.touched = true; beat([20, 80, 20]); snd.fx('pop'); }
+  } else snd.set('squeak', 0);
   if (m === 'call') {
-    const lv = Math.max(sensor.micOn ? sensor.micLevel : 0, holding('call') ? 0.8 : 0);
-    if (lv > 0.3 && d.call < 0.3) { d.n++; d.touched = true; }
+    const lv = Math.max(sensor.micOn && now > callMuteUntil ? sensor.micLevel : 0, holding('call') ? 0.8 : 0);
+    if (lv > 0.3 && d.call < 0.3) { d.n++; d.touched = true; setTimeout(() => { snd.fx('answer'); callMuteUntil = performance.now() + 1200; }, 260); }
     d.call += (lv - d.call) * Math.min(1, dt / (lv > d.call ? 120 : 600));
   }
   if (now - lastMeter > 500) {
@@ -542,27 +554,30 @@ if (IS_MOBILE) addEventListener('click', () => { if (!sensor.on) sensor.enable()
 
 // ════════════════ 2 서랍: 내려갈수록 열림(+ 몸 쪽으로 당기기) ════════════════
 (() => {
-  const s2 = $('#s2'), front = $('.front', s2), tag = $('#d-tag'); let base = null, opened = false;
+  const s2 = $('#s2'), front = $('.front', s2), tag = $('#d-tag'); let base = null, opened = false, lastO = 0;
   (function tick() {
     requestAnimationFrame(tick);
-    const r = s2.getBoundingClientRect(), H = innerHeight; if (r.bottom < 0 || r.top > H) { base = null; return; }
+    const r = s2.getBoundingClientRect(), H = innerHeight; if (r.bottom < 0 || r.top > H) { if (base !== null) snd.set('slide', 0); base = null; return; }
     const p = clamp(-r.top / Math.max(1, r.height - H), 0, 1);
     let tilt = 0; if (sensor.on) { if (base == null) base = sensor.tiltY; tilt = clamp((sensor.tiltY - base) / 0.6, 0, 1); }
     const o = Math.max(clamp((p - 0.1) / 0.55, 0, 1), tilt);
     front.style.transform = `translateY(${o * 100}%)`;
-    if (o > 0.98 && !opened) { opened = true; tag.classList.add('show'); beat([15, 60, 15]); mark(2); }
+    snd.set('slide', Math.min(1, Math.abs(o - lastO) * 50)); lastO = o;
+    if (o > 0.98 && !opened) { opened = true; tag.classList.add('show'); beat([15, 60, 15]); snd.fx('clunk'); setTimeout(() => snd.fx('chime', [72, 76, 79]), 200); mark(2); }
   })();
 })();
 
 // ════════════════ 3 소파: 쿠션은 내려갈수록 벌어짐(+ 기울이기) ════════════════
+let cushV = 0;
 (function cushTick() {
-  requestAnimationFrame(cushTick);
+  requestAnimationFrame(cushTick); cushV *= 0.85;
   document.querySelectorAll('.dsec').forEach((s) => {
     const l = $('.cush.l', s); if (!l) return; const r = $('.cush.r', s);
     const rr = s.getBoundingClientRect(); if (rr.bottom < 0 || rr.top > innerHeight) return;
     const p = parseFloat(s.style.getPropertyValue('--p')) || 0;
     const part = Math.max(clamp((p - 0.04) / 0.3, 0, 1), sensor.on ? clamp(Math.abs(sensor.tiltX) / 0.45, 0, 1) : 0);
     l.style.transform = `translateX(${-part * 96}%)`; r.style.transform = `translateX(${part * 96}%)`;
+    cushV = Math.max(cushV, Math.min(1, Math.abs(part - (s._part || 0)) * 25)); s._part = part;
   });
 })();
 // 감싸기
@@ -605,7 +620,7 @@ document.querySelectorAll('.fsec').forEach((s) => {
   const size = () => { fc.width = Math.max(1, ph.clientWidth >> 1); fc.height = Math.max(1, ph.clientHeight >> 1); };
   new ResizeObserver(size).observe(ph);
   const fog = (e) => { const r = ph.getBoundingClientRect(), x = (e.clientX - r.left) / 2, y = (e.clientY - r.top) / 2; const g = fx.createRadialGradient(x, y, 0, x, y, 40); g.addColorStop(0, 'rgba(235,238,240,.5)'); g.addColorStop(1, 'rgba(235,238,240,0)'); fx.fillStyle = g; fx.beginPath(); fx.arc(x, y, 40, 0, 6.3); fx.fill(); };
-  ph.addEventListener('pointerdown', (e) => { down = true; fog(e); });
+  ph.addEventListener('pointerdown', (e) => { down = true; fog(e); snd.fx('breath'); if (Math.random() < 0.6) snd.fx('ding'); });
   ph.addEventListener('pointermove', (e) => { if (down || e.pointerType === 'mouse') fog(e); });
   addEventListener('pointerup', () => { down = false; });
   (function tick() {
@@ -623,7 +638,7 @@ const inSleepSec = () => { const r = s4s.getBoundingClientRect(); return r.top <
 function sleep(how) {
   if (sleeping) return; sleeping = true; sleepAt = Date.now();
   slH.textContent = how === 'palm' ? '손을 떼면 깨어나요' : how === 'face' ? '들어 올리면 깨어나요' : '화면을 누르면 깨어나요';
-  sl.hidden = false; slT.textContent = '00:00'; keepAwake();
+  sl.hidden = false; slT.textContent = '00:00'; keepAwake(); snd.scene('sleep');
   clearInterval(sleepIv); sleepIv = setInterval(() => {
     const s = Math.floor((Date.now() - sleepAt) / 1000); slT.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     if (s >= 600) wake();
@@ -632,7 +647,7 @@ function sleep(how) {
 function wake() {
   if (!sleeping) return; sleeping = false; clearInterval(sleepIv); sl.hidden = true;
   const s = Math.max(1, Math.floor((Date.now() - sleepAt) / 1000)), m = Math.floor(s / 60);
-  h5.textContent = `${m ? m + '분 ' : ''}${s % 60}초 동안 곁에 있었어요`; beat([20, 100, 20]); mark(4);
+  h5.textContent = `${m ? m + '분 ' : ''}${s % 60}초 동안 곁에 있었어요`; snd.scene('floor'); snd.fx('wake'); beat([20, 100, 20]); mark(4);
 }
 $('#sleepbtn').onclick = () => { h5.textContent = '들어 올리면 깨어나요'; setTimeout(() => sleep('btn'), RM ? 0 : 1500); };
 sl.addEventListener('pointerdown', () => { if (!palm) wake(); });
@@ -673,9 +688,9 @@ new IntersectionObserver((es) => {
     requestAnimationFrame(tick);
     if (!holding || doneTag) return; const now = performance.now();
     prog = Math.min(1, prog + 1 / 300); draw();
-    if (now - lastStitch > 250) { lastStitch = now; sensor.vibrate(6); }
+    if (now - lastStitch > 250) { lastStitch = now; sensor.vibrate(6); snd.fx('stitch'); }
     if (prog >= 1) {
-      doneTag = true; holding = false; sew.textContent = '완성했어요'; sew.disabled = true; beat([20, 80, 20]);
+      doneTag = true; holding = false; sew.textContent = '완성했어요'; sew.disabled = true; beat([20, 80, 20]); snd.fx('chime', [72, 76, 79, 84], 0.18);
       store.set('valix-muchloved-tag', inp.value.trim());
       try { keep.href = tc.toDataURL('image/png'); keep.hidden = false; } catch (e) {}
       mark(5);
@@ -694,4 +709,11 @@ document.querySelectorAll('.ml-exit').forEach((a) => a.addEventListener('click',
   const top = $('.ml-top'); let y0 = scrollY;
   addEventListener('scroll', () => { if (!IS_MOBILE) return; const y = scrollY; if (y < 120) top.classList.remove('hide'); else if (y - y0 > 24) top.classList.add('hide'); else if (y0 - y > 14) top.classList.remove('hide'); y0 = y; }, { passive: true });
 })();
-if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, hugIds, get cur() { return cur; } };
+// ── 소리: 첫 터치에 켜짐(소리 끄기를 고른 사람은 그대로), 상단 버튼으로 켜고 끄기
+const sb = $('#ml-snd');
+const sbUI = () => { sb.classList.toggle('on', snd.on); sb.setAttribute('aria-pressed', String(snd.on)); sb.textContent = snd.on ? '소리 켜짐' : '소리 꺼짐'; };
+sb.addEventListener('click', async (e) => { e.stopPropagation(); if (snd.on) { snd.stop(); try { localStorage.setItem('xpace-sound', 'off'); } catch (err) {} } else { try { localStorage.setItem('xpace-sound', 'on'); } catch (err) {} await snd.start(); snd.scene(['intro', 'wall', 'drawer', 'sofa', 'floor', 'end', 'end'][Math.max(0, cur)] || 'intro'); } sbUI(); });
+const firstTouch = async (e) => { if (e.target === sb || snd.on || !snd.allowed()) return; await snd.start(); snd.scene(['intro', 'wall', 'drawer', 'sofa', 'floor', 'end', 'end'][Math.max(0, cur)] || 'intro'); sbUI(); };
+addEventListener('pointerdown', firstTouch, true); addEventListener('keydown', firstTouch, true);
+sbUI();
+if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, hugIds, snd, get cur() { return cur; } };
