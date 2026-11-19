@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <style>/* 앱처럼: 두 번 탭 확대·길게 눌러 뜨는 메뉴(공유·사진 저장)·글자 선택·눌림 회색 빛·당김 출렁임 막기 (휴대폰만, 입력칸은 그대로) */
+    html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    @media (hover: none) {
+      html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+      html, body, body * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; }
+      img, svg, a, video, canvas { -webkit-user-drag: none; }
+      input, textarea, select, [contenteditable], [contenteditable] * { -webkit-touch-callout: default !important; -webkit-user-select: text !important; user-select: text !important; }
+    }
+  </style>
+  <script>matchMedia('(hover: none)').matches && addEventListener('contextmenu', function (e) { var t = e.target; if (!(t.closest && t.closest('input, textarea, select, [contenteditable]'))) e.preventDefault(); }, true);</script>
+  <title>ARTMOS SCREEN · 컨트롤러</title>
+  <link rel="icon" href="assets/artmos-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="css/artmos-brand.css?v=1" />
+  <link rel="stylesheet" href="css/screen.css?v=1" />
+</head>
+<body class="rmt">
+  <header class="rmt-top">
+    <p class="rmt-brand"><b class="logo">ARTMOS</b><span>SCREEN</span></p>
+    <button id="exit" type="button" aria-label="나가기">나가기</button>
+  </header>
+  <main id="app"></main>
+  <div id="toast" class="scr-toast" hidden></div>
+  <script type="module" src="js/remote.js?v=1"></script>
+</body>
+</html>

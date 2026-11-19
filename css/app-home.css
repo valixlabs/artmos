@@ -2,7 +2,7 @@
 
 /* ── 아래 탭: 화면 폭 전체, 평평한 검은 막대 ── */
 .vx .vx-tabs { left: 0; right: 0; bottom: 0; gap: 0; padding: 0 0 var(--sab); background: #000; border-top: 1px solid rgba(255,255,255,.08); animation: none; }
-.vx .vx-tabs .pill { grid-template-columns: repeat(3, 1fr); padding: 6px 8px 4px; border: 0; border-radius: 0; background: #000; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.vx .vx-tabs .pill { grid-template-columns: repeat(4, 1fr); padding: 6px 8px 4px; border: 0; border-radius: 0; background: #000; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .vx .vx-tabs .pill button { border-radius: 0; padding: 7px 0 5px; gap: 3px; color: #6f6f6f; }
 .vx .vx-tabs .pill button.on { color: #fff; }
 .vx .vx-tabs .pill button span { font-size: 11px; }
@@ -169,3 +169,20 @@
 
 /* 결제(2026-11-18): 상세의 '먼저 미리 보기' */
 .vx .dt-preview { display: block; margin: 14px 0 0; padding: 8px 0; background: none; border: 0; color: #bdbdbd; font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* 스크린 탭 (2026-11-19) — 큰 화면과 연결하기 */
+.vx .scr-tab { padding: 0 24px calc(var(--sab) + 110px); display: grid; gap: 14px; }
+.vx .scr-tab-lead { font-size: 15px; line-height: 1.6; color: #a8a8a8; margin-bottom: 6px; word-break: keep-all; }
+.vx .scr-tab-card { border: 1px solid rgba(255,255,255,.14); border-radius: 18px; padding: 20px; display: grid; gap: 10px; }
+.vx .scr-tab-card small { font-size: 12px; color: #7a7a7a; letter-spacing: .04em; }
+.vx .scr-tab-card h2 { font-size: 19px; font-weight: 700; color: #fff; }
+.vx .scr-tab-card p { font-size: 14px; line-height: 1.6; color: #a8a8a8; word-break: keep-all; }
+.vx .scr-tab-card p b { color: #fff; }
+.vx .scr-tab-code { width: 100%; margin-top: 4px; padding: 16px 0; background: transparent; border: 1px solid rgba(255,255,255,.3); border-radius: 14px; color: #fff; text-align: center; font: 800 38px/1 Pretendard, sans-serif; letter-spacing: .35em; text-indent: .35em; font-variant-numeric: tabular-nums; outline: none; -webkit-user-select: text; user-select: text; }
+.vx .scr-tab-code:focus { border-color: #fff; }
+.vx .scr-tab-code::placeholder { color: rgba(255,255,255,.18); }
+.vx .scr-tab-go { width: 100%; min-height: 52px; border-radius: 14px; background: #fff; color: #000; font-size: 16px; font-weight: 700; }
+.vx .scr-tab-url { font-size: 14px !important; color: #fff !important; font-weight: 600; word-break: break-all !important; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.06); }
+.vx .scr-tab-row { display: flex; gap: 8px; }
+.vx .scr-tab-row button { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,.22); color: #fff; font-size: 14px; }
+.vx .scr-tab-note { font-size: 12px; color: #6f6f6f; line-height: 1.6; word-break: keep-all; }

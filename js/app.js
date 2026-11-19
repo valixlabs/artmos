@@ -31,7 +31,7 @@ const T = {
 Object.keys(APP_COPY).forEach((language) => Object.assign(T[language], APP_COPY[language]));
 const t = (k, n) => { let s = (T[lang] && T[lang][k]) ?? k; if (n != null) s = s.replace('{n}', n).replace(/^n/, n); return s; };
 const br = (s) => esc(s).replace(/\n/g, '<br>');
-const TAB_WORDS = { en: { '홈': 'Home' }, zh: { '홈': '首页' }, ja: { '홈': 'ホーム' } };
+const TAB_WORDS = { en: { '홈': 'Home', '스크린': 'Screen' }, zh: { '홈': '首页', '스크린': '大屏' }, ja: { '홈': 'ホーム', '스크린': 'スクリーン' } };
 document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = (TAB_WORDS[lang] && TAB_WORDS[lang][el.dataset.t]) || t(el.dataset.t); });
 
 const VERSION = '0.9.0';
@@ -294,7 +294,7 @@ onPlanet((k, u) => { document.querySelectorAll('img[data-pl]').forEach((im) => {
 
 /* ---------- 탭 화면 ---------- */
 let tab = 'home', ticker = 0, revealIO = null;
-const tabScroll = { home: 0, play: 0, shop: 0, my: 0 };
+const tabScroll = { home: 0, screen: 0, play: 0, shop: 0, my: 0 };
 let countdownNodes = [];
 function stopViewEffects() {
   revealIO?.disconnect(); revealIO = null;
@@ -444,6 +444,32 @@ const screens = {
         <p>${t('스탬프와 기록은 이 기기에만 저장돼요.')}</p></div>`;
   },
   shop() { return SHOP.screenHTML(bell()); },
+  // 스크린(2026-11-19): 큰 화면(사이니지·노트북·데스크톱)의 screen.html을 휴대폰으로 조작. 컨트롤러는 웹 remote.html을 전시 틀에 띄움(앱을 다시 내지 않아도 고칠 수 있게)
+  screen() {
+    const url = SCREEN_URL.replace(/^https?:\/\//, '');
+    return `<header class="page-h"><div><small class="nb-page-kicker">ARTMOS · SCREEN</small><h1>스크린</h1></div></header>
+      <section class="scr-tab">
+        <p class="scr-tab-lead">큰 화면의 우주를 휴대폰으로 움직여요.<br>디지털 사이니지·노트북·데스크톱 어디서나.</p>
+        <div class="scr-tab-card">
+          <h2>화면과 연결하기</h2>
+          <p>큰 화면에 보이는 <b>숫자 4자리</b>를 넣어 주세요.</p>
+          <input class="scr-tab-code" data-scr-code inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="0000" aria-label="입장 숫자">
+          <button class="scr-tab-go" data-scr-go type="button">연결하기</button>
+        </div>
+        <div class="scr-tab-card">
+          <h2>큰 화면 열기</h2>
+          <p>사이니지·노트북·데스크톱 브라우저에서 아래 주소를 열면 QR과 숫자가 나와요. 함께 온 사람은 휴대폰 카메라로 QR만 비추면 앱 없이도 들어올 수 있어요.</p>
+          <p class="scr-tab-url">${esc(url)}</p>
+          <div class="scr-tab-row"><button data-scr-copy type="button">주소 복사</button><button data-scr-share type="button">주소 보내기</button></div>
+        </div>
+        <div class="scr-tab-card">
+          <small>지금 열린 스크린 체험</small>
+          <h2>함께 그리는 별자리</h2>
+          <p>휴대폰을 밀거나 기울여 큰 화면의 빛을 움직이고, 별을 놓아 나만의 별자리를 그려요. 최대 6명이 함께, 한 사람 75초. 완성한 별자리는 내 휴대폰에만 도착해요.</p>
+        </div>
+        <p class="scr-tab-note">움직임·기울기는 큰 화면을 움직이는 데에만 쓰고 저장하지 않아요.</p>
+      </section>`;
+  },
   my() {
     const p = me() || { nick: wanderer(), since: Date.now() }, h = hist();
     const seen = Object.entries(h).filter(([id]) => cells.some((c) => c.id === id)).sort((a, b) => b[1].last - a[1].last);
@@ -554,7 +580,7 @@ function bindHero() {
   }, { passive: true });
 }
 
-const TAB_I = { home: 0, shop: 1, my: 2 };
+const TAB_I = { home: 0, screen: 1, shop: 2, my: 3 };
 function go(next, keepScroll) {
   if (!Object.hasOwn(screens, next)) return;
   const previous = tab, oldScroll = scrollY;
@@ -658,6 +684,9 @@ function onAction(e) {
   if ((b = q('[data-cover-index]'))) { changeCover(0, Number(b.dataset.coverIndex), 'index:' + b.dataset.coverIndex); return true; }
   if ((b = q('[data-cat]'))) { homeCat = b.dataset.cat; if (sheet.isOpen) sheet.close({ restoreFocus: false }); tabScroll.home = 0; go('home'); return true; }
   if ((b = q('[data-gotab]'))) { go(b.dataset.gotab); return true; }
+  if (q('[data-scr-go]')) { const inp = view.querySelector('[data-scr-code]'), c = (inp && inp.value || '').replace(/\D/g, ''); if (c.length !== 4) { toast('숫자 4자리를 넣어 주세요'); inp && inp.focus(); } else { inp.blur(); openRemote(c); } return true; }
+  if (q('[data-scr-copy]')) { (navigator.clipboard ? navigator.clipboard.writeText(SCREEN_URL) : Promise.reject()).then(() => toast('주소를 복사했어요'), () => toast(SCREEN_URL)); return true; }
+  if (q('[data-scr-share]')) { if (navigator.share) navigator.share({ title: 'ARTMOS SCREEN', url: SCREEN_URL }).catch(() => {}); else toast(SCREEN_URL); return true; }
   if (q('[data-search]')) { discover.open('all', true); return true; }
   if (q('[data-saved]')) { discover.open('liked'); return true; }
   if (q('[data-intro-replay]')) { try { localStorage.removeItem('valix-intro-at'); } catch (e) {} location.reload(); return true; } // 다음에 켤 때가 아니라 지금 바로 전체 인트로
@@ -795,6 +824,19 @@ async function doPay(b) {
 }
 MB.initStore().catch(() => {});
 AU.onAuth?.((u) => { MB.initStore(u && u.id).catch(() => {}); });
+view.addEventListener('input', (e) => { const i = e.target.closest && e.target.closest('[data-scr-code]'); if (i) i.value = i.value.replace(/\D/g, '').slice(0, 4); });
+view.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-scr-code]')) { e.preventDefault(); view.querySelector('[data-scr-go]')?.click(); } });
+const SCREEN_URL = new URL(web('screen.html'), location.href).href;
+function openRemote(code) { // 스크린 컨트롤러를 전시 틀에 띄움 (착륙 화면 없이)
+  if (!viewer.hidden) return;
+  startSensorRelay(); // 누른 순간 안에서 기울기 권한 · 앱 안이면 센서 중계
+  stopVideos(); current = null; enteredAt = 0;
+  const u = new URL(web('remote.html'), location.href);
+  u.searchParams.set('c', code); u.searchParams.set('app', '1'); u.searchParams.set('lang', lang);
+  const m = me(); if (m && m.nick) u.searchParams.set('me', m.nick);
+  $('#toast').hidden = true; viewer.hidden = false; replaceFrame(u.href);
+  history.pushState({ viewer: true }, ''); syncRuntime();
+}
 function openExhibit(c) {
   if (!c || !isOpen(c) || !viewer.hidden) return;
   startSensorRelay();
