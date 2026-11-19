@@ -2,7 +2,7 @@
 // ?cell=c005 → 그 전시의 작품만, ?work=w001 → 작품 상세를 바로 엶, #orders → 소장 내역(결제 후 돌아올 때)
 import * as SHOP from './app-shop.js?v=21';
 import { createAppSheet } from './app-sheet.js?v=2';
-import { loadLocalData } from './data.js?v=36';
+import { loadLocalData } from './data.js?v=37';
 import { lang } from './i18n.js?v=7';
 import { bizHTML } from './biz.js?v=2';
 

@@ -3,7 +3,7 @@
 // 연결은 screen-link.js. 폰 입력은 그 폰 통로로만 오고, 결과도 그 폰에만 보냄.
 import { open, room, newCode, newId, linkMode } from './screen-link.js?v=1';
 import { qrSVG } from './qr.js?v=1';
-import { loadLocalData } from './data.js?v=36';
+import { loadLocalData } from './data.js?v=37';
 import { planetURL } from './planets.js?v=4';
 
 const $ = (s) => document.querySelector(s);

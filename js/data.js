@@ -125,7 +125,7 @@ async function prepareData(cellRows, blockRows, source, translations) {
   if (lang !== 'ko') {
     const tx = (await translations) || {};
     const loc = (row, fields, t) => { const o = { ...row }; fields.forEach((f) => { const own = row[`${f}_${lang}`]; o[f] = own != null && String(own).trim() !== '' ? own : (t && t[f]) || row[f]; }); return o; };
-    cells = cells.map((c) => loc(c, ['title', 'subtitle', 'artist', 'period'], tx.cells?.[c.id]?.[lang]));
+    cells = cells.map((c) => loc(c, ['title', 'subtitle', 'artist', 'period', 'summary'], tx.cells?.[c.id]?.[lang]));
     blocks = blocks.map((b) => loc(b, ['title', 'body', 'caption'], tx.blocks?.[`${b.cell_id}:${b.order}`]?.[lang]));
   }
   // 기획전 묶기: 멤버 전시는 행성 목록에서 빠지고, 첫 멤버 자리에 기획전 행성이 들어감

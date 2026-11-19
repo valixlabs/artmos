@@ -3,7 +3,7 @@
 // 작품 데이터: cells 시트의 'artworks' 탭(work_id 칸이 있어야 함) → 없으면 data/artworks.json. 칸 설명은 docs/shop/README.md
 // 저장·팔로우·문의 기록은 이 기기(localStorage nebula-shop-*)에만.
 import { CONFIG } from './config.js?v=38';
-import { fetchSheet, imageUrl, esc } from './data.js?v=36';
+import { fetchSheet, imageUrl, esc } from './data.js?v=37';
 import { lang } from './i18n.js?v=7';
 import { web } from './web-base.js?v=1';
 import { PAY_ON, SHOP_TEST, SHIPPING_KRW, buyable, checkout, orders, needsLogin, currentUser, SHOP_SIM } from './shop-pay.js?v=18';

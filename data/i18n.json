@@ -106,19 +106,45 @@
     "title": "A Thread of Hope",
     "subtitle": "Five small hopes, joined by a single red thread",
     "artist": "Kim Baneul",
-    "period": ""
+    "period": "",
+    "summary": "A person curled up in the corner of a room lifts their head and sees a single red thread. As you scroll, the thread runs on without breaking, stitching together the small hopes of five strangers. Kim Baneul’s embroidery series “A Thread of Hope”."
    },
    "zh": {
     "title": "一线希望",
     "subtitle": "一根红线串起五个人的小小希望",
     "artist": "Kim Baneul",
-    "period": ""
+    "period": "",
+    "summary": "蜷缩在房间角落的人抬起头，看见一根红线。向下滑动，这根线不断延续，依次串起五个互不相识的人的小小希望。Kim Baneul 的刺绣系列《一线希望》。"
    },
    "ja": {
     "title": "一縷の望み",
     "subtitle": "一本の赤い糸でつながる、五人の小さな希望",
     "artist": "Kim Baneul",
-    "period": ""
+    "period": "",
+    "summary": "部屋の隅にうずくまった人が顔を上げ、一本の赤い糸を見つけます。スクロールすると糸は途切れずに続き、見知らぬ五人の小さな希望を順に縫いつないでいきます。Kim Baneul の刺繍連作『一縷の望み』。"
+   }
+  },
+  "c008": {
+   "en": {
+    "title": "MUCH LOVED",
+    "subtitle": "Wherever it wore thin, love stayed",
+    "artist": "Kim Gyuzin",
+    "period": "",
+    "summary": "Comfort dolls, worn, frayed and partly gone, set in resin and aluminium instead of being repaired. Rub them, blow on them, open a drawer, pull one from the sofa cushions, hold one in both hands, and fall asleep together. Kim Gyuzin’s series “MUCH LOVED”."
+   },
+   "zh": {
+    "title": "MUCH LOVED",
+    "subtitle": "每一处磨损，都曾有爱停留",
+    "artist": "Kim Gyuzin",
+    "period": "",
+    "summary": "磨损、破旧、部分消失的安抚玩偶，没有被修补，而是用树脂和铝凝固下来。摸一摸、吹一吹，打开抽屉，从沙发缝里把玩偶拿出来，用双手捧住，再一起睡一会儿。Kim Gyuzin 的系列作品《MUCH LOVED》。"
+   },
+   "ja": {
+    "title": "MUCH LOVED",
+    "subtitle": "すり減ったところに、愛がとどまった",
+    "artist": "Kim Gyuzin",
+    "period": "",
+    "summary": "すり減り、ほつれ、一部がなくなったお気に入りの人形を、直さずにレジンとアルミニウムで固めた彫刻。なでて、吹いて、引き出しを開け、ソファのすき間から取り出し、両手で包み、いっしょに眠ってみます。Kim Gyuzin の連作『MUCH LOVED』。"
    }
   }
  },

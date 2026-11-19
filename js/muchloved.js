@@ -8,7 +8,8 @@
 // 모든 센서에 버튼·끌기 대체. 마이크·카메라는 누른 사람에게만. 문서: docs/exhibitions/c008-muchloved/
 import * as THREE from './vendor/three.module.js';
 import { sensor, IS_MOBILE, startMic, startCamera, keepAwake } from './sensors.js?v=6';
-import './i18n.js?v=7';
+import { lang, langSwitcher } from './i18n.js?v=7';
+import { t, ARTIST } from './muchloved-i18n.js?v=1';
 import { snd } from './muchloved-sound.js?v=1';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -35,18 +36,18 @@ const ORDER = ['tommy', ...WALL, ...SOFA, ...FLOOR];
 // 인형마다 체험 하나씩 (2026-11-19 소유자: 각 인형별로 다른 체험, 하나씩만)
 const MODE = { snow: 'rub', dino: 'blow', floopy: 'press', hobby: 'shake', fufu: 'hug', 'peanut-frame': 'tap', moon: 'stretch', jake: 'roll', peanut: 'pull', mas: 'call' };
 const TEXT = {
-  rub: ['문질러 보세요', '만질수록 손때가 묻어요'],
-  blow: ['후~ 불어 보세요', '해진 곳이 벌어지고 솜이 날려요'],
-  press: ['꾹 누르고 있어 보세요', '눌린 자리가 납작하게 남아요'],
-  shake: [IS_MOBILE ? '휴대폰을 흔들어 보세요' : '흔들기를 눌러 보세요', '해진 틈으로 솜이 빠져나와요'],
-  hug: [IS_MOBILE ? '두 손가락으로 감싸 보세요' : '꾹 누르고 있어 보세요', '폭 안기며 심장이 뛰어요'],
-  tap: ['톡톡 두드려 보세요', '두드린 자리가 반들반들 닳아요'],
-  stretch: ['잡아당겨 보세요', '천이 늘어나요 · 세게 당기면 실밥이 터져요'],
-  roll: [IS_MOBILE ? '휴대폰을 좌우로 기울여 보세요' : '인형을 좌우로 끌어 보세요', '소파 위를 구르며 먼지가 일어요'],
-  pull: ['위로 끌어 꺼내 보세요', '쿠션 틈에 끼어 있어요'],
-  call: ['이름을 불러 보세요', '목소리에 귀를 기울여요'],
+  rub: [t('문질러 보세요'), t('만질수록 손때가 묻어요')],
+  blow: [t('후~ 불어 보세요'), t('해진 곳이 벌어지고 솜이 날려요')],
+  press: [t('꾹 누르고 있어 보세요'), t('눌린 자리가 납작하게 남아요')],
+  shake: [IS_MOBILE ? t('휴대폰을 흔들어 보세요') : t('흔들기를 눌러 보세요'), t('해진 틈으로 솜이 빠져나와요')],
+  hug: [IS_MOBILE ? t('두 손가락으로 감싸 보세요') : t('꾹 누르고 있어 보세요'), t('폭 안기며 심장이 뛰어요')],
+  tap: [t('톡톡 두드려 보세요'), t('두드린 자리가 반들반들 닳아요')],
+  stretch: [t('잡아당겨 보세요'), t('천이 늘어나요 · 세게 당기면 실밥이 터져요')],
+  roll: [IS_MOBILE ? t('휴대폰을 좌우로 기울여 보세요') : t('인형을 좌우로 끌어 보세요'), t('소파 위를 구르며 먼지가 일어요')],
+  pull: [t('위로 끌어 꺼내 보세요'), t('쿠션 틈에 끼어 있어요')],
+  call: [t('이름을 불러 보세요'), t('목소리에 귀를 기울여요')],
 };
-const BTN = { blow: '후~ 불기', shake: IS_MOBILE ? '흔들기 (버튼)' : '흔들기', call: '이름 부르기 (누르고 있기)' };
+const BTN = { blow: t('후~ 불기'), shake: IS_MOBILE ? t('흔들기 (버튼)') : t('흔들기'), call: t('이름 부르기 (누르고 있기)') };
 const MARKS = new Set(['rub', 'blow', 'press', 'shake', 'tap', 'stretch', 'roll']); // 자국이 남는 체험 → '원래대로'
 const TOUCH = new Set(['rub', 'press', 'hug', 'tap', 'stretch', 'pull', ...(IS_MOBILE ? [] : ['roll'])]); // 인형 위 터치로 하는 체험(이때만 스크롤 대신 체험)
 const tagHTML = (id) => `<b>${W[id][0]}</b><span>${W[id][2]}mm · ${W[id][1]} · 2025</span>`;
@@ -61,21 +62,21 @@ const setBack = (c) => { back.style.backgroundColor = c; };
 const dollSec = (id, ch, extra = '') => `
 <section class="sc dsec" data-i="${ch}" data-doll="${id}">
   <div class="stk">
-    <div class="d-top"><div class="tag show">${tagHTML(id)}${id === 'peanut' ? '<span style="color:#888">액자 작품과 이름이 같아요 · 작가 확인 중</span>' : ''}</div></div>
+    <div class="d-top"><div class="tag show">${tagHTML(id)}${id === 'peanut' ? `<span style="color:#888">${t('액자 작품과 이름이 같아요 · 작가 확인 중')}</span>` : ''}</div></div>
     ${extra}
     <div class="d-bot">
       <p class="d-verb"><b>${TEXT[MODE[id]][0]}</b><span>${TEXT[MODE[id]][1]}</span></p>
       <p class="d-meter" aria-live="polite"></p>
-      <div class="chip-row">${BTN[MODE[id]] ? `<button class="chip hold" data-act="${MODE[id]}">${BTN[MODE[id]]}</button>` : ''}${MARKS.has(MODE[id]) ? '<button class="chip ghost" data-act="reset">원래대로</button>' : ''}</div>
+      <div class="chip-row">${BTN[MODE[id]] ? `<button class="chip hold" data-act="${MODE[id]}">${BTN[MODE[id]]}</button>` : ''}${MARKS.has(MODE[id]) ? `<button class="chip ghost" data-act="reset">${t('원래대로')}</button>` : ''}</div>
     </div>
   </div>
 </section>`;
-const chapter = (ch, n, t, lead) => `<section class="sc chap" data-i="${ch}"><p class="sc-head">${n}</p><h2 class="sc-title">${t}</h2><p class="sc-lead">${lead}</p><p class="scroll-cue">아래로 ↓</p></section>`;
+const chapter = (ch, n, title, lead) => `<section class="sc chap" data-i="${ch}"><p class="sc-head">${n}</p><h2 class="sc-title">${title}</h2><p class="sc-lead">${lead}</p><p class="scroll-cue">${t('아래로 ↓')}</p></section>`;
 const floorSec = (id) => `
 <section class="sc fsec" data-i="4" data-floor="${id}">
   <div class="stk">
     <div class="ph"><img src="${A}p/${id}.webp" alt="${W[id][0]}" loading="lazy" draggable="false"><canvas class="fog"></canvas><i class="sheen"></i></div>
-    <div class="d-bot"><div class="tag show">${tagHTML(id)}</div><p class="d-verb"><span>${IS_MOBILE ? '만져 보거나 기울여 보세요' : '마우스로 쓸어 보세요'} · 금속은 닳지 않아요</span></p></div>
+    <div class="d-bot"><div class="tag show">${tagHTML(id)}</div><p class="d-verb"><span>${t(IS_MOBILE ? '만져 보거나 기울여 보세요' : '마우스로 쓸어 보세요')} · ${t('금속은 닳지 않아요')}</span></p></div>
   </div>
 </section>`;
 
@@ -84,71 +85,71 @@ main.innerHTML = `
 <section class="sc" id="s0" data-i="0">
   <div>
     <h1 class="s0-name"><img src="assets/posters/c008-logo.webp" alt="MUCH LOVED" width="900" height="391"></h1>
-    <p class="s0-by">김규진 · KIM GYUZIN</p>
+    <p class="s0-by">${lang === 'ko' ? '김규진 · KIM GYUZIN' : 'KIM GYUZIN'}</p>
     <div class="ring"><svg viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="39"/><circle class="fg" cx="42" cy="42" r="39"/></svg></div>
-    <p class="hint" id="h0">화면을 꾹 누르고 있어 보세요</p>
+    <p class="hint" id="h0">${t('화면을 꾹 누르고 있어 보세요')}</p>
     <div class="lines" id="lines"></div>
-    <div class="under"><button class="btn" id="go1" hidden>들어가기</button></div>
+    <div class="under"><button class="btn" id="go1" hidden>${t('들어가기')}</button></div>
   </div>
 </section>
-${chapter(1, '1 · 액자 속 인형들', '많이 사랑받은 것은 닳는다', '인형마다 만나는 방법이 하나씩 달라요. 문지르고, 불고, 누르고, 흔들고, 껴안고, 두드리고, 잡아당겨 보세요. ‘원래대로’를 누르면 언제든 작품의 원래 모습으로 돌아가요.')}
+${chapter(1, t('1 · 액자 속 인형들'), t('많이 사랑받은 것은 닳는다'), t('인형마다 만나는 방법이 하나씩 달라요. 문지르고, 불고, 누르고, 흔들고, 껴안고, 두드리고, 잡아당겨 보세요. ‘원래대로’를 누르면 언제든 작품의 원래 모습으로 돌아가요.'))}
 ${WALL.map((id) => dollSec(id, 1)).join('')}
-${chapter(2, '2 · 서랍', '넣어 둔 기억', '천천히 내려가면 서랍이 열려요.')}
+${chapter(2, t('2 · 서랍'), t('넣어 둔 기억'), t('천천히 내려가면 서랍이 열려요.'))}
 <section class="sc tsec" id="s2" data-i="2">
   <div class="stk">
-    <div class="drawer" id="drawer"><img src="${A}p/tommy.webp" alt="나무 서랍 안에서 고개를 내민 TOMMY" loading="lazy" draggable="false"><div class="front"></div></div>
-    <div class="d-bot"><div class="tag" id="d-tag">${tagHTML('tommy')}</div><p class="d-verb" id="h2"><span>${IS_MOBILE ? '천천히 내려 보세요 · 휴대폰을 몸 쪽으로 당겨 세워도 열려요' : '천천히 내려 보세요'}</span></p></div>
+    <div class="drawer" id="drawer"><img src="${A}p/tommy.webp" alt="${t('나무 서랍 안에서 고개를 내민 TOMMY')}" loading="lazy" draggable="false"><div class="front"></div></div>
+    <div class="d-bot"><div class="tag" id="d-tag">${tagHTML('tommy')}</div><p class="d-verb" id="h2"><span>${t(IS_MOBILE ? '천천히 내려 보세요 · 휴대폰을 몸 쪽으로 당겨 세워도 열려요' : '천천히 내려 보세요')}</span></p></div>
   </div>
 </section>
-${chapter(3, '3 · 소파', '생활 속에 숨은 인형', '소파에 놓인 인형들이에요. 굴리고, 꺼내고, 불러 보세요.')}
+${chapter(3, t('3 · 소파'), t('생활 속에 숨은 인형'), t('소파에 놓인 인형들이에요. 굴리고, 꺼내고, 불러 보세요.'))}
 ${SOFA.map((id) => dollSec(id, 3, id === 'peanut' ? '<div class="cush f"></div>' : '<div class="cush l"></div><div class="cush r"></div>')).join('')}
 <section class="sc" id="s3h" data-i="3">
   <div class="hug" id="hug">
-    <p class="sc-title" style="font-size:18px">두 손으로 감싸 보세요</p>
-    <p class="sc-lead" style="margin:6px auto 0">아래 동그라미를 두 손가락 이상으로 덮고 있거나, 꾹 누르고 있어요.</p>
-    <div class="hug-pad" id="hugpad">여기를 감싸기</div>
+    <p class="sc-title" style="font-size:18px">${t('두 손으로 감싸 보세요')}</p>
+    <p class="sc-lead" style="margin:6px auto 0">${t('아래 동그라미를 두 손가락 이상으로 덮고 있거나, 꾹 누르고 있어요.')}</p>
+    <div class="hug-pad" id="hugpad">${t('여기를 감싸기')}</div>
     <p class="hint" id="h4"></p>
-    <div class="chip-row"><button class="chip" id="chest">가슴에 안아 보기 (카메라)</button></div>
-    <p class="hint" style="font-size:11px;color:#666">카메라는 화면이 가려졌는지 밝기만 읽어요. 영상은 보지도 저장하지도 않아요.</p>
+    <div class="chip-row"><button class="chip" id="chest">${t('가슴에 안아 보기 (카메라)')}</button></div>
+    <p class="hint" style="font-size:11px;color:#666">${t('카메라는 화면이 가려졌는지 밝기만 읽어요. 영상은 보지도 저장하지도 않아요.')}</p>
   </div>
 </section>
-${chapter(4, '4 · 은빛 바닥', '굳어 버린 시간', '금속이 된 인형은 더 이상 닳지 않아요. 만지면 입김처럼 흐려졌다가 다시 맑아져요.')}
+${chapter(4, t('4 · 은빛 바닥'), t('굳어 버린 시간'), t('금속이 된 인형은 더 이상 닳지 않아요. 만지면 입김처럼 흐려졌다가 다시 맑아져요.'))}
 ${FLOOR.map(floorSec).join('')}
 <section class="sc" id="s4s" data-i="4">
   <div style="text-align:center;margin:auto 0">
-    <p class="sc-title">함께 잠들어 볼까요?</p>
-    <p class="sc-lead" style="margin:10px auto 16px">${IS_MOBILE ? '휴대폰을 엎어 두거나, 손바닥을 화면에 얹어 보세요.' : '버튼을 누르면 잠들어요.'}</p>
-    <button class="btn line" id="sleepbtn">잠들기</button>
+    <p class="sc-title">${t('함께 잠들어 볼까요?')}</p>
+    <p class="sc-lead" style="margin:10px auto 16px">${t(IS_MOBILE ? '휴대폰을 엎어 두거나, 손바닥을 화면에 얹어 보세요.' : '버튼을 누르면 잠들어요.')}</p>
+    <button class="btn line" id="sleepbtn">${t('잠들기')}</button>
     <p class="hint" id="h5"></p>
   </div>
 </section>
 <section class="sc" id="s5" data-i="5">
-  <p class="sc-head">5 · 나의 인형</p>
-  <h2 class="sc-title">당신이 남긴 자국</h2>
+  <p class="sc-head">${t('5 · 나의 인형')}</p>
+  <h2 class="sc-title">${t('당신이 남긴 자국')}</h2>
   <div class="marks" id="marks"></div>
-  <h2 class="sc-title" style="margin-top:34px">당신의 인형 이름은<br>무엇이었나요?</h2>
+  <h2 class="sc-title" style="margin-top:34px">${t('당신의 인형 이름은<br>무엇이었나요?')}</h2>
   <div class="my">
-    <input id="myname" maxlength="12" placeholder="이름 (12자까지)" autocomplete="off" enterkeyhint="done">
+    <input id="myname" maxlength="12" placeholder="${t('이름 (12자까지)')}" autocomplete="off" enterkeyhint="done">
     <canvas id="tagcv" width="640" height="400"></canvas>
-    <button class="btn" id="sew">꾹 눌러 바느질하기</button>
-    <a class="btn line" id="keep" hidden download="much-loved-tag.png">간직하기</a>
-    <p class="hint" style="font-size:11px;color:#666">이름은 이 기기에만 저장돼요.</p>
+    <button class="btn" id="sew">${t('꾹 눌러 바느질하기')}</button>
+    <a class="btn line" id="keep" hidden download="much-loved-tag.png">${t('간직하기')}</a>
+    <p class="hint" style="font-size:11px;color:#666">${t('이름은 이 기기에만 저장돼요.')}</p>
   </div>
 </section>
 <section class="sc" id="s6" data-i="6" style="display:block">
-  <p class="end-msg">닳은 자리마다,<br>사랑이 머물렀다.</p>
+  <p class="end-msg">${t('닳은 자리마다,<br>사랑이 머물렀다.')}</p>
   <div class="note">
-    <p>아기에게 인형은 장난감이라기보다 불안을 견디게 해 준 첫 번째 타자에 가깝습니다. 쥐고, 물고, 끌어안고 잠든 시간이 때와 닳음과 찢어짐으로 남습니다.</p>
-    <p>작가는 그 흔적을 고치지 않습니다. 사라진 자리를 그대로 굳혀, 결핍을 슬픔이 아니라 사랑이 머문 자리로, 상처를 시간이 남긴 문장으로 보여 줍니다.</p>
-    <small>작가 노트에서 (요약)</small>
+    <p>${t('아기에게 인형은 장난감이라기보다 불안을 견디게 해 준 첫 번째 타자에 가깝습니다. 쥐고, 물고, 끌어안고 잠든 시간이 때와 닳음과 찢어짐으로 남습니다.')}</p>
+    <p>${t('작가는 그 흔적을 고치지 않습니다. 사라진 자리를 그대로 굳혀, 결핍을 슬픔이 아니라 사랑이 머문 자리로, 상처를 시간이 남긴 문장으로 보여 줍니다.')}</p>
+    <small>${t('작가 노트에서 (요약)')}</small>
   </div>
-  <img class="space" src="${A}p/space-wall.webp" alt="액자 벽과 서랍장 설치 전경" loading="lazy">
-  <img class="space" src="${A}p/space-sofa.webp" alt="소파 설치 전경" loading="lazy">
-  <img class="space" src="${A}p/space-table.webp" alt="은빛 탁자 설치 전경" loading="lazy">
+  <img class="space" src="${A}p/space-wall.webp" alt="${t('액자 벽과 서랍장 설치 전경')}" loading="lazy">
+  <img class="space" src="${A}p/space-sofa.webp" alt="${t('소파 설치 전경')}" loading="lazy">
+  <img class="space" src="${A}p/space-table.webp" alt="${t('은빛 탁자 설치 전경')}" loading="lazy">
   <div class="grid">${ORDER.map((k) => `<figure><img src="${A}t/${k}.webp" alt="${W[k][0]}" loading="lazy"><figcaption><b>${W[k][0]}</b><br>${W[k][1]}<br>${W[k][2]}mm, 2025</figcaption></figure>`).join('')}</div>
-  <div class="bio"><h3>작가</h3>김규진 (KIM GYUZIN, 1991). 충남대학교 조소과, 성신여자대학교 조소과 석사·박사 수료.<br>개인전 〈Kidult〉(2024, Vista Valley), 〈Journey to Childhood〉(2023, 성신여대 파이룸).<br>2025 〈차세대 작가 展 Forefesta〉(자하미술관) 외 단체전 다수. 2020 대한민국미술대전 비구상부문 평론가상.</div>
-  <div class="credit"><h3>크레딧</h3>© KIM GYUZIN 2026 · Photo: Studio Yumull · 도록 《MUCH LOVED》 발행 HJ Design, 디자인 ATST<br>작품 이미지는 작가와 촬영자의 허락을 받아 사용했습니다. 레진 작품의 입체는 도록 사진 한 장으로 만든 앞면 입체이며, 뒷면은 만들지 않았습니다. 손때·해진 곳·눌림은 관람 체험을 위해 이 화면에만 그려지는 효과이며, 작품의 실제 상태가 아닙니다.<br>센서·마이크·카메라 정보는 이 기기 안에서만 쓰고 저장하거나 보내지 않습니다.</div>
-  <a class="btn exit ml-exit" href="./">전시 행성 나가기</a>
+  <div class="bio"><h3>${t('작가')}</h3>${t('BIO')}</div>
+  <div class="credit"><h3>${t('크레딧')}</h3>${t('CREDIT')}</div>
+  <a class="btn exit ml-exit" href="./">${t('전시 행성 나가기')}</a>
 </section>`;
 
 // ── 진행 점(장 단위)
@@ -445,7 +446,7 @@ addEventListener('pointerup', release); addEventListener('pointercancel', releas
 let micTried = false, holdAct = null;
 document.querySelectorAll('.dsec .chip').forEach((b) => {
   const act = b.dataset.act, sec = b.closest('.dsec');
-  if (act === 'reset') { b.onclick = () => { const d = dolls.get(sec.dataset.doll); if (d) { resetDoll(d); snd.fx('reset'); $('.d-meter', sec).textContent = '작품의 원래 모습이에요'; } }; return; }
+  if (act === 'reset') { b.onclick = () => { const d = dolls.get(sec.dataset.doll); if (d) { resetDoll(d); snd.fx('reset'); $('.d-meter', sec).textContent = t('작품의 원래 모습이에요'); } }; return; }
   const on = async (e) => {
     e.preventDefault(); holdAct = { act, s: sec, t: performance.now() }; b.classList.add('on');
     if ((act === 'blow' || act === 'call') && !micTried && IS_MOBILE) { micTried = true; try { await startMic(); } catch (err) {} }
@@ -514,23 +515,23 @@ function interact() {
     lastMeter = now; if (d.dirty) measure(d);
     const st = d.stats, sec = Math.round(d.hugT / 1000);
     const note = {
-      rub: st.dirt ? `손때 ${st.dirt}%` : '',
-      blow: st.tear ? `해진 곳 ${st.tear}%` : '',
-      press: d.n ? `${d.n}번 눌렀어요 · 납작해진 곳 ${st.flat}%` : '',
-      shake: d.n ? `${d.n}번 흔들었어요 · 해진 틈 ${st.tear}%` : '',
-      hug: sec ? `${sec}초 동안 안았어요` : '',
-      tap: d.n ? `${d.n}번 두드렸어요 · 반들해진 곳 ${st.flat}%` : '',
-      stretch: d.n || d.m ? `${d.n}번 당겼어요${d.m ? ` · 터진 실밥 ${d.m}곳` : ''}` : '',
-      roll: d.rollT > 0.05 ? `소파 위를 굴렀어요 · 묻은 먼지 ${Math.max(1, st.dirt)}%` : '',
-      pull: d.found ? '찾았다! 쿠션 틈에서 꺼냈어요' : '',
-      call: d.n ? `목소리를 ${d.n}번 들었어요` : '',
+      rub: st.dirt ? t('손때 {p}%', { p: st.dirt }) : '',
+      blow: st.tear ? t('해진 곳 {p}%', { p: st.tear }) : '',
+      press: d.n ? t('{n}번 눌렀어요 · 납작해진 곳 {p}%', { n: d.n, p: st.flat }) : '',
+      shake: d.n ? t('{n}번 흔들었어요 · 해진 틈 {p}%', { n: d.n, p: st.tear }) : '',
+      hug: sec ? t('{s}초 동안 안았어요', { s: sec }) : '',
+      tap: d.n ? t('{n}번 두드렸어요 · 반들해진 곳 {p}%', { n: d.n, p: st.flat }) : '',
+      stretch: d.n || d.m ? t('{n}번 당겼어요', { n: d.n }) + (d.m ? t(' · 터진 실밥 {m}곳', { m: d.m }) : '') : '',
+      roll: d.rollT > 0.05 ? t('소파 위를 굴렀어요 · 묻은 먼지 {p}%', { p: Math.max(1, st.dirt) }) : '',
+      pull: d.found ? t('찾았다! 쿠션 틈에서 꺼냈어요') : '',
+      call: d.n ? t('목소리를 {n}번 들었어요', { n: d.n }) : '',
     }[m];
     if (note) { d.note = note; $('.d-meter', active.s).textContent = note; }
   }
 }
 
 // ════════════════ 0 쥐기 ════════════════
-const LINES = ['당신이 가장 오래 쥐고 있던 것은<br>무엇인가요?', '손에 쥐고, 입에 넣고,<br>끌어안고 잠들던 것.', '그것은 닳고, 해지고,<br>어느 부분은 사라졌습니다.', '그래도 놓지 않았습니다.', '지금 손에 쥔 그것일지도 모릅니다.', 'MUCH LOVED · 많이 사랑받은 것들'];
+const LINES = ['당신이 가장 오래 쥐고 있던 것은<br>무엇인가요?', '손에 쥐고, 입에 넣고,<br>끌어안고 잠들던 것.', '그것은 닳고, 해지고,<br>어느 부분은 사라졌습니다.', '그래도 놓지 않았습니다.', '지금 손에 쥔 그것일지도 모릅니다.', 'MUCH LOVED · 많이 사랑받은 것들'].map((l) => t(l));
 (() => {
   const s0 = $('#s0'), fg = $('#s0 .fg'), h0 = $('#h0'), box = $('#lines'), go = $('#go1');
   box.innerHTML = LINES.map((l, i) => `<p class="${i === LINES.length - 1 ? 'big' : ''}">${l}</p>`).join('');
@@ -542,8 +543,8 @@ const LINES = ['당신이 가장 오래 쥐고 있던 것은<br>무엇인가요?
     if (n >= LINES.length) { held = false; h0.textContent = ''; go.hidden = false; mark(0); return; }
     timer = setTimeout(step, 1200);
   };
-  const down = (e) => { if (n >= LINES.length || (e.target && e.target.closest && e.target.closest('button,a'))) return; held = true; h0.textContent = '그대로 쥐고 있어요'; clearTimeout(hold0); hold0 = setTimeout(step, 600); };
-  const up = () => { if (!held) return; held = false; clearTimeout(hold0); clearTimeout(timer); if (n < LINES.length) h0.textContent = '다시 꾹 누르면 이어져요'; };
+  const down = (e) => { if (n >= LINES.length || (e.target && e.target.closest && e.target.closest('button,a'))) return; held = true; h0.textContent = t('그대로 쥐고 있어요'); clearTimeout(hold0); hold0 = setTimeout(step, 600); };
+  const up = () => { if (!held) return; held = false; clearTimeout(hold0); clearTimeout(timer); if (n < LINES.length) h0.textContent = t('다시 꾹 누르면 이어져요'); };
   s0.addEventListener('pointerdown', down); addEventListener('pointerup', up); addEventListener('pointercancel', up);
   addEventListener('keydown', (e) => { if (e.code === 'Space' && cur === 0 && !e.repeat) { e.preventDefault(); down(e); } });
   addEventListener('keyup', (e) => { if (e.code === 'Space') up(); });
@@ -590,7 +591,7 @@ let cushV = 0;
     if (on) {
       total += now - last; if (now - beatT > 1200) { beatT = now; beat(); }
       const g = Math.min(42, 21 + total / 4000 * 21) | 0; setBack(`rgb(${g},${g},${g})`);
-      h4.textContent = total > 6000 ? '곁에 있었어요' : '그대로 있어요';
+      h4.textContent = t(total > 6000 ? '곁에 있었어요' : '그대로 있어요');
       if (total > 6000) mark(3);
     } else if (total) setBack('#000');
     last = now; requestAnimationFrame(tick);
@@ -603,14 +604,14 @@ let cushV = 0;
     try {
       const v = $('#ml-cam'); const stop = await startCamera(v);
       const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d', { willReadFrequently: true });
-      let dark = 0; h4.textContent = '휴대폰 뒷면을 가슴에 대 보세요';
+      let dark = 0; h4.textContent = t('휴대폰 뒷면을 가슴에 대 보세요');
       const hug = $('#s3h');
       const iv = setInterval(() => {
         const r = hug.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) { clearInterval(iv); stop(); camHeld = false; b.disabled = false; return; }
         x.drawImage(v, 0, 0, 16, 16); const d = x.getImageData(0, 0, 16, 16).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += (d[i] + d[i + 1] + d[i + 2]) / 3;
         const avg = s / 256; if (avg < 18) dark += 200; else if (avg > 40) dark = 0; camHeld = dark >= 800;
       }, 200);
-    } catch (err) { b.textContent = '카메라 없이 동그라미를 감싸 주세요'; }
+    } catch (err) { b.textContent = t('카메라 없이 동그라미를 감싸 주세요'); }
   };
 })();
 
@@ -637,7 +638,7 @@ const sl = $('#ml-sleep'), slT = $('.ml-sleep-t', sl), slH = $('.ml-sleep-h', sl
 const inSleepSec = () => { const r = s4s.getBoundingClientRect(); return r.top < innerHeight * 0.6 && r.bottom > innerHeight * 0.4; };
 function sleep(how) {
   if (sleeping) return; sleeping = true; sleepAt = Date.now();
-  slH.textContent = how === 'palm' ? '손을 떼면 깨어나요' : how === 'face' ? '들어 올리면 깨어나요' : '화면을 누르면 깨어나요';
+  slH.textContent = t(how === 'palm' ? '손을 떼면 깨어나요' : how === 'face' ? '들어 올리면 깨어나요' : '화면을 누르면 깨어나요');
   sl.hidden = false; slT.textContent = '00:00'; keepAwake(); snd.scene('sleep');
   clearInterval(sleepIv); sleepIv = setInterval(() => {
     const s = Math.floor((Date.now() - sleepAt) / 1000); slT.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -647,9 +648,9 @@ function sleep(how) {
 function wake() {
   if (!sleeping) return; sleeping = false; clearInterval(sleepIv); sl.hidden = true;
   const s = Math.max(1, Math.floor((Date.now() - sleepAt) / 1000)), m = Math.floor(s / 60);
-  h5.textContent = `${m ? m + '분 ' : ''}${s % 60}초 동안 곁에 있었어요`; snd.scene('floor'); snd.fx('wake'); beat([20, 100, 20]); mark(4);
+  h5.textContent = m ? t('{m}분 {s}초 동안 곁에 있었어요', { m, s: s % 60 }) : t('{s}초 동안 곁에 있었어요', { s }); snd.scene('floor'); snd.fx('wake'); beat([20, 100, 20]); mark(4);
 }
-$('#sleepbtn').onclick = () => { h5.textContent = '들어 올리면 깨어나요'; setTimeout(() => sleep('btn'), RM ? 0 : 1500); };
+$('#sleepbtn').onclick = () => { h5.textContent = t('들어 올리면 깨어나요'); setTimeout(() => sleep('btn'), RM ? 0 : 1500); };
 sl.addEventListener('pointerdown', () => { if (!palm) wake(); });
 sensor.onFaceDown((down) => { if (!inSleepSec() && !sleeping) return; if (down) sleep('face'); else wake(); });
 addEventListener('touchstart', (e) => {
@@ -663,7 +664,7 @@ addEventListener('touchend', (e) => { if (palm && e.touches.length === 0) { palm
 new IntersectionObserver((es) => {
   if (!es[0].isIntersecting) return; const rows = [];
   for (const id of [...WALL, ...SOFA]) { const d = dolls.get(id); if (!d || !d.note) continue; rows.push(`<li><b>${W[id][0]}</b><span>${d.note}</span></li>`); }
-  $('#marks').innerHTML = rows.length ? `<ul>${rows.join('')}</ul><p class="sc-lead">당신의 손이 지나간 자리예요. 인형들은 이렇게 사랑받아 왔어요.</p>` : '<p class="sc-lead">아직 만진 인형이 없어요. 위로 올라가 한 번 만져 보세요.</p>';
+  $('#marks').innerHTML = rows.length ? `<ul>${rows.join('')}</ul><p class="sc-lead">${t('당신의 손이 지나간 자리예요. 인형들은 이렇게 사랑받아 왔어요.')}</p>` : `<p class="sc-lead">${t('아직 만진 인형이 없어요. 위로 올라가 한 번 만져 보세요.')}</p>`;
 }, { threshold: 0.1 }).observe($('#s5'));
 (() => {
   const inp = $('#myname'), tc = $('#tagcv'), x = tc.getContext('2d'), sew = $('#sew'), keep = $('#keep');
@@ -675,7 +676,7 @@ new IntersectionObserver((es) => {
     x.fillStyle = '#f2f0ec'; x.beginPath(); x.roundRect(10, 10, 620, 380, 8); x.fill();
     x.globalAlpha = 0.05; x.fillStyle = '#000'; for (let i = 0; i < 380; i += 3) x.fillRect(10, 10 + i, 620, 1); x.globalAlpha = 1;
     x.fillStyle = '#111'; x.textAlign = 'center';
-    x.font = '700 54px Pretendard, sans-serif'; x.fillText(inp.value.trim() || '이름', 320, 190);
+    x.font = '700 54px Pretendard, sans-serif'; x.fillText(inp.value.trim() || t('이름'), 320, 190);
     x.font = '400 20px Pretendard, sans-serif'; x.fillStyle = '#555'; x.fillText(ds, 320, 240);
     x.font = '700 16px Pretendard, sans-serif'; x.fillText('M U C H   L O V E D', 320, 300);
     const P = [[34, 34], [606, 34], [606, 366], [34, 366], [34, 34]];
@@ -690,7 +691,7 @@ new IntersectionObserver((es) => {
     prog = Math.min(1, prog + 1 / 300); draw();
     if (now - lastStitch > 250) { lastStitch = now; sensor.vibrate(6); snd.fx('stitch'); }
     if (prog >= 1) {
-      doneTag = true; holding = false; sew.textContent = '완성했어요'; sew.disabled = true; beat([20, 80, 20]); snd.fx('chime', [72, 76, 79, 84], 0.18);
+      doneTag = true; holding = false; sew.textContent = t('완성했어요'); sew.disabled = true; beat([20, 80, 20]); snd.fx('chime', [72, 76, 79, 84], 0.18);
       store.set('valix-muchloved-tag', inp.value.trim());
       try { keep.href = tc.toDataURL('image/png'); keep.hidden = false; } catch (e) {}
       mark(5);
@@ -711,9 +712,13 @@ document.querySelectorAll('.ml-exit').forEach((a) => a.addEventListener('click',
 })();
 // ── 소리: 첫 터치에 켜짐(소리 끄기를 고른 사람은 그대로), 상단 버튼으로 켜고 끄기
 const sb = $('#ml-snd');
-const sbUI = () => { sb.classList.toggle('on', snd.on); sb.setAttribute('aria-pressed', String(snd.on)); sb.textContent = snd.on ? '소리 켜짐' : '소리 꺼짐'; };
+const sbUI = () => { sb.classList.toggle('on', snd.on); sb.setAttribute('aria-pressed', String(snd.on)); sb.textContent = t(snd.on ? '소리 켜짐' : '소리 꺼짐'); };
 sb.addEventListener('click', async (e) => { e.stopPropagation(); if (snd.on) { snd.stop(); try { localStorage.setItem('xpace-sound', 'off'); } catch (err) {} } else { try { localStorage.setItem('xpace-sound', 'on'); } catch (err) {} await snd.start(); snd.scene(['intro', 'wall', 'drawer', 'sofa', 'floor', 'end', 'end'][Math.max(0, cur)] || 'intro'); } sbUI(); });
 const firstTouch = async (e) => { if (e.target === sb || snd.on || !snd.allowed()) return; await snd.start(); snd.scene(['intro', 'wall', 'drawer', 'sofa', 'floor', 'end', 'end'][Math.max(0, cur)] || 'intro'); sbUI(); };
 addEventListener('pointerdown', firstTouch, true); addEventListener('keydown', firstTouch, true);
 sbUI();
+document.title = `MUCH LOVED — ${ARTIST} | ARTMOS`;
+{ const dm = document.querySelector('meta[name=description]'); if (dm) dm.content = t('닳고 해진 애착 인형을 손끝으로 다시 만나는 온라인 전시. 김규진 《MUCH LOVED》.'); }
+langSwitcher($('.ml-top'), { before: sb, cls: 'ml-lang' });
+$('.ml-sleep-h').textContent = t('들어 올리면 깨어나요');
 if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, hugIds, snd, get cur() { return cur; } };

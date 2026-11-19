@@ -6,7 +6,7 @@ import { api, loadToss, back, CLIENT_KEY, WIDGET, SHOP_TEST, PAY_ON, SHIPPING_KR
 import { currentUser } from './auth.js?v=16';
 import { lang } from './i18n.js?v=7';
 import { bizHTML } from './biz.js?v=2';
-import { esc } from './data.js?v=36';
+import { esc } from './data.js?v=37';
 
 document.documentElement.lang = lang;
 const T = {
