@@ -9,7 +9,7 @@
 import * as THREE from './vendor/three.module.js';
 import { sensor, IS_MOBILE, startMic, startCamera, keepAwake } from './sensors.js?v=6';
 import { lang, langSwitcher } from './i18n.js?v=7';
-import { t, ARTIST } from './muchloved-i18n.js?v=1';
+import { t, ARTIST } from './muchloved-i18n.js?v=2';
 import { snd } from './muchloved-sound.js?v=1';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -102,7 +102,7 @@ ${chapter(2, t('2 · 서랍'), t('넣어 둔 기억'), t('천천히 내려가면
   </div>
 </section>
 ${chapter(3, t('3 · 소파'), t('생활 속에 숨은 인형'), t('소파에 놓인 인형들이에요. 굴리고, 꺼내고, 불러 보세요.'))}
-${SOFA.map((id) => dollSec(id, 3, id === 'peanut' ? '<div class="cush f"></div>' : '<div class="cush l"></div><div class="cush r"></div>')).join('')}
+${SOFA.map((id) => dollSec(id, 3)).join('')}
 <section class="sc" id="s3h" data-i="3">
   <div class="hug" id="hug">
     <p class="sc-title" style="font-size:18px">${t('두 손으로 감싸 보세요')}</p>
@@ -174,19 +174,25 @@ const cv = $('#ml-gl');
 const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.75 : 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
 camera.position.set(0, 0, 6);
 const VH = 2 * 6 * Math.tan(THREE.MathUtils.degToRad(15)); // 화면 높이(월드)
 scene.add(new THREE.HemisphereLight(0xffffff, 0x1a1a1a, 1.2));
-const key = new THREE.DirectionalLight(0xffffff, 1.7); key.position.set(1.2, 1.6, 3); scene.add(key);
+const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(1.2, 1.6, 3); scene.add(key);
+// 전시장 조명: 위 앞에서 비추는 스포트라이트 하나가 지금 보이는 인형을 따라가며 액자 안·소파에 그림자를 드리움
+const spot = new THREE.SpotLight(0xfff6ea, 26, 0, 0.42, 0.55, 1.6);
+spot.castShadow = true; spot.shadow.mapSize.set(IS_MOBILE ? 1024 : 2048, IS_MOBILE ? 1024 : 2048); spot.shadow.bias = -0.0004; spot.shadow.radius = 6;
+spot.shadow.camera.near = 1; spot.shadow.camera.far = 14;
+scene.add(spot, spot.target);
 const loader = new THREE.TextureLoader();
 const texCache = new Map();
 function tex(u, color) {
   if (!texCache.has(u)) texCache.set(u, new Promise((r) => loader.load(u, (t) => { if (color) { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; } r(t); }, undefined, () => r(null))));
   return texCache.get(u);
 }
-const DEPTH = 0.3, MAX = THREE.MathUtils.degToRad(22);
+const DEPTH = 0.36, BACK = 0.3, MAX = THREE.MathUtils.degToRad(22), TURN = THREE.MathUtils.degToRad(42);
 
 // 셰이더: 표준 재질에 자국 지도(R 손때 · G 해진 곳 · B 눌림)와 누르는 자리(uPress)를 더함
 function wearMaterial(d) {
@@ -253,12 +259,84 @@ function makeDoll(id) {
     const isIn = (u, v) => { const x = Math.floor(u * mc.width), y = Math.floor((1 - v) * mc.height); return x >= 0 && y >= 0 && x < mc.width && y < mc.height && grid[y * mc.width + x] === 1; };
     const d = { id, mode: MODE[id], col, dep, nor, asp, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), pull: new THREE.Vector4(0.5, 0.5, 0, 0), seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false, rz: 0, rollT: 0, hug: 0, hugT: 0, out: 0, outT: 0, call: 0, n: 0, m: 0, note: '' };
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(asp, 1, 200, Math.max(64, Math.round(200 / asp))), wearMaterial(d));
-    const g = new THREE.Group(); g.add(mesh); g.visible = false; scene.add(g);
-    Object.assign(d, { mesh, g, w: asp, h: 1 });
+    mesh.castShadow = true;
+    mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: col, alphaTest: 0.5, displacementMap: dep, displacementScale: DEPTH });
+    const back = backMesh(col, dep, asp);
+    const spin = new THREE.Group(); spin.add(mesh, back);
+    const g = new THREE.Group(); g.add(spin); g.visible = false; scene.add(g);
+    const box = SOFA.includes(id) ? sofaCatcher(asp, MODE[id] === 'pull') : frameBox(asp);
+    g.add(box);
+    Object.assign(d, { mesh, back, spin, box, g, w: asp, h: 1 });
     dolls.set(id, d);
     return d;
   })();
   making.set(id, p); return p;
+}
+
+// 뒷면: 앞면 사진을 흐리게(얼굴·무늬가 사라진 천 뒷모습) + 깊이를 뒤로 → 앞면과 가장자리에서 만나 닫힌 몸통
+function backMesh(col, dep, asp) {
+  const im = col.image, w = 512, h = Math.round(512 / asp);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  x.filter = `blur(${Math.round(w * 0.022)}px) saturate(0.8) brightness(0.78)`; x.drawImage(im, 0, 0, w, h); x.filter = 'none';
+  x.globalCompositeOperation = 'destination-in'; x.drawImage(im, 0, 0, w, h); // 원래 테두리(알파)는 그대로
+  const bt = new THREE.CanvasTexture(c); bt.colorSpace = THREE.SRGBColorSpace;
+  // 깊이를 꼭짓점에 직접 옮김(빛·그림자가 실제 굴곡을 따르게)
+  const sx = 120, sy = Math.max(48, Math.round(120 / asp));
+  const geo = new THREE.PlaneGeometry(asp, 1, sx, sy);
+  const dc = document.createElement('canvas'); dc.width = sx + 1; dc.height = sy + 1; const dx = dc.getContext('2d', { willReadFrequently: true });
+  dx.drawImage(dep.image, 0, 0, sx + 1, sy + 1); const dd = dx.getImageData(0, 0, sx + 1, sy + 1).data;
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const u = uv.getX(i), v = uv.getY(i), px = Math.round(u * sx), py = Math.round((1 - v) * sy);
+    const z = dd[(py * (sx + 1) + px) * 4] / 255; pos.setZ(i, -Math.pow(z, 0.85) * BACK);
+  }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: bt, alphaTest: 0.5, roughness: 0.92, side: THREE.DoubleSide }));
+  m.castShadow = true;
+  m.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: bt, alphaTest: 0.5 });
+  return m;
+}
+// 액자 상자: 깊은 나무 틀 + 안쪽 판(그림자가 드리움). 인형 크기 1을 기준으로
+const FR = { mat: new THREE.MeshStandardMaterial({ color: 0xe9e6e0, roughness: 0.7 }), inner: new THREE.MeshStandardMaterial({ color: 0x3a3936, roughness: 1 }) };
+const frameW = (asp) => asp * 1.22 + 0.16;
+function frameBox(asp) {
+  const g = new THREE.Group(), W2 = frameW(asp), H2 = 1.3, D = 0.62, t = 0.06, zb = -0.42;
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(W2, H2), FR.inner); panel.position.z = zb; panel.receiveShadow = true; g.add(panel);
+  const bar = (w, h, d, x, y, z) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), FR.mat); b.position.set(x, y, z); b.castShadow = true; b.receiveShadow = true; g.add(b); };
+  const zc = zb + D / 2;
+  bar(W2 + 2 * t, t, D, 0, H2 / 2 + t / 2, zc); bar(W2 + 2 * t, t, D, 0, -H2 / 2 - t / 2, zc);
+  bar(t, H2, D, -W2 / 2 - t / 2, 0, zc); bar(t, H2, D, W2 / 2 + t / 2, 0, zc);
+  // 안쪽 판 위 조명 웅덩이(전시장 핀 조명 느낌)
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(W2, H2), new THREE.MeshBasicMaterial({ map: poolTex(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.35 }));
+  pool.position.z = zb + 0.002; g.add(pool);
+  g.userData.zb = zb;
+  return g;
+}
+let _pool = null;
+function poolTex() {
+  if (_pool) return _pool; const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  const gr = x.createRadialGradient(64, 46, 4, 64, 60, 76); gr.addColorStop(0, 'rgba(255,248,236,.55)'); gr.addColorStop(1, 'rgba(255,248,236,0)'); x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+  return (_pool = new THREE.CanvasTexture(c));
+}
+// 소파 인형: 천 쿠션 두 개(등받이·앉는 자리) 위에 놓임 — 그림자가 쿠션 굴곡을 따라 드리움
+const CUSH = new THREE.MeshStandardMaterial({ color: 0x5e5b57, roughness: 1 });
+function pillow(w, h, d) {
+  // 둥근 상자(모서리가 부푼 쿠션): 구를 늘리고 가운데를 평평하게
+  const g = new THREE.SphereGeometry(1, 48, 32), P = g.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    let x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+    const k = (v) => Math.sign(v) * Math.pow(Math.abs(v), 0.45); x = k(x); y = k(y); z = Math.sign(z) * Math.pow(Math.abs(z), 0.8);
+    P.setXYZ(i, x * w / 2, y * h / 2, z * d / 2);
+  }
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, CUSH); m.receiveShadow = true; m.castShadow = true; return m;
+}
+function sofaCatcher(asp, front) {
+  const g = new THREE.Group(), W2 = Math.max(asp * 1.7 + 0.6, 1.6);
+  const backC = pillow(W2, 1.25, 0.42); backC.position.set(0, 0.12, -0.62); backC.rotation.x = -0.12; g.add(backC);
+  const seat = pillow(W2 * 1.05, 0.34, 1.1); seat.position.set(0, -0.62, -0.05); g.add(seat);
+  if (front) { const f = pillow(W2 * 1.1, 0.78, 0.55); f.position.set(0, -0.42, 0.42); f.rotation.x = 0.1; g.add(f); } // 쿠션 틈(꺼내기)
+  g.userData.zb = -0.45; return g;
 }
 
 // 자국 그리기 (캔버스에 채널별로 더함)
@@ -350,26 +428,38 @@ function frame() {
     const r = s.getBoundingClientRect(), on = r.bottom > 0 && r.top < H;
     d.g.visible = on; if (!on) continue; show = true;
     const stk = s._stk || (s._stk = $('.stk', s)); const sr = stk.getBoundingClientRect();
-    const sofa = SOFA.includes(d.id);
-    const anchor = sr.top + H * (sofa ? 0.47 : 0.45);
-    const hT = Math.min(VH * (sofa ? 0.44 : 0.5), VW * 0.84 / d.asp);
+    const sofa = SOFA.includes(d.id), sp = d.spin;
+    const anchor = sr.top + H * (sofa ? 0.45 : 0.465);
+    const hT = sofa ? Math.min(VH * 0.42, VW * 0.8 / d.asp) : Math.min(VH * 0.42, VW * 0.84 / frameW(d.asp));
     d.g.scale.setScalar(hT); d.g.position.set(0, (0.5 - anchor / H) * VH, 0);
-    d.g.rotation.x = (sofa ? -0.15 : 0) + rx + Math.sin(t * 0.5 + d.asp) * 0.025 * idle;
-    d.g.rotation.y = ry + Math.sin(t * 0.37 + d.asp) * 0.07 * idle;
-    d.g.rotation.z = 0;
-    if (d.mode === 'roll') { d.g.rotation.z = -d.rz * 0.55; d.g.position.x += d.rz * Math.min(hT * 0.3, VW * 0.18); }
-    if (d.mode === 'hug') d.g.scale.set(hT * (1 + 0.07 * d.hug), hT * (1 - 0.09 * d.hug), hT);
-    if (d.mode === 'pull') d.g.position.y += -(1 - d.out) * hT * 0.5 + d.out * hT * 0.16;
-    if (d.mode === 'call') { d.g.rotation.y += d.call * 0.45; d.g.position.y += Math.sin(t * 9) * d.call * hT * 0.015; }
+    // 장면 전체(액자+인형): 기울기에 조금만 → 액자 깊이가 보이는 시차
+    d.g.rotation.set((sofa ? -0.12 : 0) + rx * 0.45, ry * 0.45, 0);
+    // 들어올 때·나갈 때 옆으로 돌며(두께·뒷모습) 앞으로 나옴
+    const enter = clamp(r.top / H, 0, 1), leave = clamp((H - r.bottom) / H, 0, 1);
+    const turnIn = (enter - leave) * 1.35;
+    const sway = Math.sin(t * 0.33 + d.asp * 3) * 0.32 * idle;
+    sp.rotation.set(rx * 1.1 + Math.sin(t * 0.5 + d.asp) * 0.03 * idle, turnIn + ry * (TURN / MAX) + sway, 0);
+    sp.position.set(0, 0, 0.12 + (enter + leave) * 0.25); sp.scale.set(1, 1, 1);
+    if (d.mode === 'roll') { sp.rotation.z = -d.rz * 0.55; sp.position.x += d.rz * Math.min(0.3, VW * 0.18 / hT); }
+    if (d.mode === 'hug') sp.scale.set(1 + 0.07 * d.hug, 1 - 0.09 * d.hug, 1 - 0.25 * d.hug);
+    if (d.mode === 'pull') { sp.position.y += -(1 - d.out) * 0.2 + d.out * 0.24; sp.position.z += d.out * 0.3; }
+    if (d.mode === 'call') { sp.rotation.y += d.call * 0.6; sp.position.y += Math.sin(t * 9) * d.call * 0.015; }
     if (!(press && press.d === d)) { d.pull.z *= 0.86; d.pull.w *= 0.86; }
     s.style.setProperty('--p', clamp(-r.top / Math.max(1, r.height - H), 0, 1).toFixed(3));
     if (r.top <= 2 && r.bottom >= H - 2) active = { s, d };
     if (!(press && press.d === d)) d.press.z *= 0.9;
   }
   key.position.set(1.2 - ry * 6, 1.6 + rx * 5, 3);
+  // 스포트라이트: 화면 가운데에 가장 가까운 인형 위 앞에서
+  let near0 = null, nd = 1e9; for (const [, d] of dolls) if (d.g.visible) { const k = Math.abs(d.g.position.y); if (k < nd) { nd = k; near0 = d; } }
+  if (near0) {
+    const P = near0.g.position, sc = near0.g.scale.y, lx = (mouse && !sensor.on ? mouse.x : ry / MAX) * 0.6;
+    spot.position.set(P.x + (0.35 + lx) * sc * 2, P.y + 1.9 * sc, P.z + 2.2 * sc); spot.target.position.set(P.x, P.y - 0.05 * sc, P.z - 0.2 * sc); spot.target.updateMatrixWorld();
+    spot.distance = 0; spot.shadow.camera.far = 6 * sc; spot.shadow.camera.near = 0.3 * sc;
+  }
   // 만지는 인형이 바뀌면 지난 인형의 솜은 치움
   const aid = active && active.d.id; if (aid !== lastActive) { lastActive = aid; if (aid) { pLife.fill(0); for (let i = 0; i < PN; i++) pPos[i * 3 + 2] = -99; pGeo.attributes.position.needsUpdate = true; } }
-  key.intensity = 1.7 + (active && active.d.mode === 'call' ? active.d.call * 0.9 : 0);
+  key.intensity = 1.0 + (active && active.d.mode === 'call' ? active.d.call * 0.9 : 0);
   if (show !== anyOn) { anyOn = show; cv.classList.toggle('on', show); }
   if (!show) return;
   interact();
