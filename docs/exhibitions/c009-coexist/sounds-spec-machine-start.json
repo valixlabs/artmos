@@ -1,0 +1,28 @@
+{
+ "sounds": [
+  {
+   "name": "machine_start",
+   "recipe": {
+    "name": "machine_start",
+    "says": "an old motor switched on and spinning up",
+    "space": "room",
+    "layers": [
+     {
+      "sound": "switch/industrial",
+      "gain": 0
+     },
+     {
+      "sound": "drill/electric",
+      "pitch": -12,
+      "lowpass": 2500,
+      "at": 0.15,
+      "gain": -4,
+      "fade_in": 0.8,
+      "dur": 2.5,
+      "fade_out": 0.8
+     }
+    ]
+   }
+  }
+ ]
+}

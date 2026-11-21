@@ -125,6 +125,23 @@
    "url": "muchloved.html",
    "poster": "assets/posters/c008-poster.webp",
    "logo": "assets/posters/c008-logo.webp"
+  },
+  {
+   "id": "c009",
+   "order": 9,
+   "status": "open",
+   "title": "A-009 · 새로운 공존의 시작",
+   "subtitle": "기계는 나무에 힘을 보내고, 나무는 기계를 품는다",
+   "artist": "신예진",
+   "period": "2026.11 –",
+   "color": "#b9ad9c",
+   "thumbnail": "",
+   "summary": "밑동에 엔진을 품은 고목이 안개 속에 서 있습니다. 나무를 손끝으로 문질러 깨우고, 엔진을 눌러 돌려 보세요. 둘이 함께 움직일 때 엔진의 빛이 가지로 흐르고 이끼와 새소리가 돌아옵니다. 신예진 작가의 나무와 기계 작업에서 출발한 ARTMOS 3D 기획 전시.",
+   "bgm": "",
+   "fx": "",
+   "planet": "rocky",
+   "month": "2026-11,2026-12",
+   "url": "coexist.html"
   }
  ],
  "blocks": [

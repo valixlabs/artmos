@@ -1,0 +1,11 @@
+{"sounds":[{"name":"bgm","recipe":{"name":"bgm","says":"a slow, dark, sacred ambient pad for a misty forest shrine","kind":"ambience","dur":26,"space":"cathedral",
+ "layers":[
+  {"sound":"drone/dark","stretch":2,"at":0,"fade_in":2,"fade_out":3,"gain":-2},
+  {"sound":"drone/dark","stretch":2,"pitch":-5,"at":8.5,"fade_in":3,"fade_out":3,"gain":-3},
+  {"sound":"drone/dark","stretch":2,"at":17,"fade_in":3,"fade_out":3,"gain":-2},
+  {"sound":"pad/air","stretch":2,"pitch":-12,"at":1,"fade_in":2,"fade_out":2,"gain":-7},
+  {"sound":"pad/warm","stretch":2,"pitch":-12,"at":6.5,"fade_in":2,"fade_out":2,"gain":-9},
+  {"sound":"pad/air","stretch":2,"pitch":-7,"at":12,"fade_in":2,"fade_out":2,"gain":-8},
+  {"sound":"pad/warm","stretch":2,"pitch":-17,"at":18,"fade_in":2,"fade_out":2,"gain":-9},
+  {"sound":"wind/mountain","lowpass":700,"gain":-18,"dur":26}
+ ]}}]}

@@ -1,0 +1,139 @@
+{
+ "sounds": [
+  {
+   "name": "forest_wind",
+   "want": "wind in the trees, a seamless loop of 20 seconds",
+   "sound": "wind/trees",
+   "loop": true,
+   "dur": 20
+  },
+  {
+   "name": "forest_birds",
+   "want": "birds singing in a forest, a seamless loop of 20 seconds",
+   "sound": "forest/morning",
+   "loop": true,
+   "dur": 20
+  },
+  {
+   "name": "engine_idle",
+   "dur": 12,
+   "recipe": {
+    "name": "engine_idle",
+    "says": "a heavy engine idling, low and steady",
+    "kind": "ambience",
+    "dur": 12,
+    "space": "room",
+    "layers": [
+     {
+      "sound": "blender/run",
+      "pitch": -18,
+      "lowpass": 700,
+      "gain": 0,
+      "dur": 12
+     },
+     {
+      "sound": "space_hum/ship",
+      "gain": -6,
+      "dur": 12
+     },
+     {
+      "sound": "washing_machine/spin",
+      "pitch": -7,
+      "lowpass": 1200,
+      "gain": -9,
+      "dur": 12
+     }
+    ]
+   }
+  },
+  {
+   "name": "gears",
+   "dur": 4,
+   "recipe": {
+    "name": "gears",
+    "says": "gears turning, slow mechanical ticking",
+    "kind": "ambience",
+    "dur": 4,
+    "space": "room",
+    "layers": [
+     {
+      "sound": "clock/ticktock",
+      "pitch": -7,
+      "gain": 0,
+      "dur": 4
+     },
+     {
+      "sound": "ratchet/wrench",
+      "pitch": -9,
+      "gain": -10,
+      "lowpass": 3000
+     }
+    ]
+   }
+  },
+  {
+   "name": "tree_creak",
+   "recipe": {
+    "name": "tree_creak",
+    "says": "an old tree trunk creaking slowly",
+    "space": "hall",
+    "layers": [
+     {
+      "sound": "door/creak",
+      "pitch": -10,
+      "lowpass": 2500,
+      "gain": 0
+     },
+     {
+      "sound": "floor/creak",
+      "pitch": -6,
+      "gain": -6,
+      "at": 0.4
+     }
+    ]
+   }
+  },
+  {
+   "name": "touch_wood",
+   "want": "a soft knock on hollow wood",
+   "sound": "knock/hollow"
+  },
+  {
+   "name": "touch_metal",
+   "want": "a small metallic tick",
+   "sound": "tick/metal"
+  },
+  {
+   "name": "machine_start",
+   "recipe": {
+    "name": "machine_start",
+    "says": "an old motor switched on and spinning up",
+    "space": "room",
+    "layers": [
+     {
+      "sound": "switch/industrial",
+      "gain": 0
+     },
+     {
+      "sound": "drill/electric",
+      "pitch": -14,
+      "glide": 6,
+      "lowpass": 2500,
+      "at": 0.15,
+      "gain": -4,
+      "fade_in": 0.3
+     }
+    ]
+   }
+  },
+  {
+   "name": "machine_stop",
+   "recipe": "robot_power_down"
+  },
+  {
+   "name": "bloom",
+   "want": "a breath of air growing, a reveal",
+   "sound": "rise/breath"
+  }
+ ]
+}
