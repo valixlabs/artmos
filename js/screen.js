@@ -15,7 +15,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* ---------- 경품 = 열린 전시 ---------- */
-const POSTER_S = { c005: 'assets/posters/c005-poster-s.webp', g001: 'assets/posters/g001-poster-s.webp', c007: 'assets/posters/c007-poster-s.webp', c008: 'assets/posters/c008-poster-s.webp' };
+const POSTER_S = { c005: 'assets/posters/c005-poster-s.webp', g001: 'assets/posters/g001-poster-s.webp', c007: 'assets/posters/c007-poster-s.webp', c008: 'assets/posters/c008-poster-s.webp', c009: 'assets/posters/c009-poster-s.webp' };
 let prizes = [];
 const short = (t) => String(t || '').replace(/^\s*(?:(?:CELL|X|N|A)\s*-?\s*\d+\s*[·:|–-]\s*)+/i, '');
 loadLocalData().then(({ cells }) => {

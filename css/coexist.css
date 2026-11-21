@@ -28,3 +28,9 @@ html,body{margin:0;height:100%;background:#000;color:#fff;overflow:hidden;
   #enter{background:#fff;color:#000;border:0;font-size:15px;font-weight:700;padding:14px 34px;border-radius:28px}
   #intro small{display:block;margin-top:28px;font-size:10px;opacity:.45;line-height:1.7;max-width:320px}
   #loading{font-size:12px;opacity:.7;margin-top:14px;height:16px}
+/* 포스터·로고 (2026-11-21) */
+#intro{background:#000 url(../assets/posters/c009-poster.webp) center/cover no-repeat}
+#intro::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.82) 55%,#000)}
+#intro>*{position:relative}
+#intro h1.co-logo{margin:0 0 14px}
+#intro h1.co-logo img{display:block;width:min(78vw,380px);height:auto;margin:0 auto}
