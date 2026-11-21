@@ -169,3 +169,5 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .rmt-art img { width: 100%; display: block; }
 .rmt-lead b { font-weight: 800; }
 .scr .scr-toast { left: 2.4vw; top: 2.4vw; transform: none; }
+.scr-lobby { background: linear-gradient(90deg, rgba(0,0,0,.7), rgba(0,0,0,.2) 55%, rgba(0,0,0,.45)); }
+@media (orientation: portrait) { .scr-lobby { background: rgba(0,0,0,.5); } }
