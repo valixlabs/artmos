@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ARTMOS SCREEN · 행성 뽑기</title>
+  <title>ARTMOS SCREEN · 장승효 나비의 정원</title>
   <meta name="description" content="ARTMOS SCREEN — 큰 화면의 우주를 휴대폰으로 움직이는 인터랙티브 스크린" />
   <link rel="icon" href="assets/artmos-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
   <link rel="stylesheet" href="css/artmos-brand.css?v=1" />
-  <link rel="stylesheet" href="css/screen.css?v=4" />
+  <link rel="stylesheet" href="css/screen.css?v=6" />
 </head>
 <body class="scr">
   <canvas id="sky"></canvas>
@@ -16,13 +16,13 @@
   <!-- 아무도 없을 때: 가운데 큰 안내 -->
   <section id="lobby" class="scr-lobby">
     <div class="scr-copy">
-      <p class="scr-kick"><b class="logo">ARTMOS</b><span>SCREEN</span></p>
-      <h1>행성 뽑기</h1>
-      <p class="scr-lead">휴대폰 조이스틱으로 집게를 움직여<br>ARTMOS 전시 행성을 뽑아 보세요.</p>
+      <p class="scr-kick"><b class="logo">ARTMOS</b><span>SCREEN · 장승효</span></p>
+      <h1>나비의 정원</h1>
+      <p class="scr-lead">장승효 작가의 작품이 조각으로 숨었어요.<br>휴대폰으로 나비를 날려 모두 함께 완성해 보세요.</p>
       <ol class="scr-steps">
         <li><b>01</b><span>스캔</span><small>휴대폰 카메라로 QR을 비추거나<br>ARTMOS 앱 ‘스크린’ 탭에 숫자 입력</small></li>
-        <li><b>02</b><span>뽑기</span><small>조이스틱으로 집게를 옮기고<br>‘잡기’를 눌러요 · 기회 3번</small></li>
-        <li><b>03</b><span>관람하기</span><small>뽑은 행성은 내 휴대폰에 도착,<br>바로 그 전시로 들어가요</small></li>
+        <li><b>02</b><span>날기</span><small>조이스틱으로 나비를 움직여<br>떠다니는 작품 조각을 모아요</small></li>
+        <li><b>03</b><span>완성하기</span><small>모두의 조각이 모이면<br>작품이 온전히 드러나요</small></li>
       </ol>
     </div>
     <div class="scr-join">
@@ -30,7 +30,7 @@
       <p class="scr-code-l">입장 숫자</p>
       <p class="scr-code" id="code">····</p>
       <p class="scr-url" id="url"></p>
-      <p class="scr-note">앱 설치 없이 바로 · 기계 3대 · 줄 서기</p>
+      <p class="scr-note">앱 설치 없이 바로 · 여러 사람이 함께</p>
     </div>
   </section>
 
@@ -47,6 +47,6 @@
     <button id="fs" type="button">전체 화면</button>
   </div>
 
-  <script type="module" src="js/screen.js?v=5"></script>
+  <script type="module" src="js/screen.js?v=7"></script>
 </body>
 </html>

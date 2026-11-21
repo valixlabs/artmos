@@ -154,3 +154,18 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .rmt-li em { font-style: normal; font-size: 12px; color: var(--tx2); justify-self: end; }
 .rmt-play { min-height: calc(100svh - 80px - env(safe-area-inset-bottom)); align-content: center; padding-bottom: 24px; }
 .rmt-play { max-width: 440px; margin: 0 auto; width: 100%; }
+
+/* ---- 장승효 · 나비의 정원 (2026-11-21) ---- */
+.rmt-knob.bf { width: 96px; height: 96px; background: transparent; box-shadow: none; }
+.rmt-knob.bf img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 14px rgba(255,255,255,.35)); }
+.rmt-mine { color: #fff; font-weight: 800; font-size: 18px; }
+.rmt-mine.pop { animation: rmt-pop .45s ease; }
+.rmt-prog { position: relative; height: 22px; display: flex; align-items: center; }
+.rmt-prog i { position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1.5px; background: #fff; transform-origin: left; transform: scaleX(0); transition: transform .6s ease; }
+.rmt-prog::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1.5px; background: rgba(255,255,255,.15); }
+.rmt-prog span { position: relative; margin-left: auto; margin-top: 22px; font-size: 12px; color: var(--tx2); }
+.rmt-btn.grab:disabled { background: transparent; border-color: rgba(255,255,255,.3); }
+.rmt-art { width: min(84vw, 340px); border-radius: 18px; overflow: hidden; border: 1px solid var(--bd); animation: rmt-pop .6s .1s ease both; }
+.rmt-art img { width: 100%; display: block; }
+.rmt-lead b { font-weight: 800; }
+.scr .scr-toast { left: 2.4vw; top: 2.4vw; transform: none; }
