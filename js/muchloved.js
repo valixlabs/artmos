@@ -192,11 +192,11 @@ function tex(u, color) {
   if (!texCache.has(u)) texCache.set(u, new Promise((r) => loader.load(u, (t) => { if (color) { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; } r(t); }, undefined, () => r(null))));
   return texCache.get(u);
 }
-const DEPTH = 0.36, BACK = 0.3, MAX = THREE.MathUtils.degToRad(22), TURN = THREE.MathUtils.degToRad(42);
+const DEPTH = 0.36, BACK = 0.3, FRONT_K = 0.8, BACK_K = 0.7, MAX = THREE.MathUtils.degToRad(22), TURN = THREE.MathUtils.degToRad(42);
 
 // 셰이더: 표준 재질에 자국 지도(R 손때 · G 해진 곳 · B 눌림)와 누르는 자리(uPress)를 더함
 function wearMaterial(d) {
-  const m = new THREE.MeshStandardMaterial({ map: d.col, displacementMap: d.dep, normalMap: d.nor, displacementScale: DEPTH, alphaTest: 0.5, roughness: 0.82, metalness: 0, side: THREE.DoubleSide });
+  const m = new THREE.MeshStandardMaterial({ map: d.col, displacementMap: d.dep, normalMap: d.nor, displacementScale: d.dz, alphaTest: 0.5, roughness: 0.82, metalness: 0, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWear = { value: d.wearTex };
     sh.uniforms.uPress = { value: d.press };
@@ -241,12 +241,16 @@ function wearMaterial(d) {
 // 인형 (가까워지면 한 번 만들어 둠, 자국은 페이지를 떠날 때까지 남음)
 const dolls = new Map(); // id → doll (만들어진 것)
 const making = new Map(); // id → Promise
+let _th = null;
+const thick = () => _th || (_th = fetch(A + 'r/depth.json?v=1').then((r) => r.json()).catch(() => ({})));
 function makeDoll(id) {
   if (making.has(id)) return making.get(id);
   const p = (async () => {
-    const [col, dep, nor] = await Promise.all([tex(A + `r/${id}_color.webp`, 1), tex(A + `r/${id}_depth.png`), tex(A + `r/${id}_normal.webp`)]);
+    const [col, dep, nor, TH] = await Promise.all([tex(A + `r/${id}_color.webp`, 1), tex(A + `r/${id}_depth.png`), tex(A + `r/${id}_normal.webp`), thick()]);
     if (!col) return null;
     const asp = col.image.width / col.image.height;
+    // 인형마다 실제 두께(둥근 단면, tools/muchloved-relief/relief2.py) — 없으면 예전 값
+    const th = TH[id] || 0.18, dz = th * FRONT_K, bz = th * BACK_K;
     const wc = document.createElement('canvas'); wc.width = 256; wc.height = Math.round(256 / asp);
     const wx = wc.getContext('2d', { willReadFrequently: true }); wx.fillStyle = '#000'; wx.fillRect(0, 0, wc.width, wc.height);
     const wearTex = new THREE.CanvasTexture(wc);
@@ -257,11 +261,11 @@ function makeDoll(id) {
     const grid = new Uint8Array(mc.width * mc.height);
     for (let y = 0; y < mc.height; y++) for (let x = 0; x < mc.width; x++) if (md[(y * mc.width + x) * 4 + 3] > 200) { inside.push([(x + 0.5) / mc.width, 1 - (y + 0.5) / mc.height]); grid[y * mc.width + x] = 1; }
     const isIn = (u, v) => { const x = Math.floor(u * mc.width), y = Math.floor((1 - v) * mc.height); return x >= 0 && y >= 0 && x < mc.width && y < mc.height && grid[y * mc.width + x] === 1; };
-    const d = { id, mode: MODE[id], col, dep, nor, asp, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), pull: new THREE.Vector4(0.5, 0.5, 0, 0), seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false, rz: 0, rollT: 0, hug: 0, hugT: 0, out: 0, outT: 0, call: 0, n: 0, m: 0, note: '' };
+    const d = { id, mode: MODE[id], col, dep, nor, asp, dz, bz, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), pull: new THREE.Vector4(0.5, 0.5, 0, 0), seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false, rz: 0, rollT: 0, hug: 0, hugT: 0, out: 0, outT: 0, call: 0, n: 0, m: 0, note: '' };
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(asp, 1, 200, Math.max(64, Math.round(200 / asp))), wearMaterial(d));
     mesh.castShadow = true;
-    mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: col, alphaTest: 0.5, displacementMap: dep, displacementScale: DEPTH });
-    const back = backMesh(col, dep, asp);
+    mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: col, alphaTest: 0.5, displacementMap: dep, displacementScale: d.dz });
+    const back = backMesh(col, dep, asp, d.bz);
     const spin = new THREE.Group(); spin.add(mesh, back);
     const g = new THREE.Group(); g.add(spin); g.visible = false; scene.add(g);
     const box = SOFA.includes(id) ? sofaCatcher(asp, MODE[id] === 'pull') : frameBox(asp);
@@ -274,7 +278,7 @@ function makeDoll(id) {
 }
 
 // 뒷면: 앞면 사진을 흐리게(얼굴·무늬가 사라진 천 뒷모습) + 깊이를 뒤로 → 앞면과 가장자리에서 만나 닫힌 몸통
-function backMesh(col, dep, asp) {
+function backMesh(col, dep, asp, bz) {
   const im = col.image, w = 512, h = Math.round(512 / asp);
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
   x.filter = `blur(${Math.round(w * 0.022)}px) saturate(0.8) brightness(0.78)`; x.drawImage(im, 0, 0, w, h); x.filter = 'none';
@@ -288,7 +292,7 @@ function backMesh(col, dep, asp) {
   const pos = geo.attributes.position, uv = geo.attributes.uv;
   for (let i = 0; i < pos.count; i++) {
     const u = uv.getX(i), v = uv.getY(i), px = Math.round(u * sx), py = Math.round((1 - v) * sy);
-    const z = dd[(py * (sx + 1) + px) * 4] / 255; pos.setZ(i, -Math.pow(z, 0.85) * BACK);
+    const z = dd[(py * (sx + 1) + px) * 4] / 255; pos.setZ(i, -z * bz);
   }
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: bt, alphaTest: 0.5, roughness: 0.92, side: THREE.DoubleSide }));
@@ -388,7 +392,7 @@ let pi = 0;
 const tmpV = new THREE.Vector3();
 function puff(d, u, v, n, fall = false) {
   for (let k = 0; k < n; k++) {
-    tmpV.set((u - 0.5) * d.w, (v - 0.5) * d.h, DEPTH * 0.6); d.mesh.localToWorld(tmpV);
+    tmpV.set((u - 0.5) * d.w, (v - 0.5) * d.h, d.dz * 0.6); d.mesh.localToWorld(tmpV);
     pPos[pi * 3] = tmpV.x; pPos[pi * 3 + 1] = tmpV.y; pPos[pi * 3 + 2] = tmpV.z;
     pVel[pi].set((Math.random() - 0.5) * 0.02, fall ? -0.004 - Math.random() * 0.01 : 0.008 + Math.random() * 0.02, 0.01 + Math.random() * 0.02);
     pLife[pi] = 1; pi = (pi + 1) % PN;
