@@ -36,25 +36,27 @@ const FORMS = [
   { b: 1, s: 1.1, ax: .85, flap: 9, name: '날쌘 나비', mir: true },
 ];
 
-/* ---------- 판(숨은 작품) ---------- */
-let round = 0, art = ARTS[0], tiles = [], revealed = 0, pieces = [], doneAt = 0, flashes = [];
-const rev = document.createElement('canvas'), rctx = rev.getContext('2d'); // 드러난 조각만 그린 판
+/* ---------- 작품 조각 모으기 (2026-11-21 소유자: 퍼즐 판이 배경을 가려서 다른 게임으로) ----------
+   가운데 판 없이 화면 전체가 무대. 작품에서 떼 낸 동그란 조각(사탕·꽃·보석)이 떠다니고,
+   나비가 닿으면 그 나비에게 빨려 들어가 모임(금빛 조각은 5개). 모두 함께 목표를 채우면
+   뒤의 작품이 점점 또렷하게 깨어나고, 다 채우면 '만개' — 작품이 활짝 드러나고 나비가 쏟아져 오름. */
+let round = 0, art = ARTS[0], total = 40, revealed = 0, pieces = [], doneAt = 0, shower = [];
+const goalFor = (n) => clamp(30 + n * 15, 40, 400);
+function setGoal() { const g = Math.max(goalFor(people.size), revealed + 10); if (!doneAt && g > total) { total = g; sendProg(true); } }
 function startRound(k) {
-  round = k; art = ARTS[k % ARTS.length]; revealed = 0; doneAt = 0; pieces = []; flashes = [];
-  tiles = []; for (let r = 0; r < art.rows; r++) for (let c = 0; c < art.cols; c++) tiles.push({ c, r, state: 0 }); // 0 숨음 · 1 떠다님 · 2 날아가는 중 · 3 드러남
-  const go = () => { rev.width = art.img.naturalWidth; rev.height = art.img.naturalHeight; rctx.clearRect(0, 0, rev.width, rev.height); };
-  if (art.img.complete && art.img.naturalWidth) go(); else art.img.addEventListener('load', go, { once: true });
+  round = k; art = ARTS[k % ARTS.length]; revealed = 0; doneAt = 0; pieces = []; shower = [];
+  total = goalFor(people.size);
   for (const p of people.values()) p.score = 0;
-  if (main) main.send({ t: 'round', title: artTitle(), total: tiles.length });
+  if (main) main.send({ t: 'round', title: artTitle(), total });
   sendProg(true); if (typeof layout === 'function' && W) layout();
 }
 const artTitle = () => art.title || '장승효 작가의 나비';
 function spawnPiece() {
-  const hidden = tiles.filter((t) => t.state === 0); if (!hidden.length) return;
-  const t = hidden[Math.floor(Math.random() * hidden.length)]; t.state = 1;
-  const side = Math.random() * 4 | 0, m = 60;
-  const x = side === 0 ? -m : side === 1 ? W + m : Math.random() * W, y = side === 2 ? -m : side === 3 ? H + m : Math.random() * H * .9;
-  pieces.push({ t, x, y, vx: 0, vy: 0, ph: Math.random() * 6.3, rot: Math.random() * 6.3, born: performance.now(), fly: null });
+  const side = Math.random() * 4 | 0, m = 50;
+  const x = side === 0 ? -m : side === 1 ? W + m : Math.random() * W, y = side === 2 ? H * .12 - m : side === 3 ? H + m : H * .15 + Math.random() * H * .8;
+  const gold = Math.random() < .1;
+  const a = Math.atan2(H * (.3 + Math.random() * .4) - y, W * (.2 + Math.random() * .6) - x), v = 40 + Math.random() * 50;
+  pieces.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ph: Math.random() * 6.3, rot: Math.random() * 6.3, born: performance.now(), chip: Math.floor(Math.random() * 1e6), gold, fly: null });
 }
 
 /* ---------- 입장 숫자 · QR ---------- */
@@ -93,9 +95,9 @@ function onMain(m) {
   const p = { pid: m.pid, ch, nick: String(m.nick || '').slice(0, 20) || '나비', form, x: .15 + Math.random() * .7, y: .2 + Math.random() * .6, vx: 0, vy: 0, ix: 0, iy: 0, ang: 0, ph: Math.random() * 6, dash: 0, dashCool: 0, score: 0, seen: Date.now(), born: performance.now() };
   people.set(m.pid, p);
   ch.ready.then(() => ch.send(welcome(p)));
-  toast(`${p.nick}님의 나비가 날아왔어요`); layout(); rate();
+  toast(`${p.nick}님의 나비가 날아왔어요`); layout(); rate(); setGoal();
 }
-const welcome = (p) => { const f = FORMS[p.form]; return { t: 'welcome', form: p.form, formName: f.name, bf: abs(BF_SRC[f.b]), mir: !!f.mir, hz: hzFor(people.size), title: artTitle(), total: tiles.length, done: revealed, mine: p.score }; };
+const welcome = (p) => { const f = FORMS[p.form]; return { t: 'welcome', form: p.form, formName: f.name, bf: abs(BF_SRC[f.b]), mir: !!f.mir, hz: hzFor(people.size), title: artTitle(), total, done: Math.min(revealed, total), mine: p.score }; };
 function rate() { const hz = hzFor(people.size); if (hz !== lastHz && main) { lastHz = hz; main.send({ t: 'rate', hz }); } }
 function onPerson(pid, msg) {
   const p = people.get(pid); if (!p || !msg) return;
@@ -111,20 +113,20 @@ setInterval(() => {
   for (const p of [...people.values()]) { if (hb) p.ch.send({ t: 'hb' }); if (now - p.seen > 10000) leave(p); }
 }, 500);
 let progAt = 0;
-function sendProg(force) { const now = performance.now(); if (!main || (!force && now - progAt < 900)) return; progAt = now; main.send({ t: 'prog', done: revealed, total: tiles.length }); }
+function sendProg(force) { const now = performance.now(); if (!main || (!force && now - progAt < 900)) return; progAt = now; main.send({ t: 'prog', done: Math.min(revealed, total), total }); }
 
 /* ---------- 화면 배치 ---------- */
 function layout() {
   const any = people.size > 0;
   $('#lobby').classList.toggle('off', any); $('#corner').hidden = !any;
-  $('#players').innerHTML = any && !doneAt ? `<div class="pl q"><b>나비 ${people.size}마리</b><span>함께 작품을 완성하고 있어요</span></div>` : '';
+  $('#players').innerHTML = any && !doneAt ? `<div class="pl q"><b>나비 ${people.size}마리</b><span>함께 작품 조각을 모으고 있어요</span></div>` : '';
 }
 let toastT = 0;
 function toast(s) { const t = $('#toast'); t.textContent = s; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600); }
 
 /* ---------- 그림 ---------- */
 const cv = $('#sky'), ctx = cv.getContext('2d');
-let W = 0, H = 0, DPR = 1, board = { x: 0, y: 0, w: 0, h: 0 };
+let W = 0, H = 0, DPR = 1;
 const bg = [], sparks = [];
 function resize() {
   DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
@@ -132,10 +134,6 @@ function resize() {
   bg.length = 0; for (let i = 0, n = Math.round(W * H / 2600); i < n; i++) bg.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + .2, a: Math.random() * .6 + .1, p: Math.random() * 6.3 });
 }
 addEventListener('resize', resize); resize();
-function fitBoard() {
-  const iw = art.img.naturalWidth || art.cols, ih = art.img.naturalHeight || art.rows, top = H * .12, maxH = H * .7, maxW = W * .7;
-  const s = Math.min(maxW / iw, maxH / ih); board = { w: iw * s, h: ih * s, x: (W - iw * s) / 2, y: top + (maxH - ih * s) / 2 };
-}
 function sparkle(x, y, sp = 160) { const a = Math.random() * 6.283, s = sp * (.3 + Math.random()); sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, r: 1.5 + Math.random() * 2.5 }); }
 function drawButterfly(x, y, size, form, ph, ang, alpha = 1) {
   const f = FORMS[form], im = BF[f.b]; if (!im.complete || !im.naturalWidth) return;
@@ -152,7 +150,7 @@ const idle = Array.from({ length: 3 }, (_, i) => ({ form: i * 3 % FORMS.length, 
 /* ---------- 움직이는 배경 (2026-11-21 소유자: 화려하게, 뒤 배경이 움직이게 — 'Collage + Dreaming Butterfly' 느낌) ----------
    ① 작품 자체를 크게 흐리게 깔고 천천히 돌고 숨 쉼 ② 작품 속 사탕·꽃·보석 조각이 가운데 소용돌이에서 흘러나옴
    ③ 따뜻한 빛 번짐 ④ 멀리 작은 나비들. 가운데(작품 판)는 어둡게 눌러 게임이 잘 보이게. */
-const BG = { blur: null, artRef: null, chips: [], floaters: [], bgBf: [], glints: [] };
+const BG = { blur: null, artRef: null, chips: [], floaters: [], bgBf: [], glints: [], wake: 1 };
 function buildBlur() {
   if (!art.img.complete || !art.img.naturalWidth || BG.artRef === art) return;
   BG.artRef = art;
@@ -193,8 +191,9 @@ function drawBg(now, dt, dim) {
   // ① 작품이 천천히 돌고 숨 쉼
   if (BG.blur) {
     const sc = Math.max(W / BG.blur.width, H / BG.blur.height) * (1.25 + .06 * Math.sin(t * .23));
-    ctx.save(); ctx.globalAlpha = .78 * dim; ctx.translate(cx + Math.sin(t * .07) * W * .03, cy + Math.cos(t * .09) * H * .03); ctx.rotate(Math.sin(t * .05) * .12);
-    ctx.drawImage(BG.blur, -BG.blur.width * sc / 2, -BG.blur.height * sc / 2, BG.blur.width * sc, BG.blur.height * sc); ctx.restore();
+    const wt = people.size && !doneAt ? .35 + .65 * Math.min(1, revealed / total) : 1; BG.wake += (wt - BG.wake) * Math.min(1, dt * 1.5);
+    ctx.save(); ctx.globalAlpha = (.3 + .55 * BG.wake) * dim; ctx.filter = `saturate(${.6 + .6 * BG.wake})`; ctx.translate(cx + Math.sin(t * .07) * W * .03, cy + Math.cos(t * .09) * H * .03); ctx.rotate(Math.sin(t * .05) * .12);
+    ctx.drawImage(BG.blur, -BG.blur.width * sc / 2, -BG.blur.height * sc / 2, BG.blur.width * sc, BG.blur.height * sc); ctx.filter = 'none'; ctx.restore();
   }
   // ③ 따뜻한 빛 번짐(가운데에서 천천히 맥박)
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -208,7 +207,7 @@ function drawBg(now, dt, dim) {
     f.r += dt * (.035 + f.z * .05); f.a += dt * (.35 - f.r * .22) * (.6 + f.z * .6); f.rot += f.vr * dt; f.wob += dt;
     if (f.r > 1.15) Object.assign(f, newFloater(false));
     const rr = f.r * D * (1 + .05 * Math.sin(f.wob)), x = cx + Math.cos(f.a) * rr, y = cy + Math.sin(f.a) * rr * .8;
-    const size = (10 + 70 * f.z) * (.35 + Math.min(1, f.r * 1.6)), al = Math.min(1, f.r * 4) * (1.15 - f.r) * (.3 + .7 * f.z) * dim;
+    const size = (10 + 70 * f.z) * (.35 + Math.min(1, f.r * 1.6)), al = Math.min(1, f.r * 4) * (1.15 - f.r) * (.3 + .7 * f.z) * dim * (people.size && !doneAt ? .5 : 1); // 게임 중엔 모을 조각(흰 테두리)이 눈에 띄게 배경 조각은 옅게
     if (al <= .01) continue;
     ctx.save(); ctx.globalAlpha = Math.min(1, al); ctx.translate(x, y); ctx.rotate(f.rot); ctx.drawImage(BG.chips[f.chip % BG.chips.length], -size / 2, -size / 2, size, size); ctx.restore();
   }
@@ -219,7 +218,7 @@ function drawBg(now, dt, dim) {
   for (const g of BG.glints) { const k = Math.max(0, Math.sin(t * 1.7 * g.s + g.p)); if (k < .55) continue; const a = (k - .55) / .45 * dim, x = g.x * W, y = g.y * H, L = 6 + 14 * g.s * a; ctx.globalAlpha = a * .9; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x - L, y); ctx.lineTo(x + L, y); ctx.moveTo(x, y - L); ctx.lineTo(x, y + L); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 6.283); ctx.fillStyle = '#fff'; ctx.fill(); }
   ctx.restore();
   // 가장자리 어둡게 + 가운데(판) 눌러 주기
-  const v = ctx.createRadialGradient(cx, cy, D * .15, cx, cy, D); v.addColorStop(0, `rgba(0,0,0,${.35 * dim})`); v.addColorStop(.6, 'rgba(0,0,0,.05)'); v.addColorStop(1, 'rgba(0,0,0,.45)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  const v = ctx.createRadialGradient(cx, cy, D * .15, cx, cy, D); v.addColorStop(0, `rgba(0,0,0,${.15 * dim})`); v.addColorStop(.6, 'rgba(0,0,0,.05)'); v.addColorStop(1, 'rgba(0,0,0,.45)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
 }
 
 let last = performance.now();
@@ -228,49 +227,40 @@ function frame(now) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   for (const s of bg) { ctx.globalAlpha = s.a * (.7 + .3 * Math.sin(now / 1500 + s.p)); ctx.fillStyle = '#fff'; ctx.fillRect(s.x, s.y, s.r, s.r); }
   ctx.globalAlpha = 1;
-  drawBg(now, dt, people.size ? (doneAt ? .55 : 1) : .85); // 사람이 없을 땐 안내 글이 잘 보이게 조금 흐리게
+  drawBg(now, dt, people.size ? (doneAt ? .6 : 1) : .85); // 사람이 없을 땐 안내 글이 잘 보이게 조금 흐리게
   const size = Math.min(W, H) * .125;
   if (!people.size) {
     for (const b of idle) { b.t += dt * .12; b.ph += dt * FORMS[b.form].flap; const x = (.5 + .42 * Math.sin(b.t * 1.3 + b.form)) * W, y = (.5 + .38 * Math.sin(b.t * 1.7 + b.form * 2)) * H; drawButterfly(x, y, size * .9, b.form, b.ph, Math.sin(b.t * 2) * .35, .35); }
   } else {
-    fitBoard();
-    const { x: bx, y: by, w: bw, h: bh } = board, iw = rev.width || 1, ih = rev.height || 1, tw = bw / art.cols, th = bh / art.rows;
-    // 숨은 작품: 아주 흐리게 + 드러난 조각
-    const doneK = doneAt ? clamp((now - doneAt) / 1800, 0, 1) : 0;
-    ctx.fillStyle = `rgba(0,0,0,${.82 * (1 - doneK)})`; ctx.fillRect(bx - 8, by - 8, bw + 16, bh + 16);
-    if (art.img.complete) { ctx.globalAlpha = .07 + doneK * .93; ctx.drawImage(art.img, bx, by, bw, bh); ctx.globalAlpha = 1; }
-    ctx.drawImage(rev, bx, by, bw, bh);
-    ctx.strokeStyle = `rgba(255,255,255,${.25 + doneK * .5})`; ctx.lineWidth = 1 + doneK * 2; ctx.strokeRect(bx - .5, by - .5, bw + 1, bh + 1);
-    if (!doneAt) { ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1; ctx.beginPath(); for (let c = 1; c < art.cols; c++) { ctx.moveTo(bx + c * tw, by); ctx.lineTo(bx + c * tw, by + bh); } for (let r = 1; r < art.rows; r++) { ctx.moveTo(bx, by + r * th); ctx.lineTo(bx + bw, by + r * th); } ctx.stroke(); }
-    for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.life -= dt * 2; if (f.life <= 0) { flashes.splice(i, 1); continue; } ctx.fillStyle = `rgba(255,255,255,${f.life * .7})`; ctx.fillRect(bx + f.c * tw, by + f.r * th, tw, th); }
     // 진행 막대
-    const pr = tiles.length ? revealed / tiles.length : 0, pw = Math.min(W * .5, 640), px = (W - pw) / 2, py = H * .055;
+    const pr = total ? revealed / total : 0, pw = Math.min(W * .5, 640), px = (W - pw) / 2, py = H * .055;
     { const tg = ctx.createLinearGradient(0, 0, 0, H * .11); tg.addColorStop(0, 'rgba(0,0,0,.75)'); tg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H * .11); }
-    ctx.fillStyle = 'rgba(255,255,255,.15)'; ctx.fillRect(px, py, pw, 4); ctx.fillStyle = '#fff'; ctx.fillRect(px, py, pw * pr, 4);
-    ctx.font = `600 ${Math.round(clamp(W * .013, 14, 22))}px Pretendard, sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(doneAt ? `${artTitle()} · 모두 함께 완성했어요` : `${artTitle()} · 함께 완성한 조각 ${revealed}/${tiles.length}`, W / 2, py - 10);
-    // 떠다니는 조각
-    const want = doneAt ? 0 : Math.min(26, 6 + people.size * 2);
-    if (pieces.filter((p) => !p.fly).length < want && Math.random() < dt * 4) spawnPiece();
-    const pr0 = clamp(Math.max(tw, th) * .55, 16, 46);
+    ctx.fillStyle = 'rgba(255,255,255,.15)'; ctx.fillRect(px, py, pw, 4); ctx.fillStyle = '#fff'; ctx.fillRect(px, py, pw * Math.min(1, pr), 4);
+    ctx.font = `600 ${Math.round(clamp(W * .013, 14, 22))}px Pretendard, sans-serif`; ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(doneAt ? `${artTitle()} · 활짝 피었어요` : `${artTitle()} · 함께 모은 조각 ${Math.min(revealed, total)}/${total}`, W / 2, py - 10);
+    if (doneAt) finale(now);
+    // 떠다니는 작품 조각
+    const want = doneAt ? 0 : Math.min(34, 10 + people.size * 3);
+    if (pieces.filter((q) => !q.fly).length < want && Math.random() < dt * 5) spawnPiece();
+    const pr0 = clamp(Math.min(W, H) * .032, 16, 40), chips = BG.chips;
     for (let i = pieces.length - 1; i >= 0; i--) {
-      const q = pieces[i], t = q.t;
-      if (q.fly) { // 제자리로 날아감
-        q.fly.k = Math.min(1, q.fly.k + dt / .75); const e = 1 - Math.pow(1 - q.fly.k, 3);
-        const tx = bx + (t.c + .5) * tw, ty = by + (t.r + .5) * th;
-        q.x = q.fly.x + (tx - q.fly.x) * e; q.y = q.fly.y + (ty - q.fly.y) * e - Math.sin(e * Math.PI) * 60;
-        if (q.fly.k >= 1) { pieces.splice(i, 1); reveal(t); continue; }
+      const q = pieces[i];
+      if (q.fly) { // 잡은 나비에게 빨려 들어감
+        const tp = q.fly.p, tx = people.has(tp.pid) ? tp.x * W : q.fly.x, ty = people.has(tp.pid) ? tp.y * H : q.fly.y;
+        q.fly.k = Math.min(1, q.fly.k + dt / .35); const e = q.fly.k * q.fly.k;
+        q.x = q.fly.x + (tx - q.fly.x) * e; q.y = q.fly.y + (ty - q.fly.y) * e;
+        if (q.fly.k >= 1) { pieces.splice(i, 1); gain(tp, q.gold ? 5 : 1, tx, ty, q.gold); continue; }
       } else {
-        q.ph += dt; q.vx += Math.sin(q.ph * .7 + q.rot) * 14 * dt; q.vy += Math.cos(q.ph * .5 + q.rot * 2) * 14 * dt; q.vx *= .99; q.vy *= .99;
-        const age = (now - q.born) / 1000; if (age < 2.5) { q.vx += (W / 2 - q.x) * .02 * dt; q.vy += (H / 2 - q.y) * .02 * dt; }
-        q.x += q.vx * dt * 3; q.y += q.vy * dt * 3; q.x = clamp(q.x, -80, W + 80); q.y = clamp(q.y, H * .11, H + 80); // 위쪽 제목 줄은 비움 q.rot += dt * .3;
+        q.ph += dt; q.vx += Math.sin(q.ph * .8 + q.rot) * 20 * dt; q.vy += Math.cos(q.ph * .6 + q.rot * 2) * 20 * dt;
+        q.x += q.vx * dt; q.y += q.vy * dt; q.rot += dt * .4;
+        if (q.x < -120 || q.x > W + 120 || q.y < H * .1 - 120 || q.y > H + 120) { if ((now - q.born) > 3000) { pieces.splice(i, 1); continue; } }
       }
-      const r = q.fly ? pr0 * (1 - q.fly.k * .3) : pr0 * (1 + Math.sin(q.ph * 2) * .06);
-      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.fly ? 0 : Math.sin(q.rot) * .4);
-      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.save(); ctx.clip();
-      if (art.img.complete) { const sx = t.c * iw / art.cols, sy = t.r * ih / art.rows, sw = iw / art.cols, sh = ih / art.rows, k = Math.max(r * 2 / sw, r * 2 / sh); ctx.drawImage(art.img, sx, sy, sw, sh, -sw * k / 2, -sh * k / 2, sw * k, sh * k); }
-      ctx.restore(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, r + 5 + Math.sin(q.ph * 3) * 2, 0, 6.283); ctx.stroke();
+      const r = (q.gold ? 1.3 : 1) * (q.fly ? pr0 * (1 - q.fly.k * .6) : pr0 * (1 + Math.sin(q.ph * 2.2) * .07)), born = Math.min(1, (now - q.born) / 500);
+      ctx.save(); ctx.globalAlpha = born; ctx.translate(q.x, q.y); ctx.rotate(Math.sin(q.rot) * .5);
+      if (q.gold) { const g = ctx.createRadialGradient(0, 0, r * .6, 0, 0, r * 2.4); g.addColorStop(0, 'rgba(255,214,120,.55)'); g.addColorStop(1, 'rgba(255,190,80,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r * 2.4, 0, 6.283); ctx.fill(); }
+      if (chips.length) ctx.drawImage(chips[q.chip % chips.length], -r, -r, r * 2, r * 2);
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.strokeStyle = q.gold ? 'rgba(255,220,140,.95)' : 'rgba(255,255,255,.85)'; ctx.lineWidth = q.gold ? 3 : 2; ctx.stroke();
+      ctx.strokeStyle = q.gold ? 'rgba(255,220,140,.35)' : 'rgba(255,255,255,.2)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, r + 6 + Math.sin(q.ph * 3) * 2, 0, 6.283); ctx.stroke();
       ctx.restore();
     }
     // 나비
@@ -286,46 +276,59 @@ function frame(now) {
       const x = p.x * W, y = p.y * H + Math.sin(p.ph * .5) * 4;
       if (p.dash > 0 && Math.random() < .6) sparkle(x, y, 60);
       // 조각 줍기
-      const reach = size * FORMS[p.form].s * .42 + pr0;
-      if (!doneAt) for (const q of pieces) if (!q.fly && Math.hypot(q.x - x, q.y - y) < reach) { q.fly = { x: q.x, y: q.y, k: 0 }; q.t.state = 2; p.score++; p.ch.send({ t: 'got', mine: p.score }); for (let i = 0; i < 10; i++) sparkle(q.x, q.y, 140); }
+      const reach = size * FORMS[p.form].s * .45 + pr0;
+      if (!doneAt) for (const q of pieces) if (!q.fly && Math.hypot(q.x - x, q.y - y) < reach) q.fly = { x: q.x, y: q.y, k: 0, p };
       const a = Math.min(1, (now - p.born) / 600); // 나타날 때 서서히
       drawButterfly(x, y, size, p.form, p.ph, p.ang, a);
       ctx.globalAlpha = .75 * a; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `500 ${Math.round(clamp(W * .009, 11, 16))}px Pretendard, sans-serif`;
       ctx.globalAlpha = a; ctx.font = `700 ${Math.round(clamp(W * .010, 12, 18))}px Pretendard, sans-serif`; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(p.nick, x, y + size * FORMS[p.form].s * .38);
       ctx.fillText(p.nick, x, y + size * FORMS[p.form].s * .38); ctx.globalAlpha = 1;
     }
-    if (doneAt) finale(now);
+    if (doneAt) drawShower(now, dt);
   }
+  for (let i = rings.length - 1; i >= 0; i--) { const g = rings[i]; g.life -= dt * 2.2; if (g.life <= 0) { rings.splice(i, 1); continue; } ctx.globalAlpha = g.life; ctx.strokeStyle = g.gold ? '#ffd98a' : '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, g.y, (1 - g.life) * 90 + 20, 0, 6.283); ctx.stroke(); }
   for (let i = sparks.length - 1; i >= 0; i--) { const s = sparks[i]; s.life -= dt * 1.6; if (s.life <= 0) { sparks.splice(i, 1); continue; } s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= .95; s.vy *= .95; ctx.globalAlpha = s.life; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill(); }
   ctx.globalAlpha = 1;
   requestAnimationFrame(frame);
 }
-function reveal(t) {
-  t.state = 3; revealed++;
-  const iw = rev.width, ih = rev.height, sw = iw / art.cols, sh = ih / art.rows;
-  if (art.img.complete && iw) rctx.drawImage(art.img, t.c * sw, t.r * sh, sw, sh, t.c * sw, t.r * sh, sw, sh);
-  flashes.push({ c: t.c, r: t.r, life: 1 });
+const rings = [];
+function gain(p, n, x, y, gold) {
+  if (doneAt) return;
+  revealed += n; p.score += n; p.ch.send({ t: 'got', mine: p.score });
+  for (let i = 0; i < (gold ? 26 : 10); i++) sparkle(x, y, gold ? 240 : 150);
+  rings.push({ x, y, life: 1, gold });
   sendProg(false);
-  if (revealed >= tiles.length && !doneAt) complete();
+  if (revealed >= total) complete();
 }
 function complete() {
-  doneAt = performance.now(); pieces = [];
+  doneAt = performance.now();
+  for (const q of pieces) for (let i = 0; i < 6; i++) sparkle(q.x, q.y, 200);
+  pieces = [];
   const ranked = [...people.values()].sort((a, b) => b.score - a.score);
   const top = ranked.filter((p) => p.score > 0).slice(0, 3).map((p) => ({ nick: p.nick, n: p.score }));
   sendProg(true);
   for (const p of people.values()) p.ch.send({ t: 'complete', title: artTitle(), img: art.url, mine: p.score, players: people.size, top, rank: ranked.indexOf(p) + 1 });
-  for (let i = 0; i < 160; i++) sparkle(board.x + Math.random() * board.w, board.y + Math.random() * board.h, 260);
+  shower = Array.from({ length: 70 }, (_, i) => ({ form: i % FORMS.length, x: Math.random(), y: 1.1 + Math.random() * 1.2, sp: .12 + Math.random() * .2, sw: Math.random() * 6.3, ph: Math.random() * 6.3, sz: .35 + Math.random() * .6 }));
+  for (let i = 0; i < 200; i++) sparkle(Math.random() * W, Math.random() * H, 260);
   layout();
   const r = round; setTimeout(() => { if (doneAt && round === r) startRound(round + 1); }, NEXT_AFTER * 1000);
 }
-function finale(now) { // 완성: 작품이 온전히 드러나고 함께한 나비들을 알림
-  const k = clamp((now - doneAt) / 1500, 0, 1), list = [...people.values()].filter((p) => p.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
-  const big = Math.round(clamp(W * .03, 22, 52)), small = Math.round(clamp(W * .012, 13, 20)), y0 = Math.min(H - big - small * 2.6, board.y + board.h + 18);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = `rgba(255,255,255,${k})`;
-  ctx.font = `800 ${big}px Pretendard, sans-serif`; ctx.fillText('모두 함께 완성했어요', W / 2, y0);
-  ctx.font = `500 ${small}px Pretendard, sans-serif`; ctx.fillStyle = `rgba(255,255,255,${k * .75})`;
-  ctx.fillText(`장승효 · 참여한 나비 ${people.size}마리${list.length ? '  ·  가장 많이 모은 나비 ' + list.map((p) => `${p.nick} ${p.score}`).join(' · ') : ''}`, W / 2, y0 + big * 1.3);
-  if (Math.random() < .3) sparkle(board.x + Math.random() * board.w, board.y + Math.random() * board.h, 120);
+function drawShower(now, dt) { // 만개: 나비 떼가 아래에서 쏟아져 오름
+  const s0 = Math.min(W, H) * .12;
+  for (const b of shower) { b.y -= b.sp * dt; b.sw += dt; b.ph += dt * FORMS[b.form].flap; if (b.y < -.2) { b.y = 1.15; b.x = Math.random(); } drawButterfly((b.x + Math.sin(b.sw) * .04) * W, b.y * H, s0 * b.sz, b.form, b.ph, Math.sin(b.sw * 1.3) * .3, .85); }
+}
+function finale(now) { // 작품이 화면 가운데에 활짝 — 함께한 나비들을 알림
+  const k = clamp((now - doneAt) / 1500, 0, 1), e = 1 - Math.pow(1 - k, 3), list = [...people.values()].filter((p) => p.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+  if (art.img.complete && art.img.naturalWidth) {
+    const iw = art.img.naturalWidth, ih = art.img.naturalHeight, sc = Math.min(W * .62 / iw, H * .6 / ih) * (.85 + .15 * e), w = iw * sc, h = ih * sc, x = (W - w) / 2, y = H * .44 - h / 2;
+    ctx.save(); ctx.globalAlpha = e; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 40; ctx.drawImage(art.img, x, y, w, h); ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 3; ctx.strokeRect(x - 1.5, y - 1.5, w + 3, h + 3); ctx.restore();
+    const big = Math.round(clamp(W * .03, 22, 52)), small = Math.round(clamp(W * .012, 13, 20)), y0 = Math.min(H - big - small * 2.6, y + h + 20);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.lineJoin = 'round';
+    ctx.font = `800 ${big}px Pretendard, sans-serif`; ctx.lineWidth = 6; ctx.strokeStyle = `rgba(0,0,0,${.7 * k})`; ctx.strokeText('모두 함께 활짝 피웠어요', W / 2, y0); ctx.fillStyle = `rgba(255,255,255,${k})`; ctx.fillText('모두 함께 활짝 피웠어요', W / 2, y0);
+    const sub = `장승효 · 참여한 나비 ${people.size}마리${list.length ? '  ·  가장 많이 모은 나비 ' + list.map((p) => `${p.nick} ${p.score}`).join(' · ') : ''}`;
+    ctx.font = `600 ${small}px Pretendard, sans-serif`; ctx.lineWidth = 4; ctx.strokeText(sub, W / 2, y0 + big * 1.3); ctx.fillStyle = `rgba(255,255,255,${k * .85})`; ctx.fillText(sub, W / 2, y0 + big * 1.3);
+  }
 }
 requestAnimationFrame(frame);
 
@@ -339,4 +342,4 @@ addEventListener('mousemove', showCursor); showCursor();
 if (KIOSK) document.body.classList.add('kiosk');
 
 openRoom(); startRound(0); layout();
-if (location.hash === '#debug') window.__scr = { people, get pieces() { return pieces; }, get tiles() { return tiles; }, get code() { return code; }, get revealed() { return revealed; }, finishAll() { tiles.forEach((t) => { if (t.state < 3) reveal(t); }); } };
+if (location.hash === '#debug') window.__scr = { people, get pieces() { return pieces; }, get total() { return total; }, get code() { return code; }, get revealed() { return revealed; }, finishAll() { const p = [...people.values()][0]; if (p) gain(p, total, W / 2, H / 2); } };

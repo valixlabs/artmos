@@ -99,7 +99,7 @@ function playView(s) {
   app.innerHTML = `<section class="rmt-play">
       <div class="rmt-hud"><span class="rmt-me"><b>${esc(s.nick)}</b><small>${esc(s.formName || '나비')}</small></span><span id="mine" class="rmt-mine">조각 ${s.mine}</span></div>
       <div class="rmt-prog"><i id="prog"></i><span id="progT"></span></div>
-      <p class="rmt-tip" id="tip">나비를 움직여 떠다니는 <b>작품 조각</b>에 닿으면 모아져요</p>
+      <p class="rmt-tip" id="tip">나비로 떠다니는 <b>작품 조각</b>에 닿으면 모아져요 · 금빛 조각은 5개</p>
       <div class="rmt-pad" id="pad"><i class="rmt-ring"></i><i class="rmt-knob bf" id="knob">${s.bf ? `<img src="${esc(s.bf)}" alt="" draggable="false" style="${s.mir ? 'transform:scaleX(-1)' : ''}">` : ''}</i></div>
       <div class="rmt-mode" role="group" aria-label="움직이는 방법">
         <button data-mode="push" class="on" type="button">밀어서</button>
@@ -144,20 +144,20 @@ function paintHud(s) {
   const m = $('#mine'), p = $('#prog'), t = $('#progT');
   if (m) m.textContent = `조각 ${s.mine}`;
   if (p) p.style.transform = `scaleX(${s.total ? s.done / s.total : 0})`;
-  if (t) t.textContent = s.total ? `함께 완성 ${Math.round(s.done / s.total * 100)}%` : '';
+  if (t) t.textContent = s.total ? `함께 피우기 ${Math.round(s.done / s.total * 100)}%` : '';
 }
 function popGot() { const m = $('#mine'); if (!m) return; m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop'); }
 
 /* ---------- 완성 (이 휴대폰에만 내 기록) ---------- */
 function completeView(s, m) {
   stopPlay(); s.view = 'done'; buzz([30, 60, 30, 60, 80]);
-  app.innerHTML = `<section class="rmt-result win"><p class="rmt-kick">나비 ${m.players}마리가 함께</p><h1>작품을 완성했어요!</h1>
+  app.innerHTML = `<section class="rmt-result win"><p class="rmt-kick">나비 ${m.players}마리가 함께</p><h1>활짝 피었어요!</h1>
       <div class="rmt-art"><img src="${esc(m.img)}" alt="" draggable="false"></div>
       <p class="rmt-meta">${m.title && m.title !== '장승효 작가의 나비' ? esc(m.title) + ' · ' : ''}장승효</p>
       <p class="rmt-lead">내가 모은 조각 <b>${m.mine}개</b>${m.rank && m.players > 1 ? ` · ${m.players}마리 중 ${m.rank}번째로 많이` : ''}</p>
       ${m.top && m.top.length ? `<p class="rmt-note">가장 많이 모은 나비 · ${m.top.map((x) => `${esc(x.nick)} ${x.n}`).join(' · ')}</p>` : ''}
       <div class="rmt-row"><button id="collect" class="rmt-btn main" type="button">장승효 작품 소장하러 가기</button></div>
-      <p class="rmt-note">잠시 뒤 새 작품이 숨어요. 이 화면을 켜 두면 바로 이어서 날 수 있어요.</p>
+      <p class="rmt-note">잠시 뒤 새 작품의 조각이 날아와요. 이 화면을 켜 두면 바로 이어서 날 수 있어요.</p>
       <div class="rmt-row"><button id="out" class="rmt-btn" type="button">나가기</button></div></section>`;
   $('#collect').addEventListener('click', () => {
     if (IN_APP) { try { parent.postMessage({ type: 'artmos:go-tab', tab: 'shop' }, '*'); } catch (e) {} return; }
