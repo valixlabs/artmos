@@ -191,6 +191,90 @@ scene.add(new THREE.Points(sapGeo,sapMat));
 const mists=[];for(let i=0;i<10;i++){const m=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,color:0xbfc3c8,transparent:true,opacity:.07,depthWrite:false}));
   const s=rnd(3,6);m.scale.set(s,s*.45,1);m.position.set(rnd(-3,3),rnd(.2,1),rnd(-3,3));m.userData.v=rnd(.05,.15)*(Math.random()<.5?-1:1);scene.add(m);mists.push(m);}
 
+/* ---------- 움직이는 배경 (2026-11-21 소유자: 뒤 배경이 화려하게 움직이게) ----------
+   ① 둘레 하늘: 흐르는 빛의 결(기계가 돌면 호박빛 줄기, 나무가 깨면 초록 결, 공존이면 위에서 빛) + 반짝임
+   ② 멀리 둘러선 큰 톱니들이 천천히 돎  ③ 나비 24마리(잎 나비 12 · 놋쇠 나비 12)가 나무 둘레를 날아다님
+   ④ 떠오르는 불티·꽃가루  ⑤ 위에서 내려오는 빛줄기 */
+const sky=new THREE.Mesh(new THREE.SphereGeometry(40,48,24),new THREE.ShaderMaterial({
+  side:THREE.BackSide,depthWrite:false,fog:false,
+  uniforms:{uT:{value:0},uS:{value:0},uL:{value:0},uH:{value:0}},
+  vertexShader:'varying vec3 vD;void main(){vD=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader:`precision highp float;varying vec3 vD;uniform float uT,uS,uL,uH;
+  float h(vec3 p){p=fract(p*0.3183099+.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+  float n(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);
+    return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
+  float fb(vec3 p){float a=.5,s=0.;for(int k=0;k<4;k++){s+=a*n(p);p*=2.03;a*=.5;}return s;}
+  void main(){vec3 d=normalize(vD);float y=d.y;vec2 p=vec2(atan(d.z,d.x)*1.9,y*2.6);
+    float q=fb(vec3(p*1.3,uT*.04));
+    float w=fb(vec3(p*2.0+vec2(q*2.2,-uT*.16),uT*.06));
+    float v=fb(vec3(p*3.1-vec2(uT*.03,q*1.5),uT*.05+3.));
+    vec3 c=vec3(.012,.011,.014);
+    c+=vec3(1.,.52,.16)*smoothstep(.56,.92,w)*(.07+.6*uS)*(1.-.45*uH);
+    c+=vec3(.9,.35,.08)*pow(smoothstep(.62,.98,w),3.)*(.4*uS);
+    c+=mix(vec3(.3,.72,.32),vec3(.25,.62,.7),q)*smoothstep(.52,.9,v)*(.05+.45*uL);
+    c+=vec3(.95,.86,.62)*pow(max(0.,y),3.)*(.12+.5*uH);
+    c+=vec3(.55,.42,.3)*exp(-abs(y+.05)*7.)*(.04+.1*uH);
+    vec2 g=floor(p*42.);float s=h(vec3(g,7.));float tw=step(.992,s)*(.5+.5*sin(uT*(2.+s*3.)+s*60.));
+    c+=vec3(1.,.9,.7)*tw*(.35+.5*uH);
+    gl_FragColor=vec4(c,1.);}`
+}));
+sky.renderOrder=-10;scene.add(sky);
+// ② 멀리 둘러선 톱니
+function gearGeo(r,teeth,depth){const s=new THREE.Shape();
+  for(let i=0;i<teeth*2;i++){const a=i/(teeth*2)*Math.PI*2,rr=i%2?r*0.86:r,a2=a+Math.PI/(teeth*2);
+    if(i===0)s.moveTo(Math.cos(a)*rr,Math.sin(a)*rr);else s.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);s.lineTo(Math.cos(a2)*rr,Math.sin(a2)*rr);}
+  const hole=new THREE.Path();hole.absarc(0,0,r*0.62,0,Math.PI*2,true);s.holes.push(hole);
+  const g=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:false});g.translate(0,0,-depth/2);return g;}
+const bigGearMat=new THREE.MeshStandardMaterial({color:0x3a3128,metalness:.9,roughness:.42,emissive:0xff8a2a,emissiveIntensity:0});
+const bigGears=[];for(let i=0;i<9;i++){const r=rnd(1.4,3.2);const m=new THREE.Mesh(gearGeo(r,Math.round(r*9),0.25),bigGearMat);
+  const a=i/9*Math.PI*2+rnd(-.2,.2),R=rnd(13,17);m.position.set(Math.cos(a)*R,rnd(1,8),Math.sin(a)*R);m.lookAt(0,m.position.y,0);
+  m.userData={v:rnd(.15,.35)*(i%2?1:-1)};scene.add(m);bigGears.push(m);}
+// ③ 나비
+const wingShape=new THREE.Shape();wingShape.moveTo(0,0);
+wingShape.bezierCurveTo(.08,.22,.32,.34,.36,.16);wingShape.bezierCurveTo(.38,.04,.2,0,0,0);
+wingShape.bezierCurveTo(.18,-.02,.3,-.1,.26,-.2);wingShape.bezierCurveTo(.2,-.28,.06,-.16,0,0);
+const wingGeo=new THREE.ShapeGeometry(wingShape,10);wingGeo.rotateX(-Math.PI/2);
+const leafMat=new THREE.MeshStandardMaterial({color:0x9cc24a,roughness:.7,side:THREE.DoubleSide,emissive:0x2c4a10,emissiveIntensity:.4});
+const leafMat2=new THREE.MeshStandardMaterial({color:0xd8c24c,roughness:.7,side:THREE.DoubleSide,emissive:0x3a3410,emissiveIntensity:.4});
+const brassMat=new THREE.MeshStandardMaterial({color:0xc9a24a,metalness:.9,roughness:.28,side:THREE.DoubleSide,emissive:0x5a3208,emissiveIntensity:.5});
+const flies=[];
+for(let i=0;i<24;i++){const metal=i%2===1;const g=new THREE.Group();const mat=metal?brassMat:(i%4===0?leafMat2:leafMat);
+  const wl=new THREE.Group(),wr=new THREE.Group();const ml=new THREE.Mesh(wingGeo,mat),mr=new THREE.Mesh(wingGeo,mat);mr.scale.x=-1;
+  wl.add(ml);wr.add(mr);g.add(wl,wr);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.012,.008,.16,5),metal?bright:new THREE.MeshStandardMaterial({color:0x3a2a1a}));body.rotation.x=Math.PI/2;g.add(body);
+  g.userData={metal,wl,wr,R:rnd(1.6,4.6),h:rnd(1.2,6.2),w:rnd(.25,.6)*(Math.random()<.5?1:-1),a:rnd(0,6.28),ph:rnd(0,6.28),f:rnd(9,14),s:0,k:(i>>1)/12};
+  g.scale.setScalar(.001);scene.add(g);flies.push(g);}
+// ④ 불티·꽃가루
+const NP=520;const pPos=new Float32Array(NP*3),pCol=new Float32Array(NP*3),pv=[];
+for(let i=0;i<NP;i++){const a=rnd(0,6.28),r=Math.sqrt(Math.random())*7;pPos[i*3]=Math.cos(a)*r;pPos[i*3+1]=rnd(0,10);pPos[i*3+2]=Math.sin(a)*r;
+  const warm=i%2;pCol[i*3]=warm?1:.6;pCol[i*3+1]=warm?.7:.95;pCol[i*3+2]=warm?.35:.45;pv.push({v:rnd(.15,.5),sw:rnd(0,6.28),warm});}
+const pGeo=new THREE.BufferGeometry();pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));pGeo.setAttribute('color',new THREE.BufferAttribute(pCol,3));
+const pMat=new THREE.PointsMaterial({size:.06,map:SOFT,vertexColors:true,transparent:true,opacity:.5,depthWrite:false,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Points(pGeo,pMat));
+// ⑤ 빛줄기
+const beam=new THREE.Mesh(new THREE.ConeGeometry(3.2,11,40,1,true),new THREE.MeshBasicMaterial({color:0xfff1d8,transparent:true,opacity:.04,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,fog:false}));
+beam.position.set(0.4,5.6,0);scene.add(beam);
+function updateBackdrop(dt,t){
+  const U=sky.material.uniforms;U.uT.value=t;U.uS.value=speed;U.uL.value=life;U.uH.value=harm;
+  bigGears.forEach(g=>{g.rotateZ(dt*g.userData.v*(0.25+1.6*speed));});bigGearMat.emissiveIntensity=speed*0.35+harm*0.2;
+  const nLeaf=0.3+0.7*Math.max(life,harm),nMetal=0.3+0.7*Math.max(speed,harm);
+  flies.forEach(g=>{const u=g.userData;const on=u.k<(u.metal?nMetal:nLeaf);u.s+=((on?1:0)-u.s)*dt*1.5;
+    if(u.s<0.01){g.visible=false;return;}g.visible=true;
+    u.a+=dt*u.w*(0.7+0.6*harm);const R=u.R+Math.sin(t*.3+u.ph)*.6;
+    const x=Math.cos(u.a)*R+0.3,z=Math.sin(u.a)*R,y=u.h+Math.sin(t*.8+u.ph)*.5;
+    tmpV.set(Math.cos(u.a+0.15*Math.sign(u.w))*R+0.3,y+Math.cos(t*.8+u.ph)*.06,Math.sin(u.a+0.15*Math.sign(u.w))*R);
+    g.position.set(x,y,z);g.lookAt(tmpV);
+    const fl=Math.sin(t*u.f+u.ph)*1.05;u.wl.rotation.z=fl;u.wr.rotation.z=-fl;
+    g.scale.setScalar(u.s*(u.metal?0.9:1)*(1+0.25*harm));});
+  brassMat.emissiveIntensity=.4+speed*.6;leafMat.emissiveIntensity=leafMat2.emissiveIntensity=.3+life*.6;
+  for(let i=0;i<NP;i++){const q=pv[i];pPos[i*3+1]+=dt*q.v*(0.4+(q.warm?speed:life)*1.4);
+    pPos[i*3]+=Math.sin(t*.6+q.sw)*dt*.08;if(pPos[i*3+1]>10)pPos[i*3+1]=0;}
+  pGeo.attributes.position.needsUpdate=true;pMat.opacity=.35+.4*Math.max(speed,life)+.25*harm;
+  beam.material.opacity=.03+.06*harm+.01*Math.sin(t*1.7);
+}
+const tmpV=new THREE.Vector3();
+
 /* ---------- audio (sounds made with earshot) ---------- */
 const LOOPS={bgm:23.1132,forest_wind:20,forest_birds:20,engine_idle:10.9301,gears:3.166};
 const SHOTS=['tree_creak','touch_wood','touch_metal','machine_start','machine_stop','bloom'];
@@ -304,6 +388,7 @@ function frame(){
   // camera drift when idle
   if(performance.now()-lastTouch>3500&&!mode)theta+=dt*0.06;
   tiltT+=((IS_MOBILE?sensor.tiltX:0)-tiltT)*0.08;tiltP+=((IS_MOBILE?sensor.tiltY:0)-tiltP)*0.08;
+  updateBackdrop(dt,t);
   placeCam();updateListener();mix();
   $('mTree').style.width=(life*100)+'%';$('mMach').style.width=(speed*100)+'%';$('mHarm').style.width=(harm*100)+'%';
   say(statusText());
