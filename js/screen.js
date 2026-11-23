@@ -138,7 +138,7 @@ function sparkle(x, y, sp = 160) { const a = Math.random() * 6.283, s = sp * (.3
 function drawButterfly(x, y, size, form, ph, ang, alpha = 1) {
   const f = FORMS[form], im = BF[f.b]; if (!im.complete || !im.naturalWidth) return;
   const iw = im.naturalWidth, ih = im.naturalHeight, w = size * f.s * f.ax, h = (size * f.s) * ih / iw, bx = iw * BODY[f.b];
-  const open = .28 + .72 * Math.abs(Math.cos(ph)); // 날개를 접었다 폄
+  const open = .42 + .58 * Math.abs(Math.cos(ph)); // 날개를 접었다 폄
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(ang); if (f.mir) ctx.scale(-1, 1);
   const L = w * BODY[f.b], Rw = w - L;
   ctx.save(); ctx.scale(open, 1); ctx.drawImage(im, 0, 0, bx, ih, -L, -h / 2, L, h); ctx.drawImage(im, bx, 0, iw - bx, ih, 0, -h / 2, Rw, h); ctx.restore();
@@ -207,12 +207,12 @@ function drawBg(now, dt, dim) {
     f.r += dt * (.035 + f.z * .05); f.a += dt * (.35 - f.r * .22) * (.6 + f.z * .6); f.rot += f.vr * dt; f.wob += dt;
     if (f.r > 1.15) Object.assign(f, newFloater(false));
     const rr = f.r * D * (1 + .05 * Math.sin(f.wob)), x = cx + Math.cos(f.a) * rr, y = cy + Math.sin(f.a) * rr * .8;
-    const size = (10 + 70 * f.z) * (.35 + Math.min(1, f.r * 1.6)), al = Math.min(1, f.r * 4) * (1.15 - f.r) * (.3 + .7 * f.z) * dim * (people.size && !doneAt ? .5 : 1); // 게임 중엔 모을 조각(흰 테두리)이 눈에 띄게 배경 조각은 옅게
+    const size = (14 + 86 * f.z) * (.35 + Math.min(1, f.r * 1.6)), al = Math.min(1, f.r * 4) * (1.15 - f.r) * (.3 + .7 * f.z) * dim * (people.size && !doneAt ? .5 : 1); // 게임 중엔 모을 조각(흰 테두리)이 눈에 띄게 배경 조각은 옅게
     if (al <= .01) continue;
     ctx.save(); ctx.globalAlpha = Math.min(1, al); ctx.translate(x, y); ctx.rotate(f.rot); ctx.drawImage(BG.chips[f.chip % BG.chips.length], -size / 2, -size / 2, size, size); ctx.restore();
   }
   // ④ 멀리 작은 나비들
-  for (const b of BG.bgBf) { b.t += dt * b.sp; b.ph += dt * FORMS[b.form].flap * .8; const x = (.5 + .48 * Math.sin(b.t * 1.1 + b.form * 1.7)) * W, y = (.5 + .45 * Math.sin(b.t * 1.6 + b.form)) * H; drawButterfly(x, y, Math.min(W, H) * .05, b.form, b.ph, Math.sin(b.t * 3) * .4, .3 * dim); }
+  for (const b of BG.bgBf) { b.t += dt * b.sp; b.ph += dt * FORMS[b.form].flap * .8; const x = (.5 + .48 * Math.sin(b.t * 1.1 + b.form * 1.7)) * W, y = (.5 + .45 * Math.sin(b.t * 1.6 + b.form)) * H; drawButterfly(x, y, Math.min(W, H) * .08, b.form, b.ph, Math.sin(b.t * 3) * .4, .3 * dim); }
   // ⑤ 반짝이(네 갈래 빛)
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#fff'; ctx.lineCap = 'round';
   for (const g of BG.glints) { const k = Math.max(0, Math.sin(t * 1.7 * g.s + g.p)); if (k < .55) continue; const a = (k - .55) / .45 * dim, x = g.x * W, y = g.y * H, L = 6 + 14 * g.s * a; ctx.globalAlpha = a * .9; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x - L, y); ctx.lineTo(x + L, y); ctx.moveTo(x, y - L); ctx.lineTo(x, y + L); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 6.283); ctx.fillStyle = '#fff'; ctx.fill(); }
@@ -228,7 +228,7 @@ function frame(now) {
   for (const s of bg) { ctx.globalAlpha = s.a * (.7 + .3 * Math.sin(now / 1500 + s.p)); ctx.fillStyle = '#fff'; ctx.fillRect(s.x, s.y, s.r, s.r); }
   ctx.globalAlpha = 1;
   drawBg(now, dt, people.size ? (doneAt ? .6 : 1) : .85); // 사람이 없을 땐 안내 글이 잘 보이게 조금 흐리게
-  const size = Math.min(W, H) * .125;
+  const size = Math.min(W, H) * .26;
   if (!people.size) {
     for (const b of idle) { b.t += dt * .12; b.ph += dt * FORMS[b.form].flap; const x = (.5 + .42 * Math.sin(b.t * 1.3 + b.form)) * W, y = (.5 + .38 * Math.sin(b.t * 1.7 + b.form * 2)) * H; drawButterfly(x, y, size * .9, b.form, b.ph, Math.sin(b.t * 2) * .35, .35); }
   } else {
@@ -242,7 +242,7 @@ function frame(now) {
     // 떠다니는 작품 조각
     const want = doneAt ? 0 : Math.min(34, 10 + people.size * 3);
     if (pieces.filter((q) => !q.fly).length < want && Math.random() < dt * 5) spawnPiece();
-    const pr0 = clamp(Math.min(W, H) * .032, 16, 40), chips = BG.chips;
+    const pr0 = clamp(Math.min(W, H) * .05, 24, 62), chips = BG.chips;
     for (let i = pieces.length - 1; i >= 0; i--) {
       const q = pieces[i];
       if (q.fly) { // 잡은 나비에게 빨려 들어감
@@ -281,7 +281,7 @@ function frame(now) {
       const a = Math.min(1, (now - p.born) / 600); // 나타날 때 서서히
       drawButterfly(x, y, size, p.form, p.ph, p.ang, a);
       ctx.globalAlpha = .75 * a; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `500 ${Math.round(clamp(W * .009, 11, 16))}px Pretendard, sans-serif`;
-      ctx.globalAlpha = a; ctx.font = `700 ${Math.round(clamp(W * .010, 12, 18))}px Pretendard, sans-serif`; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(p.nick, x, y + size * FORMS[p.form].s * .38);
+      ctx.globalAlpha = a; ctx.font = `700 ${Math.round(clamp(W * .012, 14, 22))}px Pretendard, sans-serif`; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(p.nick, x, y + size * FORMS[p.form].s * .38);
       ctx.fillText(p.nick, x, y + size * FORMS[p.form].s * .38); ctx.globalAlpha = 1;
     }
     if (doneAt) drawShower(now, dt);
@@ -314,7 +314,7 @@ function complete() {
   const r = round; setTimeout(() => { if (doneAt && round === r) startRound(round + 1); }, NEXT_AFTER * 1000);
 }
 function drawShower(now, dt) { // 만개: 나비 떼가 아래에서 쏟아져 오름
-  const s0 = Math.min(W, H) * .12;
+  const s0 = Math.min(W, H) * .18;
   for (const b of shower) { b.y -= b.sp * dt; b.sw += dt; b.ph += dt * FORMS[b.form].flap; if (b.y < -.2) { b.y = 1.15; b.x = Math.random(); } drawButterfly((b.x + Math.sin(b.sw) * .04) * W, b.y * H, s0 * b.sz, b.form, b.ph, Math.sin(b.sw * 1.3) * .3, .85); }
 }
 function finale(now) { // 작품이 화면 가운데에 활짝 — 함께한 나비들을 알림
