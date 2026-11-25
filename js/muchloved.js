@@ -238,7 +238,8 @@ function wearMaterial(d) {
       .replace('#include <map_fragment>', `#include <map_fragment>
         vec3 wr = texture2D(uWear, vWUv).rgb;
         float n1 = vn(vWUv * 90.0), n2 = vn(vWUv * 23.0);
-        float tear = min(wr.g, 0.72) + (n1 - 0.5) * 0.25 + (n2 - 0.5) * 0.2;
+        // 결 무늬는 해진 자국이 있는 곳에만(만지지 않은 곳에 얼룩이 생기지 않게)
+        float tear = min(wr.g, 0.72) + ((n1 - 0.5) * 0.25 + (n2 - 0.5) * 0.2) * smoothstep(0.02, 0.12, wr.g);
         // 손때: 문지른 만큼 어둡고 누렇게, 결을 따라 얼룩지게
         float dirt = clamp(wr.r * (0.7 + n2 * 0.6) * 1.3, 0.0, 1.0);
         diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.42, 0.34, 0.26), dirt);
@@ -255,7 +256,7 @@ function wearMaterial(d) {
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         totalEmissiveRadiance += vec3(1.0, 0.72, 0.36) * uGlow * (gW * 0.32 + 0.08) * (0.6 + 0.4 * n1);`);
   };
-  m.customProgramCacheKey = () => 'wear6';
+  m.customProgramCacheKey = () => 'wear7';
   return m;
 }
 
@@ -263,11 +264,11 @@ function wearMaterial(d) {
 const dolls = new Map(); // id → doll (만들어진 것)
 const making = new Map(); // id → Promise
 let _th = null;
-const thick = () => _th || (_th = fetch(A + 'r/depth.json?v=1').then((r) => r.json()).catch(() => ({})));
+const thick = () => _th || (_th = fetch(A + 'r/depth.json?v=3').then((r) => r.json()).catch(() => ({})));
 function makeDoll(id) {
   if (making.has(id)) return making.get(id);
   const p = (async () => {
-    const [col, dep, nor, TH] = await Promise.all([tex(A + `r/${id}_color.webp`, 1), tex(A + `r/${id}_depth.png`), tex(A + `r/${id}_normal.webp`), thick()]);
+    const [col, dep, nor, TH] = await Promise.all([tex(A + `r/${id}_color.webp?v=2`, 1), tex(A + `r/${id}_depth.png?v=4`), tex(A + `r/${id}_normal.webp?v=4`), thick()]);
     if (!col) return null;
     const asp = col.image.width / col.image.height;
     // 인형마다 실제 두께(둥근 단면, tools/muchloved-relief/relief2.py) — 없으면 예전 값
@@ -302,18 +303,22 @@ function makeDoll(id) {
 function backMesh(col, dep, asp, bz) {
   const im = col.image, w = 512, h = Math.round(512 / asp);
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
-  x.filter = `blur(${Math.round(w * 0.022)}px) saturate(0.8) brightness(0.78)`; x.drawImage(im, 0, 0, w, h); x.filter = 'none';
+  x.filter = `blur(${Math.round(w * 0.012)}px) saturate(0.9) brightness(0.9)`; x.drawImage(im, 0, 0, w, h); x.filter = 'none';
   x.globalCompositeOperation = 'destination-in'; x.drawImage(im, 0, 0, w, h); // 원래 테두리(알파)는 그대로
   const bt = new THREE.CanvasTexture(c); bt.colorSpace = THREE.SRGBColorSpace;
   // 깊이를 꼭짓점에 직접 옮김(빛·그림자가 실제 굴곡을 따르게)
-  const sx = 120, sy = Math.max(48, Math.round(120 / asp));
+  const sx = 200, sy = Math.max(64, Math.round(200 / asp));
   const geo = new THREE.PlaneGeometry(asp, 1, sx, sy);
-  const dc = document.createElement('canvas'); dc.width = sx + 1; dc.height = sy + 1; const dx = dc.getContext('2d', { willReadFrequently: true });
-  dx.drawImage(dep.image, 0, 0, sx + 1, sy + 1); const dd = dx.getImageData(0, 0, sx + 1, sy + 1).data;
+  // 앞면(displacementMap, GPU 선형 보간)과 똑같이 읽어야 테두리에서 앞뒤가 꼭 맞음 → 원본 크기에서 선형 보간
+  const DW = dep.image.width, DH = dep.image.height;
+  const dc = document.createElement('canvas'); dc.width = DW; dc.height = DH; const dx = dc.getContext('2d', { willReadFrequently: true });
+  dx.drawImage(dep.image, 0, 0); const dd = dx.getImageData(0, 0, DW, DH).data;
+  const at = (x, y) => dd[(Math.min(DH - 1, Math.max(0, y)) * DW + Math.min(DW - 1, Math.max(0, x))) * 4] / 255;
   const pos = geo.attributes.position, uv = geo.attributes.uv;
   for (let i = 0; i < pos.count; i++) {
-    const u = uv.getX(i), v = uv.getY(i), px = Math.round(u * sx), py = Math.round((1 - v) * sy);
-    const z = dd[(py * (sx + 1) + px) * 4] / 255; pos.setZ(i, -z * bz);
+    const fx = uv.getX(i) * DW - 0.5, fy = (1 - uv.getY(i)) * DH - 0.5, x0 = Math.floor(fx), y0 = Math.floor(fy), ax = fx - x0, ay = fy - y0;
+    const z = (at(x0, y0) * (1 - ax) + at(x0 + 1, y0) * ax) * (1 - ay) + (at(x0, y0 + 1) * (1 - ax) + at(x0 + 1, y0 + 1) * ax) * ay;
+    pos.setZ(i, -z * bz);
   }
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: bt, alphaTest: 0.5, roughness: 0.92, side: THREE.DoubleSide }));
@@ -506,7 +511,7 @@ dsecs.forEach((s) => near.observe(s));
 let active = null; // 지금 만질 수 있는 인형 장면 { s, d }
 function layout() { const H = innerHeight, Wd = innerWidth; renderer.setSize(Wd, H, false); camera.aspect = Wd / H; camera.updateProjectionMatrix(); }
 addEventListener('resize', layout); layout();
-let tx = 0, ty = 0, rx = 0, ry = 0, mouse = null;
+let tx = 0, ty = 0, rx = 0, ry = 0, mouse = null, dbgTurn = null; // dbgTurn: 시험용 각도(#debug)
 addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') mouse = { x: e.clientX / innerWidth * 2 - 1, y: e.clientY / innerHeight * 2 - 1 }; });
 const clock = new THREE.Clock();
 let anyOn = false, lastActive = null;
@@ -535,6 +540,7 @@ function frame() {
     const sway = Math.sin(t * 0.33 + d.asp * 3) * 0.32 * idle;
     sp.rotation.set(rx * 1.1 + Math.sin(t * 0.5 + d.asp) * 0.03 * idle, turnIn + ry * (TURN / MAX) + sway, 0);
     sp.position.set(0, 0, 0.12 + (enter + leave) * 0.25); sp.scale.set(1, 1, 1);
+    if (dbgTurn != null) { sp.rotation.set(0, dbgTurn, 0); d.g.rotation.set(0, 0, 0); }
     if (d.mode === 'roll') { sp.rotation.z = -d.rz * 0.55; sp.position.x += d.rz * Math.min(0.3, VW * 0.18 / hT); }
     if (d.done) { // 다 채움: 한 바퀴 돌며 떠오르고, 금빛이 숨 쉬듯
       const k = clamp((performance.now() - d.doneAt) / 1800, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
@@ -1000,4 +1006,4 @@ document.title = `MUCH LOVED — ${ARTIST} | ARTMOS`;
 { const dm = document.querySelector('meta[name=description]'); if (dm) dm.content = t('닳고 해진 애착 인형을 손끝으로 다시 만나는 온라인 전시. 김규진 《MUCH LOVED》.'); }
 langSwitcher($('.ml-top'), { before: sb, cls: 'ml-lang' });
 $('.ml-sleep-h').textContent = t('들어 올리면 깨어나요');
-if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, hugIds, snd, get cur() { return cur; } };
+if (location.hash === '#debug') window.__ml = { sensor, dolls, get active() { return active; }, tearStep, shakeNow, stamp, measure, resetDoll, hugIds, snd, get cur() { return cur; }, set turn(v) { dbgTurn = v; } };
