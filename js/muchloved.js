@@ -350,9 +350,12 @@ function pillow(w, h, d) {
   const m = new THREE.Mesh(g, CUSH); m.receiveShadow = true; m.castShadow = true; return m;
 }
 function sofaCatcher(asp, front) {
-  const g = new THREE.Group(), W2 = Math.max(asp * 1.7 + 0.6, 1.6);
+  // 휴대폰은 소파를 좁게 해서 팔걸이까지 화면 안에 다 들어오게(2026-11-25 소유자: 모바일에서 소파가 잘 안 보임)
+  const g = new THREE.Group(), W2 = IS_MOBILE ? Math.max(asp * 1.05 + 0.25, 1.1) : Math.max(asp * 1.7 + 0.6, 1.6);
   const backC = pillow(W2, 1.25, 0.42); backC.position.set(0, 0.12, -0.62); backC.rotation.x = -0.12; g.add(backC);
   const seat = pillow(W2 * 1.05, 0.34, 1.1); seat.position.set(0, -0.62, -0.05); g.add(seat);
+  for (const sx of [-1, 1]) { const aw = IS_MOBILE ? 0.26 : 0.34, a = pillow(aw, 0.92, 1.2); a.position.set(sx * (W2 / 2 + aw * 0.35), -0.34, -0.08); g.add(a); } // 팔걸이
+  g.userData.w = W2 + (IS_MOBILE ? 0.44 : 0.6);
   if (front) { const f = pillow(W2 * 1.1, 0.78, 0.55); f.position.set(0, -0.42, 0.42); f.rotation.x = 0.1; g.add(f); } // 쿠션 틈(꺼내기)
   g.userData.zb = -0.45; return g;
 }
@@ -448,7 +451,7 @@ function frame() {
     const stk = s._stk || (s._stk = $('.stk', s)); const sr = stk.getBoundingClientRect();
     const sofa = SOFA.includes(d.id), sp = d.spin;
     const anchor = sr.top + H * (sofa ? 0.45 : 0.465);
-    const hT = sofa ? Math.min(VH * 0.42, VW * 0.8 / d.asp) : Math.min(VH * 0.42, VW * 0.84 / frameW(d.asp));
+    const hT = sofa ? Math.min(VH * 0.42, VW * 0.8 / d.asp, VW * 0.95 / d.box.userData.w) : Math.min(VH * 0.42, VW * (IS_MOBILE ? 0.8 : 0.84) / frameW(d.asp));
     d.g.scale.setScalar(hT); d.g.position.set(0, (0.5 - anchor / H) * VH, 0);
     // 장면 전체(액자+인형): 기울기에 조금만 → 액자 깊이가 보이는 시차
     d.g.rotation.set((sofa ? -0.12 : 0) + rx * 0.45, ry * 0.45, 0);
