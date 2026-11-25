@@ -144,6 +144,25 @@
    "url": "coexist.html",
    "poster": "assets/posters/c009-poster.webp",
    "logo": "assets/posters/c009-logo.webp"
+  },
+  {
+   "id": "c010",
+   "order": 10,
+   "status": "open",
+   "title": "A-010 · Humming Letter",
+   "subtitle": "꽃밭 위에 허밍 — 허밍으로 쓰는 편지",
+   "artist": "권지안",
+   "period": "2026.11 –",
+   "color": "#c86a7a",
+   "thumbnail": "",
+   "summary": "흥얼거리면 그림 위에 흰 선 편지가 써집니다. 지친 날의 어두운 막을 문질러 열고, 모네의 정원을 걷고, 기울여 바람을 보내고, 손가락으로 해바라기를 드러내 보세요. 꽃은 항상 그 자리에 있다던 아버지의 말처럼, 평범한 오늘을 꽃밭 위의 허밍으로. 권지안 작가의 지두화 《Humming Letter》 14점.",
+   "bgm": "",
+   "fx": "",
+   "planet": "crystal",
+   "month": "2026-11,2026-12",
+   "url": "humming.html",
+   "poster": "assets/posters/c010-poster.webp",
+   "logo": "assets/posters/c010-logo.webp"
   }
  ],
  "blocks": [
@@ -1175,6 +1194,17 @@
    "type": "cover",
    "title": "자연선택",
    "body": "기계는 나무에 힘을 보내고, 나무는 기계를 품는다. 새로운 공존의 시작.",
+   "media": "",
+   "caption": "",
+   "bg": "#000000",
+   "align": ""
+  },
+  {
+   "cell_id": "c010",
+   "order": 1,
+   "type": "cover",
+   "title": "Humming Letter",
+   "body": "항상 그 자리에 있는 것들에게, 허밍으로 쓰는 편지.",
    "media": "",
    "caption": "",
    "bg": "#000000",

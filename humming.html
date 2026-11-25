@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <style>/* 앱처럼: 두 번 탭 확대·길게 눌러 뜨는 메뉴(공유·사진 저장)·글자 선택·눌림 회색 빛·당김 출렁임 막기 (휴대폰만, 입력칸은 그대로) */
+    html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    @media (hover: none) {
+      html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+      html, body, body * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; }
+      img, svg, a, video, canvas { -webkit-user-drag: none; }
+      input, textarea, select, [contenteditable], [contenteditable] * { -webkit-touch-callout: default !important; -webkit-user-select: text !important; user-select: text !important; }
+    }
+  </style>
+  <script>matchMedia('(hover: none)').matches && addEventListener('contextmenu', function (e) { var t = e.target; if (!(t.closest && t.closest('input, textarea, select, [contenteditable]'))) e.preventDefault(); }, true);</script>
+  <title>Humming Letter — 권지안 | ARTMOS</title>
+  <meta name="description" content="허밍하면 그림 위에 편지가 써지는 온라인 전시. 권지안 《Humming Letter》 — 꽃밭 위에 허밍." />
+  <link rel="icon" href="assets/artmos-mark.svg" />
+  <link rel="preload" as="image" href="assets/posters/c010-logo.webp" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="css/humming.css?v=1" />
+</head>
+<body class="hl-page">
+  <header class="hl-top">
+    <a class="hl-logo hl-exit" href="./">ARTMOS</a>
+    <span class="hl-title">Humming Letter</span>
+    <button class="hl-snd" id="hl-snd" aria-pressed="false">소리 꺼짐</button>
+    <i class="hl-bar" id="hl-bar" aria-hidden="true"></i>
+  </header>
+
+  <div class="hl-gate" id="hl-gate">
+    <img class="hl-gate-bg" src="assets/posters/c010-poster.webp" alt="" aria-hidden="true" />
+    <div class="hl-gate-in">
+      <img class="hl-gate-logo" src="assets/posters/c010-logo.webp" alt="Humming Letter" />
+      <p class="hl-gate-by">권지안 · 꽃밭 위에 허밍</p>
+      <canvas class="hl-gate-cv" id="hl-gate-cv" aria-hidden="true"></canvas>
+      <p class="hl-gate-t">흥얼거리면 그림 위에 편지가 써져요.<br>바람·손가락·리듬으로 그림을 만나 보세요.</p>
+      <button class="hl-btn big" id="hl-enter">들어가기</button>
+      <button class="hl-link" id="hl-enter2">마이크 없이 들어가기</button>
+      <p class="hl-gate-note">센서와 마이크는 이 기기 안에서만 써요. 소리는 높낮이만 읽고 녹음하지 않아요.</p>
+    </div>
+  </div>
+
+  <main id="hl"></main>
+  <p class="hl-toast" id="hl-toast" hidden></p>
+  <script type="module" src="js/humming.js?v=1"></script>
+</body>
+</html>
