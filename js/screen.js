@@ -340,6 +340,7 @@ let idleT = 0;
 const showCursor = () => { document.body.classList.remove('hide-cursor'); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('hide-cursor'), KIOSK ? 800 : 3000); };
 addEventListener('mousemove', showCursor); showCursor();
 if (KIOSK) document.body.classList.add('kiosk');
+{ const sw = $('#switch'); if (sw) { const u = new URL('screen-ml.html', location.href); for (const [k, v] of params) u.searchParams.set(k, v); sw.href = u.href; } }
 
 openRoom(); startRound(0); layout();
 if (location.hash === '#debug') window.__scr = { people, get pieces() { return pieces; }, get total() { return total; }, get code() { return code; }, get revealed() { return revealed; }, finishAll() { const p = [...people.values()][0]; if (p) gain(p, total, W / 2, H / 2); } };

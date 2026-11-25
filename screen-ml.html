@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARTMOS SCREEN · 김규진 MUCH LOVED</title>
+  <meta name="description" content="ARTMOS SCREEN — 큰 화면의 우주를 휴대폰으로 움직이는 인터랙티브 스크린" />
+  <link rel="icon" href="assets/artmos-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="css/artmos-brand.css?v=1" />
+  <link rel="stylesheet" href="css/screen.css?v=9" />
+</head>
+<body class="scr">
+  <canvas id="sky"></canvas>
+
+  <!-- 아무도 없을 때: 가운데 큰 안내 -->
+  <section id="lobby" class="scr-lobby">
+    <div class="scr-copy">
+      <p class="scr-kick"><b class="logo">ARTMOS</b><span>SCREEN · 김규진</span></p>
+      <h1>MUCH LOVED</h1>
+      <p class="scr-lead">오래 사랑받아 닳은 애착 인형이 바랜 채 서 있어요.<br>휴대폰으로 손을 내밀어 모두 함께 쓰다듬어 주세요.</p>
+      <ol class="scr-steps">
+        <li><b>01</b><span>스캔</span><small>휴대폰 카메라로 QR을 비추거나<br>ARTMOS 앱 ‘스크린’ 탭에 숫자 입력</small></li>
+        <li><b>02</b><span>쓰다듬기</span><small>조이스틱으로 손을 옮기고<br>‘쓰다듬기’를 누르고 있어요 · 여럿이 함께면 꼭 안아요</small></li>
+        <li><b>03</b><span>채우기</span><small>인형 전체에 온기가 차면<br>닳은 자리마다 금빛이 돌아요</small></li>
+      </ol>
+    </div>
+    <div class="scr-join">
+      <div class="scr-qr" id="qr"></div>
+      <p class="scr-code-l">입장 숫자</p>
+      <p class="scr-code" id="code">····</p>
+      <p class="scr-url" id="url"></p>
+      <p class="scr-note">앱 설치 없이 바로 · 여러 사람이 함께</p>
+    </div>
+  </section>
+
+  <!-- 누군가 들어왔을 때: 구석 작은 안내 + 아래 참여자 줄 -->
+  <aside id="corner" class="scr-corner" hidden>
+    <div class="scr-qr sm" id="qr2"></div>
+    <div><p class="scr-code-l">함께하기</p><p class="scr-code sm" id="code2">····</p></div>
+  </aside>
+  <div id="players" class="scr-players"></div>
+  <div id="toast" class="scr-toast" hidden></div>
+
+  <div class="scr-tools">
+    <span id="net" class="scr-net">연결 중</span>
+    <button id="fs" type="button">전체 화면</button>
+    <a id="switch" href="screen.html">나비의 정원으로</a>
+  </div>
+
+  <script type="module" src="js/screen-ml.js?v=1"></script>
+</body>
+</html>

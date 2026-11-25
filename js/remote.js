@@ -75,8 +75,8 @@ function close(s) { if (!s) return; clearInterval(s.ping); try { s.ch.send({ t: 
 function onScreen(s, m) {
   if (S !== s || !m) return;
   s.lastHeard = Date.now();
-  if (m.t === 'welcome') { const first = !s.welcomed; s.welcomed = true; Object.assign(s, { bf: m.bf, mir: m.mir, formName: m.formName, hz: m.hz || 15, title: m.title, total: m.total, done: m.done, mine: m.mine }); if (first || s.view !== 'play') { playView(s); buzz(30); } }
-  else if (m.t === 'got') { s.mine = m.mine; paintHud(s); buzz(15); popGot(); }
+  if (m.t === 'welcome') { const first = !s.welcomed; s.welcomed = true; Object.assign(s, { game: m.game || 'bf', hue: m.hue, bf: m.bf, mir: m.mir, formName: m.formName, hz: m.hz || 15, title: m.title, total: m.total, done: m.done, mine: m.mine }); if (first || s.view !== 'play') { playView(s); buzz(30); } }
+  else if (m.t === 'got') { const up = m.mine > s.mine; s.mine = m.mine; paintHud(s); if (up) { buzz(s.game === 'ml' ? 8 : 15); popGot(); } }
   else if (m.t === 'complete') completeView(s, m);
   else if (m.t === 'full') { close(s); enterView('지금 나비가 가득 찼어요. 조금 뒤에 다시 들어와 주세요.'); }
 }
@@ -84,28 +84,30 @@ function onAll(s, m) {
   if (S !== s || !m) return;
   if (m.t === 'prog') { s.done = m.done; s.total = m.total; s.lastHeard = Date.now(); paintHud(s); }
   else if (m.t === 'rate') s.hz = m.hz || s.hz;
-  else if (m.t === 'round') { s.title = m.title; s.total = m.total; s.done = 0; s.mine = 0; if (s.welcomed && s.view !== 'play') { playView(s); toast('새 작품이 숨었어요! 다시 모아 볼까요'); } }
+  else if (m.t === 'round') { s.title = m.title; s.total = m.total; s.done = 0; s.mine = 0; if (s.welcomed && s.view !== 'play') { playView(s); toast(s.game === 'ml' ? `새 인형 ${m.title}이 기다려요` : '새 작품이 숨었어요! 다시 모아 볼까요'); } }
 }
 setInterval(() => { // 화면 소식이 9초 넘게 없으면 끊긴 것
   const s = S; if (!s || !s.welcomed) return;
   if (Date.now() - s.lastHeard > 9000) { close(s); enterView('큰 화면과 연결이 끊겼어요. 다시 연결해 주세요.'); }
 }, 1000);
 
-/* ---------- 조작 화면 (조이스틱 + 날갯짓) ---------- */
+// MUCH LOVED: 손잡이에 그리는 손(화면의 내 손과 같은 색)
+const handSVG = (h) => `<svg viewBox="-60 -70 120 120" aria-hidden="true"><g fill="hsl(${h},70%,88%)" stroke="rgba(0,0,0,.35)" stroke-width="3">${[0, 1, 2, 3].map((k) => { const fx = -27 + k * 18, fh = k === 1 || k === 2 ? 37 : 30; return `<ellipse cx="${fx}" cy="${-23 - fh * .45}" rx="8" ry="${fh / 2}"/>`; }).join('')}<ellipse cx="33" cy="1" rx="8" ry="18" transform="rotate(-52 33 1)"/><ellipse cx="0" cy="0" rx="35" ry="30"/></g></svg>`;
+/* ---------- 조작 화면 (조이스틱 + 날갯짓 / MUCH LOVED는 쓰다듬기) ---------- */
 let vx = 0, vy = 0, sentX = 9, sentY = 9, sentAt = 0, sendT = 0, tilt = false, off = { x: 0, y: 0 }, knob = null, padR = 1, dragId = null;
 function stopPlay() { clearTimeout(sendT); sendT = 0; dragId = null; vx = vy = 0; }
 function playView(s) {
-  stopPlay(); s.view = 'play';
+  stopPlay(); s.view = 'play'; const ML = s.game === 'ml';
   app.innerHTML = `<section class="rmt-play">
-      <div class="rmt-hud"><span class="rmt-me"><b>${esc(s.nick)}</b><small>${esc(s.formName || '나비')}</small></span><span id="mine" class="rmt-mine">조각 ${s.mine}</span></div>
+      <div class="rmt-hud"><span class="rmt-me"><b>${esc(s.nick)}</b><small>${esc(ML ? `${s.title || ''} · 따뜻한 손` : s.formName || '나비')}</small></span><span id="mine" class="rmt-mine">${mineText(s)}</span></div>
       <div class="rmt-prog"><i id="prog"></i><span id="progT"></span></div>
-      <p class="rmt-tip" id="tip">나비로 떠다니는 <b>작품 조각</b>에 닿으면 모아져요 · 금빛 조각은 5개</p>
-      <div class="rmt-pad" id="pad"><i class="rmt-ring"></i><i class="rmt-knob bf" id="knob">${s.bf ? `<img src="${esc(s.bf)}" alt="" draggable="false" style="${s.mir ? 'transform:scaleX(-1)' : ''}">` : ''}</i></div>
+      <p class="rmt-tip" id="tip">${ML ? '손을 <b>인형 위</b>로 옮기고 아래 버튼을 누르고 있어요 · 둘 이상 함께면 꼭 안아요' : '나비로 떠다니는 <b>작품 조각</b>에 닿으면 모아져요 · 금빛 조각은 5개'}</p>
+      <div class="rmt-pad" id="pad"><i class="rmt-ring"></i>${ML ? `<i class="rmt-knob hand" id="knob">${handSVG(s.hue || 30)}</i>` : `<i class="rmt-knob bf" id="knob">${s.bf ? `<img src="${esc(s.bf)}" alt="" draggable="false" style="${s.mir ? 'transform:scaleX(-1)' : ''}">` : ''}</i>`}</div>
       <div class="rmt-mode" role="group" aria-label="움직이는 방법">
         <button data-mode="push" class="on" type="button">밀어서</button>
         <button data-mode="tilt" type="button"${IS_MOBILE ? '' : ' disabled'}>기울여서</button>
       </div>
-      <button id="dash" class="rmt-btn grab" type="button"><b>힘껏 날갯짓</b></button>
+      <button id="dash" class="rmt-btn grab${ML ? ' rub' : ''}" type="button"><b>${ML ? '쓰다듬기' : '힘껏 날갯짓'}</b></button>
     </section>`;
   knob = $('#knob'); tilt = false;
   const pad = $('#pad');
@@ -123,8 +125,14 @@ function playView(s) {
     else { tilt = false; vx = vy = 0; mark(); }
   }));
   const g = $('#dash');
-  g.addEventListener('pointerdown', (e) => { e.preventDefault(); if (g.disabled) return; g.classList.add('down'); s.ch.send({ t: 'dash' }); buzz([15, 30, 15]); g.disabled = true; setTimeout(() => g.classList.remove('down'), 160); setTimeout(() => { g.disabled = false; }, 1600); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => g.addEventListener(ev, () => g.classList.remove('down')));
+  if (ML) { // 누르고 있는 동안 쓰다듬기
+    let rubT = 0; const on = (e) => { e.preventDefault(); if (g.classList.contains('down')) return; g.classList.add('down'); s.ch.send({ t: 'rub', on: true }); buzz(12); clearInterval(rubT); rubT = setInterval(() => { s.ch.send({ t: 'rub', on: true }); buzz(6); }, 900); };
+    const offR = () => { if (!g.classList.contains('down')) return; g.classList.remove('down'); clearInterval(rubT); s.ch.send({ t: 'rub', on: false }); };
+    g.addEventListener('pointerdown', on); ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => g.addEventListener(ev, offR));
+  } else {
+    g.addEventListener('pointerdown', (e) => { e.preventDefault(); if (g.disabled) return; g.classList.add('down'); s.ch.send({ t: 'dash' }); buzz([15, 30, 15]); g.disabled = true; setTimeout(() => g.classList.remove('down'), 160); setTimeout(() => { g.disabled = false; }, 1600); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => g.addEventListener(ev, () => g.classList.remove('down')));
+  }
   const loop = () => { pushInput(false); sendT = setTimeout(loop, 1000 / (S ? S.hz : 10)); }; loop(); // 사람이 많으면 화면이 알려 준 만큼 덜 자주
   paintHud(s);
   requestAnimationFrame(drawKnob);
@@ -142,15 +150,32 @@ function drawKnob() {
 }
 function paintHud(s) {
   const m = $('#mine'), p = $('#prog'), t = $('#progT');
-  if (m) m.textContent = `조각 ${s.mine}`;
+  if (m) m.textContent = mineText(s);
   if (p) p.style.transform = `scaleX(${s.total ? s.done / s.total : 0})`;
-  if (t) t.textContent = s.total ? `함께 피우기 ${Math.round(s.done / s.total * 100)}%` : '';
+  if (t) t.textContent = s.total ? `${s.game === 'ml' ? '함께 채운 사랑' : '함께 피우기'} ${Math.round(s.done / s.total * 100)}%` : '';
 }
+const mineText = (s) => s.game === 'ml' ? `내 손길 ${s.mine}%` : `조각 ${s.mine}`;
 function popGot() { const m = $('#mine'); if (!m) return; m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop'); }
 
 /* ---------- 완성 (이 휴대폰에만 내 기록) ---------- */
 function completeView(s, m) {
   stopPlay(); s.view = 'done'; buzz([30, 60, 30, 60, 80]);
+  if (m.game === 'ml') { // MUCH LOVED: 인형·한 문장·내 손길 %, 전시로
+    app.innerHTML = `<section class="rmt-result win"><p class="rmt-kick">손 ${m.players}개가 함께</p><h1>사랑이 가득 찼어요</h1>
+      <div class="rmt-art"><img src="${esc(m.img)}" alt="" draggable="false" style="background:#1a1410"></div>
+      <p class="rmt-meta">${esc(m.title)} · 김규진 《MUCH LOVED》</p>
+      <p class="rmt-lead">${esc(m.line || '')}</p>
+      <p class="rmt-lead">내가 채운 온기 <b>${m.mine}%</b>${m.rank && m.players > 1 ? ` · ${m.players}명 중 ${m.rank}번째` : ''}</p>
+      ${m.top && m.top.length ? `<p class="rmt-note">가장 많이 쓰다듬은 손 · ${m.top.map((x) => `${esc(x.nick)} ${x.n}%`).join(' · ')}</p>` : ''}
+      <div class="rmt-row"><button id="see" class="rmt-btn main" type="button">MUCH LOVED 전시 보러 가기</button></div>
+      <p class="rmt-note">잠시 뒤 다음 인형이 기다려요. 이 화면을 켜 두면 바로 이어서 쓰다듬을 수 있어요.</p>
+      <div class="rmt-row"><button id="out" class="rmt-btn" type="button">나가기</button></div></section>`;
+    $('#see').addEventListener('click', () => {
+      if (IN_APP) { try { parent.postMessage({ type: 'artmos:open-exhibit', id: 'c008' }, '*'); } catch (e) {} return; }
+      close(S); location.href = new URL('muchloved.html', location.href).href;
+    });
+    $('#out').addEventListener('click', leaveAll); return;
+  }
   app.innerHTML = `<section class="rmt-result win"><p class="rmt-kick">나비 ${m.players}마리가 함께</p><h1>활짝 피었어요!</h1>
       <div class="rmt-art"><img src="${esc(m.img)}" alt="" draggable="false"></div>
       <p class="rmt-meta">${m.title && m.title !== '장승효 작가의 나비' ? esc(m.title) + ' · ' : ''}장승효</p>
