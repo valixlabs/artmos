@@ -9,7 +9,7 @@
 import * as THREE from './vendor/three.module.js';
 import { sensor, IS_MOBILE, startMic, startCamera, keepAwake } from './sensors.js?v=6';
 import { lang, langSwitcher } from './i18n.js?v=7';
-import { t, ARTIST } from './muchloved-i18n.js?v=3';
+import { t, ARTIST } from './muchloved-i18n.js?v=4';
 import { snd } from './muchloved-sound.js?v=1';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -80,6 +80,7 @@ const dollSec = (id, ch, extra = '') => `
     <div class="d-bot">
       <p class="d-verb"><b>${TEXT[MODE[id]][0]}</b><span>${TEXT[MODE[id]][1]}</span></p>
       ${PC && MODE[id] === 'call' ? `<p class="d-type" aria-hidden="true">${[...W[id][0]].map((c) => `<i>${c}</i>`).join('')}</p>` : ''}
+      <div class="d-prog" aria-hidden="true"><i></i></div>
       <p class="d-meter" aria-live="polite"></p>
       <div class="chip-row">${BTN[MODE[id]] ? `<button class="chip hold" data-act="${MODE[id]}">${BTN[MODE[id]]}</button>` : ''}${MARKS.has(MODE[id]) ? `<button class="chip ghost" data-act="reset">${t('원래대로')}</button>` : ''}</div>
     </div>
@@ -215,6 +216,7 @@ function wearMaterial(d) {
     sh.uniforms.uWear = { value: d.wearTex };
     sh.uniforms.uPress = { value: d.press };
     sh.uniforms.uPull = { value: d.pull };
+    sh.uniforms.uGlow = d.glow;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nuniform sampler2D uWear; uniform vec4 uPress; uniform vec4 uPull; varying vec2 vWUv; varying float vDent;')
       .replace('#include <displacementmap_vertex>', `#include <displacementmap_vertex>
@@ -229,7 +231,7 @@ function wearMaterial(d) {
         roughnessFactor = mix(roughnessFactor, 0.3, clamp(texture2D(uWear, vWUv).b * 1.6, 0.0, 1.0));`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        uniform sampler2D uWear; varying vec2 vWUv; varying float vDent;
+        uniform sampler2D uWear; uniform float uGlow; varying vec2 vWUv; varying float vDent;
         float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
           return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }`)
@@ -246,9 +248,14 @@ function wearMaterial(d) {
         diffuseColor.rgb *= 1.0 - rim * 0.45;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.96, 0.94, 0.89) * (0.78 + n1 * 0.25), fluff);
         // 눌린 자리: 오목하게 그늘
-        diffuseColor.rgb *= 1.0 - clamp(vDent, 0.0, 1.0) * 0.6;`);
+        diffuseColor.rgb *= 1.0 - clamp(vDent, 0.0, 1.0) * 0.6;
+        // 다 채우면: 남긴 자국이 금빛으로(닳은 자리 = 사랑받은 자리)
+        float gW = clamp(max(dirt, max(rim + fluff * 0.6, clamp(vDent, 0.0, 1.0))) * 1.2, 0.0, 1.0);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.8, 0.45) * (0.75 + n1 * 0.35), uGlow * gW * 0.42);`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        totalEmissiveRadiance += vec3(1.0, 0.72, 0.36) * uGlow * (gW * 0.32 + 0.08) * (0.6 + 0.4 * n1);`);
   };
-  m.customProgramCacheKey = () => 'wear5';
+  m.customProgramCacheKey = () => 'wear6';
   return m;
 }
 
@@ -275,7 +282,7 @@ function makeDoll(id) {
     const grid = new Uint8Array(mc.width * mc.height);
     for (let y = 0; y < mc.height; y++) for (let x = 0; x < mc.width; x++) if (md[(y * mc.width + x) * 4 + 3] > 200) { inside.push([(x + 0.5) / mc.width, 1 - (y + 0.5) / mc.height]); grid[y * mc.width + x] = 1; }
     const isIn = (u, v) => { const x = Math.floor(u * mc.width), y = Math.floor((1 - v) * mc.height); return x >= 0 && y >= 0 && x < mc.width && y < mc.height && grid[y * mc.width + x] === 1; };
-    const d = { id, mode: MODE[id], col, dep, nor, asp, dz, bz, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), pull: new THREE.Vector4(0.5, 0.5, 0, 0), seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false, rz: 0, rollT: 0, hug: 0, hugT: 0, out: 0, outT: 0, call: 0, n: 0, m: 0, note: '' };
+    const d = { id, mode: MODE[id], col, dep, nor, asp, dz, bz, wc, wx, wearTex, inside, isIn, press: new THREE.Vector4(0.5, 0.5, 0, asp), pull: new THREE.Vector4(0.5, 0.5, 0, 0), glow: { value: 0 }, done: false, doneAt: 0, seeds: [], stats: { dirt: 0, tear: 0, flat: 0 }, touched: false, rz: 0, rollT: 0, hug: 0, hugT: 0, out: 0, outT: 0, call: 0, n: 0, m: 0, note: '' };
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(asp, 1, 200, Math.max(64, Math.round(200 / asp))), wearMaterial(d));
     mesh.castShadow = true;
     mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: col, alphaTest: 0.5, displacementMap: dep, displacementScale: d.dz });
@@ -369,7 +376,7 @@ function stamp(d, u, v, r, ch, a) {
   c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 6.3); c.fill();
   d.wearTex.needsUpdate = true; d.touched = true; d.dirty = true;
 }
-function resetDoll(d) { Object.assign(d, { n: 0, m: 0, note: '', rollT: 0 }); d.wx.globalCompositeOperation = 'source-over'; d.wx.fillStyle = '#000'; d.wx.fillRect(0, 0, d.wc.width, d.wc.height); d.wearTex.needsUpdate = true; d.seeds = []; d.dirty = true; d.stats = { dirt: 0, tear: 0, flat: 0 }; }
+function resetDoll(d) { Object.assign(d, { n: 0, m: 0, note: '', rollT: 0, hugT: 0, done: false, doneAt: 0, found: false, outT: 0 }); d.glow.value = 0; undone(d); d.wx.globalCompositeOperation = 'source-over'; d.wx.fillStyle = '#000'; d.wx.fillRect(0, 0, d.wc.width, d.wc.height); d.wearTex.needsUpdate = true; d.seeds = []; d.dirty = true; d.stats = { dirt: 0, tear: 0, flat: 0 }; }
 function measure(d) {
   const px = d.wx.getImageData(0, 0, d.wc.width, d.wc.height).data, W2 = d.wc.width, H2 = d.wc.height; let n = 0, r = 0, g = 0, b = 0;
   for (const [u, v] of d.inside) { const i = (Math.min(H2 - 1, Math.floor((1 - v) * H2)) * W2 + Math.min(W2 - 1, Math.floor(u * W2))) * 4; n++; if (px[i] > 70) r++; if (px[i + 1] > 110) g++; if (px[i + 2] > 25) b++; }
@@ -425,6 +432,73 @@ function puffTick() {
   pGeo.attributes.position.needsUpdate = true;
 }
 
+// 금빛 가루(다 채웠을 때)
+const GN = 220, gPos = new Float32Array(GN * 3), gVel = [], gLife = new Float32Array(GN);
+const gGeo = new THREE.BufferGeometry(); gGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3));
+const goldCv = document.createElement('canvas'); goldCv.width = goldCv.height = 32; { const c = goldCv.getContext('2d'), g = c.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,246,214,1)'); g.addColorStop(0.35, 'rgba(255,205,120,.75)'); g.addColorStop(1, 'rgba(255,180,80,0)'); c.fillStyle = g; c.fillRect(0, 0, 32, 32); }
+const gPts = new THREE.Points(gGeo, new THREE.PointsMaterial({ size: 0.05, map: new THREE.CanvasTexture(goldCv), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+gPts.frustumCulled = false; scene.add(gPts);
+for (let i = 0; i < GN; i++) { gVel.push(new THREE.Vector3()); gPos[i * 3 + 2] = -99; }
+let gi = 0;
+function sparkle(d, n) {
+  for (let k = 0; k < n; k++) {
+    const [u, v] = d.inside[(Math.random() * d.inside.length) | 0] || [0.5, 0.5];
+    tmpV.set((u - 0.5) * d.w, (v - 0.5) * d.h, d.dz * 0.7); d.mesh.localToWorld(tmpV);
+    gPos[gi * 3] = tmpV.x; gPos[gi * 3 + 1] = tmpV.y; gPos[gi * 3 + 2] = tmpV.z;
+    gVel[gi].set((Math.random() - 0.5) * 0.006, 0.004 + Math.random() * 0.012, (Math.random() - 0.2) * 0.008);
+    gLife[gi] = 0.6 + Math.random() * 0.6; gi = (gi + 1) % GN;
+  }
+}
+function sparkTick() {
+  for (let i = 0; i < GN; i++) {
+    if (gLife[i] <= 0) continue; gLife[i] -= 0.008;
+    gVel[i].x += (Math.random() - 0.5) * 0.0008; gPos[i * 3] += gVel[i].x; gPos[i * 3 + 1] += gVel[i].y; gPos[i * 3 + 2] += gVel[i].z;
+    if (gLife[i] <= 0) gPos[i * 3 + 2] = -99;
+  }
+  gGeo.attributes.position.needsUpdate = true;
+}
+// 인형마다 '다 채움'까지 얼마나 왔는지 (0~1)
+function progOf(d) {
+  const st = d.stats;
+  switch (d.mode) {
+    case 'rub': return st.dirt / 40;
+    case 'blow': return st.tear / 28;
+    case 'press': return d.n / 5;
+    case 'shake': return d.n / 12;
+    case 'hug': return d.hugT / 8000;
+    case 'tap': return d.n / 20;
+    case 'stretch': return (d.n + d.m * 2) / 8;
+    case 'roll': return d.rollT / 8;
+    case 'pull': return d.found ? 1 : d.out * 0.9;
+    case 'call': return d.n / 3;
+  }
+  return 0;
+}
+const DONE_LINE = {
+  rub: '손때 묻은 자리가 빛나요. 그만큼 오래 쥐었다는 뜻이에요',
+  blow: '해진 곳도 그대로, 사랑받은 자리예요',
+  press: '납작해진 곳은 기대어 잠들던 자리예요',
+  shake: '흔들리고 빠져나가도, 곁에 남았어요',
+  hug: '안겨 있던 시간이 몸에 남았어요',
+  tap: '반들해진 곳은 자꾸 만지던 자리예요',
+  stretch: '터진 실밥까지 그대로 굳혀 두었어요',
+  roll: '함께 뒹굴던 소파의 먼지까지',
+  pull: '잃어버린 줄 알았던 것을 찾았어요',
+  call: '이름을 부르면, 언제나 돌아봐요',
+};
+function complete(d, s) {
+  if (d.done) return; d.done = true; d.doneAt = performance.now(); d.touched = true;
+  s.classList.add('done'); const v = $('.d-verb', s);
+  if (!v._orig) v._orig = v.innerHTML;
+  v.innerHTML = `<b>${t('다 채웠어요')}</b><span>${t(DONE_LINE[d.mode])}</span>`;
+  sparkle(d, 90); beat([20, 80, 20, 80, 20]); snd.fx('chime', [72, 76, 79, 84, 88], 0.2); sensor.vibrate([30, 60, 30, 60, 90]);
+}
+function undone(d) {
+  const s = dsecs.find((x) => x.dataset.doll === d.id); if (!s) return;
+  s.classList.remove('done'); const v = $('.d-verb', s); if (v._orig) v.innerHTML = v._orig;
+  const bar = $('.d-prog i', s); if (bar) bar.style.transform = 'scaleX(0)';
+}
+
 // 인형 장면: 붙박이 칸(.stk)을 따라 3D가 함께 오르내림
 const dsecs = [...document.querySelectorAll('.dsec')];
 const near = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) makeDoll(e.target.dataset.doll); }), { rootMargin: '150% 0px' });
@@ -462,6 +536,12 @@ function frame() {
     sp.rotation.set(rx * 1.1 + Math.sin(t * 0.5 + d.asp) * 0.03 * idle, turnIn + ry * (TURN / MAX) + sway, 0);
     sp.position.set(0, 0, 0.12 + (enter + leave) * 0.25); sp.scale.set(1, 1, 1);
     if (d.mode === 'roll') { sp.rotation.z = -d.rz * 0.55; sp.position.x += d.rz * Math.min(0.3, VW * 0.18 / hT); }
+    if (d.done) { // 다 채움: 한 바퀴 돌며 떠오르고, 금빛이 숨 쉬듯
+      const k = clamp((performance.now() - d.doneAt) / 1800, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      sp.rotation.y += e * Math.PI * 2; sp.position.y += Math.sin(Math.PI * k) * 0.1;
+      d.glow.value += ((0.82 + Math.sin(t * 1.6) * 0.18) - d.glow.value) * 0.05;
+      if (on && Math.random() < 0.12) sparkle(d, 1);
+    } else if (d.glow.value) d.glow.value *= 0.9;
     if (d.mode === 'shake' && d.wob) { sp.rotation.z += d.wob * 0.45; sp.position.x += d.wob * 0.12; }
     if (d.mode === 'hug') sp.scale.set(1 + 0.07 * d.hug, 1 - 0.09 * d.hug, 1 - 0.25 * d.hug);
     if (d.mode === 'pull') { sp.position.y += -(1 - d.out) * 0.2 + d.out * 0.24; sp.position.z += d.out * 0.3; }
@@ -477,6 +557,7 @@ function frame() {
   if (near0) {
     const P = near0.g.position, sc = near0.g.scale.y, lx = (mouse && !sensor.on ? mouse.x : ry / MAX) * 0.6;
     spot.position.set(P.x + (0.35 + lx) * sc * 2, P.y + 1.9 * sc, P.z + 2.2 * sc); spot.target.position.set(P.x, P.y - 0.05 * sc, P.z - 0.2 * sc); spot.target.updateMatrixWorld();
+    spot.color.setHex(near0.done ? 0xffe2b0 : 0xfff6ea); spot.intensity = near0.done ? 32 : 26;
     spot.distance = 0; spot.shadow.camera.far = 6 * sc; spot.shadow.camera.near = 0.3 * sc;
   }
   // 만지는 인형이 바뀌면 지난 인형의 솜은 치움
@@ -485,7 +566,7 @@ function frame() {
   if (show !== anyOn) { anyOn = show; cv.classList.toggle('on', show); }
   if (!show) return;
   interact();
-  puffTick();
+  puffTick(); sparkTick();
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
@@ -704,7 +785,10 @@ function interact() {
       pull: d.found ? t('찾았다! 쿠션 틈에서 꺼냈어요') : '',
       call: d.n ? (PC && !sensor.micOn ? t('이름을 {n}번 불렀어요', { n: d.n }) : t('목소리를 {n}번 들었어요', { n: d.n })) : '',
     }[m];
-    if (note) { d.note = note; $('.d-meter', active.s).textContent = note; }
+    const pr = Math.min(1, progOf(d)), bar = $('.d-prog i', active.s);
+    if (bar) bar.style.transform = `scaleX(${pr.toFixed(3)})`;
+    if (pr >= 1 && !d.done) complete(d, active.s);
+    if (note) { d.note = note + (d.done ? t(' · 다 채웠어요') : ''); $('.d-meter', active.s).textContent = d.note; }
   }
 }
 
@@ -858,7 +942,8 @@ addEventListener('touchend', (e) => { if (palm && e.touches.length === 0) { palm
 new IntersectionObserver((es) => {
   if (!es[0].isIntersecting) return; const rows = [];
   for (const id of [...WALL, ...SOFA]) { const d = dolls.get(id); if (!d || !d.note) continue; rows.push(`<li><b>${W[id][0]}</b><span>${d.note}</span></li>`); }
-  $('#marks').innerHTML = rows.length ? `<ul>${rows.join('')}</ul><p class="sc-lead">${t('당신의 손이 지나간 자리예요. 인형들은 이렇게 사랑받아 왔어요.')}</p>` : `<p class="sc-lead">${t('아직 만진 인형이 없어요. 위로 올라가 한 번 만져 보세요.')}</p>`;
+  const nd = [...dolls.values()].filter((d) => d.done).length;
+  $('#marks').innerHTML = rows.length ? `<ul>${rows.join('')}</ul>${nd ? `<p class="marks-done">${t('다 채운 인형 {n} / {m}', { n: nd, m: WALL.length + SOFA.length })}</p>` : ''}<p class="sc-lead">${t('당신의 손이 지나간 자리예요. 인형들은 이렇게 사랑받아 왔어요.')}</p>` : `<p class="sc-lead">${t('아직 만진 인형이 없어요. 위로 올라가 한 번 만져 보세요.')}</p>`;
 }, { threshold: 0.1 }).observe($('#s5'));
 (() => {
   const inp = $('#myname'), tc = $('#tagcv'), x = tc.getContext('2d'), sew = $('#sew'), keep = $('#keep');
