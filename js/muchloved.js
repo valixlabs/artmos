@@ -9,7 +9,7 @@
 import * as THREE from './vendor/three.module.js';
 import { sensor, IS_MOBILE, startMic, startCamera, keepAwake } from './sensors.js?v=6';
 import { lang, langSwitcher } from './i18n.js?v=7';
-import { t, ARTIST } from './muchloved-i18n.js?v=2';
+import { t, ARTIST } from './muchloved-i18n.js?v=3';
 import { snd } from './muchloved-sound.js?v=1';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -35,6 +35,18 @@ const ORDER = ['tommy', ...WALL, ...SOFA, ...FLOOR];
 // 인형마다 앞세우는 동작 (모든 동작은 어디서나 됨)
 // 인형마다 체험 하나씩 (2026-11-19 소유자: 각 인형별로 다른 체험, 하나씩만)
 const MODE = { snow: 'rub', dino: 'blow', floopy: 'press', hobby: 'shake', fufu: 'hug', 'peanut-frame': 'tap', moon: 'stretch', jake: 'roll', peanut: 'pull', mas: 'call' };
+// PC·노트북은 휴대폰과 다른 체험(2026-11-25 소유자): 마우스 올리기·휠·잡고 흔들기·둘레 그리기·키보드
+const PC = !IS_MOBILE;
+const TEXT_PC = {
+  rub: [t('마우스를 올려 쓰다듬어 보세요'), t('쓰다듬을수록 손때가 묻어요')],
+  blow: [t('스페이스바를 누르고 있어 보세요'), t('후~ 바람에 해진 곳이 벌어지고 솜이 날려요')],
+  press: [t('인형 위에서 마우스 휠을 굴려 보세요'), t('굴린 만큼 깊이 눌려요')],
+  shake: [t('인형을 잡고 좌우로 세게 흔들어 보세요'), t('해진 틈으로 솜이 빠져나와요')],
+  hug: [t('인형 둘레로 마우스를 한 바퀴 그려 보세요'), t('감싸 안으면 심장이 뛰어요')],
+  tap: [t('키보드를 톡톡 두드려 보세요'), t('마우스가 가리킨 자리가 반들반들 닳아요')],
+  roll: [t('← → 키로 굴려 보세요'), t('소파 위를 구르며 먼지가 일어요')],
+  call: [t('키보드로 이름을 써 보세요'), t('이름을 다 쓰면 돌아봐요')],
+};
 const TEXT = {
   rub: [t('문질러 보세요'), t('만질수록 손때가 묻어요')],
   blow: [t('후~ 불어 보세요'), t('해진 곳이 벌어지고 솜이 날려요')],
@@ -47,9 +59,10 @@ const TEXT = {
   pull: [t('위로 끌어 꺼내 보세요'), t('쿠션 틈에 끼어 있어요')],
   call: [t('이름을 불러 보세요'), t('목소리에 귀를 기울여요')],
 };
-const BTN = { blow: t('후~ 불기'), shake: IS_MOBILE ? t('흔들기 (버튼)') : t('흔들기'), call: t('이름 부르기 (누르고 있기)') };
+if (PC) Object.assign(TEXT, TEXT_PC);
+const BTN = PC ? { blow: t('마이크로 불기'), call: t('마이크로 부르기 (누르고 있기)') } : { blow: t('후~ 불기'), shake: t('흔들기 (버튼)'), call: t('이름 부르기 (누르고 있기)') };
 const MARKS = new Set(['rub', 'blow', 'press', 'shake', 'tap', 'stretch', 'roll']); // 자국이 남는 체험 → '원래대로'
-const TOUCH = new Set(['rub', 'press', 'hug', 'tap', 'stretch', 'pull', ...(IS_MOBILE ? [] : ['roll'])]); // 인형 위 터치로 하는 체험(이때만 스크롤 대신 체험)
+const TOUCH = new Set(['rub', 'press', 'hug', 'tap', 'stretch', 'pull', ...(IS_MOBILE ? [] : ['roll', 'shake'])]); // 인형 위 터치로 하는 체험(이때만 스크롤 대신 체험)
 const tagHTML = (id) => `<b>${W[id][0]}</b><span>${W[id][2]}mm · ${W[id][1]} · 2025</span>`;
 
 // ── 진동 + 화면 박동 (아이폰 웹은 진동이 없어서 가장자리가 박동에 맞춰 밝아짐)
@@ -66,6 +79,7 @@ const dollSec = (id, ch, extra = '') => `
     ${extra}
     <div class="d-bot">
       <p class="d-verb"><b>${TEXT[MODE[id]][0]}</b><span>${TEXT[MODE[id]][1]}</span></p>
+      ${PC && MODE[id] === 'call' ? `<p class="d-type" aria-hidden="true">${[...W[id][0]].map((c) => `<i>${c}</i>`).join('')}</p>` : ''}
       <p class="d-meter" aria-live="polite"></p>
       <div class="chip-row">${BTN[MODE[id]] ? `<button class="chip hold" data-act="${MODE[id]}">${BTN[MODE[id]]}</button>` : ''}${MARKS.has(MODE[id]) ? `<button class="chip ghost" data-act="reset">${t('원래대로')}</button>` : ''}</div>
     </div>
@@ -87,12 +101,12 @@ main.innerHTML = `
     <h1 class="s0-name"><img src="assets/posters/c008-logo.webp" alt="MUCH LOVED" width="900" height="391"></h1>
     <p class="s0-by">${lang === 'ko' ? '김규진 · KIM GYUZIN' : 'KIM GYUZIN'}</p>
     <div class="ring"><svg viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="39"/><circle class="fg" cx="42" cy="42" r="39"/></svg></div>
-    <p class="hint" id="h0">${t('화면을 꾹 누르고 있어 보세요')}</p>
+    <p class="hint" id="h0">${t(PC ? '마우스나 스페이스바를 꾹 누르고 있어 보세요' : '화면을 꾹 누르고 있어 보세요')}</p>
     <div class="lines" id="lines"></div>
     <div class="under"><button class="btn" id="go1" hidden>${t('들어가기')}</button></div>
   </div>
 </section>
-${chapter(1, t('1 · 액자 속 인형들'), t('많이 사랑받은 것은 닳는다'), t('인형마다 만나는 방법이 하나씩 달라요. 문지르고, 불고, 누르고, 흔들고, 껴안고, 두드리고, 잡아당겨 보세요. ‘원래대로’를 누르면 언제든 작품의 원래 모습으로 돌아가요.'))}
+${chapter(1, t('1 · 액자 속 인형들'), t('많이 사랑받은 것은 닳는다'), PC ? t('인형마다 만나는 방법이 하나씩 달라요. 마우스로 쓰다듬고, 휠로 누르고, 잡고 흔들고, 둘레를 감싸고, 키보드로 두드리고 이름을 써 보세요. ‘원래대로’를 누르면 언제든 작품의 원래 모습으로 돌아가요.') : t('인형마다 만나는 방법이 하나씩 달라요. 문지르고, 불고, 누르고, 흔들고, 껴안고, 두드리고, 잡아당겨 보세요. ‘원래대로’를 누르면 언제든 작품의 원래 모습으로 돌아가요.'))}
 ${WALL.map((id) => dollSec(id, 1)).join('')}
 ${chapter(2, t('2 · 서랍'), t('넣어 둔 기억'), t('천천히 내려가면 서랍이 열려요.'))}
 <section class="sc tsec" id="s2" data-i="2">
@@ -106,10 +120,10 @@ ${SOFA.map((id) => dollSec(id, 3)).join('')}
 <section class="sc" id="s3h" data-i="3">
   <div class="hug" id="hug">
     <p class="sc-title" style="font-size:18px">${t('두 손으로 감싸 보세요')}</p>
-    <p class="sc-lead" style="margin:6px auto 0">${t('아래 동그라미를 두 손가락 이상으로 덮고 있거나, 꾹 누르고 있어요.')}</p>
+    <p class="sc-lead" style="margin:6px auto 0">${t(PC ? '한 손은 마우스로 동그라미를 누르고, 다른 손은 스페이스바를 함께 누르고 있어요.' : '아래 동그라미를 두 손가락 이상으로 덮고 있거나, 꾹 누르고 있어요.')}</p>
     <div class="hug-pad" id="hugpad">${t('여기를 감싸기')}</div>
     <p class="hint" id="h4"></p>
-    <div class="chip-row"><button class="chip" id="chest">${t('가슴에 안아 보기 (카메라)')}</button></div>
+    <div class="chip-row"><button class="chip" id="chest">${t(PC ? '두 손으로 웹캠을 가려 보기' : '가슴에 안아 보기 (카메라)')}</button></div>
     <p class="hint" style="font-size:11px;color:#666">${t('카메라는 화면이 가려졌는지 밝기만 읽어요. 영상은 보지도 저장하지도 않아요.')}</p>
   </div>
 </section>
@@ -118,7 +132,7 @@ ${FLOOR.map(floorSec).join('')}
 <section class="sc" id="s4s" data-i="4">
   <div style="text-align:center;margin:auto 0">
     <p class="sc-title">${t('함께 잠들어 볼까요?')}</p>
-    <p class="sc-lead" style="margin:10px auto 16px">${t(IS_MOBILE ? '휴대폰을 엎어 두거나, 손바닥을 화면에 얹어 보세요.' : '버튼을 누르면 잠들어요.')}</p>
+    <p class="sc-lead" style="margin:10px auto 16px">${t(IS_MOBILE ? '휴대폰을 엎어 두거나, 손바닥을 화면에 얹어 보세요.' : '노트북을 덮어 두거나, 손을 떼고 10초 동안 가만히 있어 보세요.')}</p>
     <button class="btn line" id="sleepbtn">${t('잠들기')}</button>
     <p class="hint" id="h5"></p>
   </div>
@@ -445,13 +459,14 @@ function frame() {
     sp.rotation.set(rx * 1.1 + Math.sin(t * 0.5 + d.asp) * 0.03 * idle, turnIn + ry * (TURN / MAX) + sway, 0);
     sp.position.set(0, 0, 0.12 + (enter + leave) * 0.25); sp.scale.set(1, 1, 1);
     if (d.mode === 'roll') { sp.rotation.z = -d.rz * 0.55; sp.position.x += d.rz * Math.min(0.3, VW * 0.18 / hT); }
+    if (d.mode === 'shake' && d.wob) { sp.rotation.z += d.wob * 0.45; sp.position.x += d.wob * 0.12; }
     if (d.mode === 'hug') sp.scale.set(1 + 0.07 * d.hug, 1 - 0.09 * d.hug, 1 - 0.25 * d.hug);
     if (d.mode === 'pull') { sp.position.y += -(1 - d.out) * 0.2 + d.out * 0.24; sp.position.z += d.out * 0.3; }
     if (d.mode === 'call') { sp.rotation.y += d.call * 0.6; sp.position.y += Math.sin(t * 9) * d.call * 0.015; }
     if (!(press && press.d === d)) { d.pull.z *= 0.86; d.pull.w *= 0.86; }
     s.style.setProperty('--p', clamp(-r.top / Math.max(1, r.height - H), 0, 1).toFixed(3));
     if (r.top <= 2 && r.bottom >= H - 2) active = { s, d };
-    if (!(press && press.d === d)) d.press.z *= 0.9;
+    if (!(press && press.d === d) && !(d.wheelAt && performance.now() - d.wheelAt < 450)) d.press.z *= 0.9;
   }
   key.position.set(1.2 - ry * 6, 1.6 + rx * 5, 3);
   // 스포트라이트: 화면 가운데에 가장 가까운 인형 위 앞에서
@@ -493,7 +508,7 @@ document.addEventListener('touchstart', (e) => {
 }, { passive: false });
 addEventListener('pointerdown', (e) => {
   if (skip(e.target) || !active || !TOUCH.has(active.d.mode)) return;
-  const h = hitDoll(e.clientX, e.clientY, active.d.mode === 'pull' || active.d.mode === 'hug'); if (!h) return;
+  const h = hitDoll(e.clientX, e.clientY, active.d.mode === 'pull' || active.d.mode === 'hug' || active.d.mode === 'shake'); if (!h) return;
   e.preventDefault();
   if (h.d.mode === 'hug') { hugIds.add(e.pointerId); }
   if (press) return; // 두 번째 손가락은 껴안기에만
@@ -519,6 +534,15 @@ addEventListener('pointermove', (e) => {
     d.pull.set(press.u, press.v, lx, ly); creakLevel = Math.min(1, L / MX); press.creak = L / MX;
     if (L > 0.2 && !press.burst) { snd.fx('snap'); press.burst = true; d.m++; stamp(d, press.u, press.v, 12, 'g', 0.6); stamp(d, press.u, press.v, 7, 'g', 0.5); puff(d, press.u, press.v, 8); beat([25, 50, 25]); }
     if (Math.random() < 0.05) sensor.vibrate(5);
+  } else if (m === 'shake') {
+    // PC: 잡고 좌우로 흔들기 — 방향이 바뀔 때마다 한 번 흔든 것
+    d.wob = clamp(dx / (innerWidth * 0.18), -1, 1);
+    const vx = e.movementX || 0, now = performance.now();
+    if (Math.abs(vx) > 6) {
+      const dir = Math.sign(vx);
+      if (press.dir && dir !== press.dir && Math.abs(e.clientX - press.turnX) > 40 && now - (press.lastShake || 0) > 200) { press.lastShake = now; shakeNow(Math.min(1, Math.abs(e.clientX - press.turnX) / 260)); press.turnX = e.clientX; }
+      if (!press.dir || dir !== press.dir) { press.dir = dir; if (press.turnX == null) press.turnX = e.clientX; }
+    }
   } else if (m === 'roll') {
     d.rollDrag = clamp(dx / (innerWidth * 0.3), -1, 1);
   } else if (m === 'pull') {
@@ -536,6 +560,60 @@ const release = (e) => {
 };
 addEventListener('pointerup', release); addEventListener('pointercancel', release);
 
+// ── PC 전용 입력
+let lastXY = null, lastInput = performance.now(), hover = null, keyHold = null;
+const tmpC = new THREE.Vector3();
+function dollCenter(d) { d.spin.updateMatrixWorld(); tmpC.setFromMatrixPosition(d.spin.matrixWorld).project(camera); return [(tmpC.x + 1) / 2 * innerWidth, (1 - tmpC.y) / 2 * innerHeight]; }
+const typing = (e) => e.target && e.target.closest && e.target.closest('input, textarea, [contenteditable]');
+if (PC) {
+  addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    if (lastXY && Math.hypot(e.clientX - lastXY[0], e.clientY - lastXY[1]) > 6) lastInput = performance.now();
+    lastXY = [e.clientX, e.clientY];
+    if (!active || press) { hover = null; return; } const d = active.d;
+    if (d.mode === 'rub') { // 누르지 않고 올려서 쓰다듬기
+      const h = hitDoll(e.clientX, e.clientY); if (!h) { hover = null; return; }
+      if (hover && hover.d === d) { const du = (h.u - hover.u) * d.wc.width, dv = (h.v - hover.v) * d.wc.height, n = Math.ceil(Math.hypot(du, dv) / 4); for (let i = 1; i <= n; i++) stamp(d, hover.u + (h.u - hover.u) * i / n, hover.v + (h.v - hover.v) * i / n, 12, 'r', 0.12); rubLevel = Math.min(1, rubLevel + Math.hypot(du, dv) / 45); }
+      hover = { d, u: h.u, v: h.v };
+    } else if (d.mode === 'hug') { // 둘레를 한 바퀴 그리면 감싸 안음
+      const [cx, cy] = dollCenter(d), a = Math.atan2(e.clientY - cy, e.clientX - cx), r = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (r < 40 || r > Math.min(innerWidth, innerHeight) * 0.62) { d.circA = null; return; }
+      if (d.circA != null) { let da = a - d.circA; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI; d.circ = (d.circ || 0) + da; }
+      d.circA = a;
+      if (Math.abs(d.circ || 0) >= Math.PI * 2) { d.circ = 0; d.hugUntil = performance.now() + 4200; d.touched = true; beat(); }
+    }
+  });
+  addEventListener('wheel', (e) => { // 휠로 꾹 누르기
+    lastInput = performance.now();
+    if (!active || active.d.mode !== 'press') return; const h = hitDoll(e.clientX, e.clientY); if (!h) return;
+    e.preventDefault(); const d = h.d, now = performance.now();
+    if (!d.wheelAt || now - d.wheelAt > 450) { snd.fx('squish'); d.wheelDown = true; }
+    d.press.x = h.u; d.press.y = h.v; d.press.z = Math.min(1, d.press.z + Math.abs(e.deltaY) / 500); d.wheelAt = now;
+  }, { passive: false });
+  addEventListener('keydown', (e) => {
+    lastInput = performance.now();
+    if (!active || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return; const d = active.d, m = d.mode;
+    if (m === 'blow' && e.code === 'Space') { e.preventDefault(); if (!e.repeat) { holdAct = { act: 'blow', s: active.s, t: performance.now() }; keyHold = 'blow'; const b = $('.chip.hold', active.s); if (b) b.classList.add('on'); } return; }
+    if (m === 'roll' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); d.keyRoll = e.key === 'ArrowLeft' ? -1 : 1; return; }
+    if (e.repeat || e.key.length !== 1 || e.key === ' ') return;
+    if (m === 'tap') { // 키보드로 톡톡 — 마우스가 가리킨 자리(없으면 아무 데나)
+      let h = lastXY && hitDoll(lastXY[0], lastXY[1]); if (!h) { const [u, v] = d.inside[(Math.random() * d.inside.length) | 0] || [0.5, 0.5]; h = { u, v }; }
+      stamp(d, h.u, h.v, 8, 'b', 0.38); d.press.x = h.u; d.press.y = h.v; d.press.z = Math.max(d.press.z, 0.45); d.n++; d.touched = true; snd.fx('knock');
+    } else if (m === 'call') { // 이름을 한 글자씩 쓰면 돌아봄
+      const name = W[d.id][0].toLowerCase().replace(/\s/g, ''), k = e.key.toLowerCase(), box = $('.d-type', active.s);
+      d.ti = d.ti || 0; if (k === name[d.ti]) d.ti++; else d.ti = k === name[0] ? 1 : 0;
+      if (box) [...box.children].forEach((c, i) => c.classList.toggle('on', i < d.ti));
+      if (d.ti) snd.fx('ding');
+      if (d.ti >= name.length) { d.ti = 0; d.callKey = performance.now(); if (box) { box.classList.add('done'); setTimeout(() => { box.classList.remove('done'); [...box.children].forEach((c) => c.classList.remove('on')); }, 1400); } }
+    }
+  });
+  addEventListener('keyup', (e) => {
+    if (e.code === 'Space' && keyHold === 'blow') { keyHold = null; if (holdAct && holdAct.act === 'blow') holdAct = null; document.querySelectorAll('.chip.hold.on').forEach((b) => b.classList.remove('on')); }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && active) active.d.keyRoll = 0;
+  });
+  addEventListener('pointerdown', () => { lastInput = performance.now(); }, true);
+}
+
 // 버튼: 후~ 불기 / 흔들기 / 이름 부르기 (누르고 있는 동안) · 원래대로
 let micTried = false, holdAct = null;
 document.querySelectorAll('.dsec .chip').forEach((b) => {
@@ -543,7 +621,8 @@ document.querySelectorAll('.dsec .chip').forEach((b) => {
   if (act === 'reset') { b.onclick = () => { const d = dolls.get(sec.dataset.doll); if (d) { resetDoll(d); snd.fx('reset'); $('.d-meter', sec).textContent = t('작품의 원래 모습이에요'); } }; return; }
   const on = async (e) => {
     e.preventDefault(); holdAct = { act, s: sec, t: performance.now() }; b.classList.add('on');
-    if ((act === 'blow' || act === 'call') && !micTried && IS_MOBILE) { micTried = true; try { await startMic(); } catch (err) {} }
+    if ((act === 'blow' || act === 'call') && !micTried) { micTried = true; try { await startMic(); } catch (err) {} }
+    if (PC && act === 'call') { const s = performance.now(); holdAct.t = s; }
     if (act === 'shake') shakeNow(0.7, sec);
   };
   const off = () => { holdAct = null; b.classList.remove('on'); };
@@ -574,6 +653,8 @@ function interact() {
     d.press.x = press.u; d.press.y = press.v; d.press.z = Math.min(1, d.press.z + dt / 1200);
     if (Math.random() < 0.05) sensor.vibrate(6);
   }
+  if (m === 'press' && d.wheelDown && now - d.wheelAt > 450) { d.wheelDown = false; if (d.press.z > 0.15) { stamp(d, d.press.x, d.press.y, 20, 'b', 0.55 * d.press.z); d.n++; d.touched = true; snd.fx('unsquish'); } }
+  if (m === 'shake' && d.wob && !(press && press.d === d)) { d.wob *= Math.pow(0.86, dt / 16); if (Math.abs(d.wob) < 0.01) d.wob = 0; }
   if (m === 'blow') {
     const bp = Math.max(sensor.micOn && sensor.blow > 0.3 ? sensor.blow : 0, holding('blow') ? 0.8 : 0);
     if (bp > 0 && Math.random() < dt / 32) tearStep(d, bp);
@@ -581,12 +662,12 @@ function interact() {
   } else snd.set('wind', 0);
   if (m === 'shake' && holding('shake') && now - holdAct.t > 500 && Math.random() < dt / 200) shakeNow(0.5);
   if (m === 'hug') {
-    const on = hugIds.size >= 2 || (press && press.d === d && now - press.t0 > 400);
+    const on = hugIds.size >= 2 || (press && press.d === d && now - press.t0 > 400) || (d.hugUntil && now < d.hugUntil);
     d.hug += ((on ? 1 : 0) - d.hug) * Math.min(1, dt / 160);
     if (on) { d.hugT += dt; d.touched = true; if (Math.floor(d.hugT / 1100) > Math.floor((d.hugT - dt) / 1100)) beat(); }
   }
   if (m === 'roll') {
-    const target = sensor.on ? clamp(sensor.tiltX / 0.6, -1, 1) : (d.rollDrag || 0);
+    const target = sensor.on ? clamp(sensor.tiltX / 0.6, -1, 1) : (d.rollDrag || d.keyRoll || 0);
     const prev = d.rz; d.rz += (target - d.rz) * Math.min(1, dt / 220);
     const v = Math.abs(d.rz - prev); d.rollT += v;
     if (v > 0.004 && Math.random() < v * 40) { // 구르면 아래쪽에 먼지 자국·먼지
@@ -601,7 +682,7 @@ function interact() {
     if (d.out > 0.95 && !d.found) { d.found = true; d.touched = true; beat([20, 80, 20]); snd.fx('pop'); }
   } else snd.set('squeak', 0);
   if (m === 'call') {
-    const lv = Math.max(sensor.micOn && now > callMuteUntil ? sensor.micLevel : 0, holding('call') ? 0.8 : 0);
+    const lv = Math.max(sensor.micOn && now > callMuteUntil ? sensor.micLevel : 0, holding('call') ? 0.8 : 0, d.callKey && now - d.callKey < 1400 ? 0.9 : 0);
     if (lv > 0.3 && d.call < 0.3) { d.n++; d.touched = true; setTimeout(() => { snd.fx('answer'); callMuteUntil = performance.now() + 1200; }, 260); }
     d.call += (lv - d.call) * Math.min(1, dt / (lv > d.call ? 120 : 600));
   }
@@ -613,12 +694,12 @@ function interact() {
       blow: st.tear ? t('해진 곳 {p}%', { p: st.tear }) : '',
       press: d.n ? t('{n}번 눌렀어요 · 납작해진 곳 {p}%', { n: d.n, p: st.flat }) : '',
       shake: d.n ? t('{n}번 흔들었어요 · 해진 틈 {p}%', { n: d.n, p: st.tear }) : '',
-      hug: sec ? t('{s}초 동안 안았어요', { s: sec }) : '',
+      hug: sec ? t('{s}초 동안 안았어요', { s: sec }) : (PC && Math.abs(d.circ || 0) > 0.4 ? t('한 바퀴까지 {p}%', { p: Math.min(99, Math.round(Math.abs(d.circ) / (Math.PI * 2) * 100)) }) : ''),
       tap: d.n ? t('{n}번 두드렸어요 · 반들해진 곳 {p}%', { n: d.n, p: st.flat }) : '',
       stretch: d.n || d.m ? t('{n}번 당겼어요', { n: d.n }) + (d.m ? t(' · 터진 실밥 {m}곳', { m: d.m }) : '') : '',
       roll: d.rollT > 0.05 ? t('소파 위를 굴렀어요 · 묻은 먼지 {p}%', { p: Math.max(1, st.dirt) }) : '',
       pull: d.found ? t('찾았다! 쿠션 틈에서 꺼냈어요') : '',
-      call: d.n ? t('목소리를 {n}번 들었어요', { n: d.n }) : '',
+      call: d.n ? (PC && !sensor.micOn ? t('이름을 {n}번 불렀어요', { n: d.n }) : t('목소리를 {n}번 들었어요', { n: d.n })) : '',
     }[m];
     if (note) { d.note = note; $('.d-meter', active.s).textContent = note; }
   }
@@ -677,10 +758,13 @@ let cushV = 0;
 })();
 // 감싸기
 (() => {
-  const pad = $('#hugpad'), h4 = $('#h4'); let held = 0, total = 0, beatT = 0, camHeld = false, last = performance.now();
+  const pad = $('#hugpad'), h4 = $('#h4'); let held = 0, total = 0, beatT = 0, camHeld = false, last = performance.now(), spaceHug = false;
+  const inHug = () => { const r = $('#s3h').getBoundingClientRect(); return r.top < innerHeight * 0.7 && r.bottom > innerHeight * 0.3; };
+  if (PC) { addEventListener('keydown', (e) => { if (e.code === 'Space' && inHug() && !typing(e)) { e.preventDefault(); spaceHug = true; } }); addEventListener('keyup', (e) => { if (e.code === 'Space') spaceHug = false; }); }
   const ptsSet = new Set();
   (function tick() {
-    const now = performance.now(), on = held > 0 || camHeld;
+    const now = performance.now(), on = (PC ? held > 0 && spaceHug : held > 0) || camHeld;
+    if (PC && !on && !camHeld) { const one = held > 0 ? t('다른 손으로 스페이스바도 눌러 주세요') : spaceHug ? t('다른 손으로 동그라미도 눌러 주세요') : ''; if (one) h4.textContent = one; else if (!total) h4.textContent = ''; }
     pad.classList.toggle('held', on);
     if (on) {
       total += now - last; if (now - beatT > 1200) { beatT = now; beat(); }
@@ -698,7 +782,7 @@ let cushV = 0;
     try {
       const v = $('#ml-cam'); const stop = await startCamera(v);
       const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d', { willReadFrequently: true });
-      let dark = 0; h4.textContent = t('휴대폰 뒷면을 가슴에 대 보세요');
+      let dark = 0; h4.textContent = t(PC ? '두 손으로 웹캠을 가려 보세요' : '휴대폰 뒷면을 가슴에 대 보세요');
       const hug = $('#s3h');
       const iv = setInterval(() => {
         const r = hug.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) { clearInterval(iv); stop(); camHeld = false; b.disabled = false; return; }
@@ -727,12 +811,12 @@ document.querySelectorAll('.fsec').forEach((s) => {
   })();
 });
 // 잠들기
-let sleeping = false, sleepAt = 0, sleepIv = 0, palm = false;
+let sleeping = false, sleepAt = 0, sleepIv = 0, palm = false, sleepHow = '';
 const sl = $('#ml-sleep'), slT = $('.ml-sleep-t', sl), slH = $('.ml-sleep-h', sl), h5 = $('#h5'), s4s = $('#s4s');
 const inSleepSec = () => { const r = s4s.getBoundingClientRect(); return r.top < innerHeight * 0.6 && r.bottom > innerHeight * 0.4; };
 function sleep(how) {
   if (sleeping) return; sleeping = true; sleepAt = Date.now();
-  slH.textContent = t(how === 'palm' ? '손을 떼면 깨어나요' : how === 'face' ? '들어 올리면 깨어나요' : '화면을 누르면 깨어나요');
+  sleepHow = how; slH.textContent = t(how === 'palm' ? '손을 떼면 깨어나요' : how === 'face' ? '들어 올리면 깨어나요' : how === 'idle' ? '마우스를 움직이면 깨어나요' : '화면을 누르면 깨어나요');
   sl.hidden = false; slT.textContent = '00:00'; keepAwake(); snd.scene('sleep');
   clearInterval(sleepIv); sleepIv = setInterval(() => {
     const s = Math.floor((Date.now() - sleepAt) / 1000); slT.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -746,6 +830,19 @@ function wake() {
 }
 $('#sleepbtn').onclick = () => { h5.textContent = t('들어 올리면 깨어나요'); setTimeout(() => sleep('btn'), RM ? 0 : 1500); };
 sl.addEventListener('pointerdown', () => { if (!palm) wake(); });
+if (PC) {
+  setInterval(() => {
+    const now = performance.now();
+    if (sleeping) { if (sleepHow === 'idle' && now - lastInput < 400) wake(); return; }
+    if (!inSleepSec()) return;
+    const idle = (now - lastInput) / 1000;
+    if (idle >= 10) sleep('idle'); else if (idle >= 3) h5.textContent = t('{s}초 뒤 잠들어요', { s: Math.ceil(10 - idle) });
+  }, 250);
+  document.addEventListener('visibilitychange', () => { // 노트북을 덮으면(화면이 꺼지면) 잠들고, 열면 깨어남
+    if (document.hidden) { if (inSleepSec() && !sleeping) { sleep('lid'); } }
+    else if (sleeping && sleepHow === 'lid') wake();
+  });
+}
 sensor.onFaceDown((down) => { if (!inSleepSec() && !sleeping) return; if (down) sleep('face'); else wake(); });
 addEventListener('touchstart', (e) => {
   if (!inSleepSec() || sleeping) return;

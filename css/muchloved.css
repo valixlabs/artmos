@@ -171,3 +171,9 @@ button { font: inherit; color: inherit; }
 .ml-top .lang-list button { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; color: #ccc; background: none; border: 0; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
 .ml-top .lang-list button.on { color: #fff; font-weight: 700; }
 .ml-title { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* PC: 이름을 한 글자씩 쓰기(MAS) */
+.d-type { display: flex; justify-content: center; gap: 14px; margin: 10px 0 2px; pointer-events: none; }
+.d-type i { font-style: normal; font: 700 28px/1 Pretendard, sans-serif; letter-spacing: .04em; color: #444; border-bottom: 2px solid #333; min-width: 30px; text-align: center; padding-bottom: 6px; transition: color .2s, border-color .2s, transform .2s; }
+.d-type i.on { color: #fff; border-color: #fff; transform: translateY(-3px); }
+.d-type.done i { color: #fff; animation: mlType .9s ease; }
+@keyframes mlType { 30% { transform: translateY(-10px) scale(1.15); } }
