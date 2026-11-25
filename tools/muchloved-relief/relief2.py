@@ -40,7 +40,9 @@ def run(folder):
         # 가장자리에서 두께가 0이 되게(2026-11-25): 둥근 단면은 테두리에서 가파르게 솟아서
         # 앞면·뒷면이 테두리에서 만나지 못하고 틈이 벌어져 '찢어진' 것처럼 보였음
         de = cv2.distanceTransform(m, cv2.DIST_L2, 5).astype(np.float32)
-        e = np.clip(de / 10.0, 0, 1); z *= e * e * (3 - 2 * e)   # 테두리 10px 안에서 부드럽게 0으로(격자 4칸쯤)
+        # 솜이 꽉 찬 단면(2026-11-25 소유자: 더 빵빵하게): 둥근 단면을 조금 더 불룩하게(어깨가 꽉 찬 모양)
+        zm0 = float(z.max()) or 1.0; z = zm0 * (z / zm0) ** 0.78
+        e = np.clip(de / 6.0, 0, 1); z *= e * e * (3 - 2 * e)   # 테두리 6px 안에서 부드럽게 0으로
         # 천의 주름·솔기: 사진 밝기의 잔결을 아주 조금
         g = cv2.cvtColor(cv2.resize(col[:, :, :3], (w, h), interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2GRAY).astype(np.float32) / 255
         hp = g - cv2.GaussianBlur(g, (0, 0), 4)

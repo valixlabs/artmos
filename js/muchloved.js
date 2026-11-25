@@ -207,7 +207,7 @@ function tex(u, color) {
   if (!texCache.has(u)) texCache.set(u, new Promise((r) => loader.load(u, (t) => { if (color) { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; } r(t); }, undefined, () => r(null))));
   return texCache.get(u);
 }
-const DEPTH = 0.36, BACK = 0.3, FRONT_K = 0.8, BACK_K = 0.7, MAX = THREE.MathUtils.degToRad(22), TURN = THREE.MathUtils.degToRad(42);
+const DEPTH = 0.36, BACK = 0.3, FRONT_K = 1.25, BACK_K = 1.1, MAX = THREE.MathUtils.degToRad(22), TURN = THREE.MathUtils.degToRad(42);
 
 // 셰이더: 표준 재질에 자국 지도(R 손때 · G 해진 곳 · B 눌림)와 누르는 자리(uPress)를 더함
 function wearMaterial(d) {
@@ -264,11 +264,11 @@ function wearMaterial(d) {
 const dolls = new Map(); // id → doll (만들어진 것)
 const making = new Map(); // id → Promise
 let _th = null;
-const thick = () => _th || (_th = fetch(A + 'r/depth.json?v=3').then((r) => r.json()).catch(() => ({})));
+const thick = () => _th || (_th = fetch(A + 'r/depth.json?v=4').then((r) => r.json()).catch(() => ({})));
 function makeDoll(id) {
   if (making.has(id)) return making.get(id);
   const p = (async () => {
-    const [col, dep, nor, TH] = await Promise.all([tex(A + `r/${id}_color.webp?v=2`, 1), tex(A + `r/${id}_depth.png?v=4`), tex(A + `r/${id}_normal.webp?v=4`), thick()]);
+    const [col, dep, nor, TH] = await Promise.all([tex(A + `r/${id}_color.webp?v=2`, 1), tex(A + `r/${id}_depth.png?v=5`), tex(A + `r/${id}_normal.webp?v=5`), thick()]);
     if (!col) return null;
     const asp = col.image.width / col.image.height;
     // 인형마다 실제 두께(둥근 단면, tools/muchloved-relief/relief2.py) — 없으면 예전 값
