@@ -7,16 +7,22 @@ export const voice = {
   note: 0.5,   // 0~1 높낮이(110Hz=0 … 880Hz=1)
   voiced: false, // 지금 흥얼거리는 중
   blow: 0,     // 0~1 '후~' 세기(크고, 음 높이가 흐릿한 소리)
+  ready: false, // 마이크 소리가 실제로 들어오는 중(소리 장치가 깨어 있음)
+  error: '',   // 못 켰을 때 이유
 };
 let ac = null, an = null, stream = null, buf = null, ds = null, floor = 0, timer = 0;
 
+// 꼭 '누른 순간' 바로 부를 것(await 뒤에 부르면 아이폰·크롬이 소리 장치를 멈춘 채로 둠)
 export async function startVoice() {
   if (voice.on) { try { ac.resume(); } catch (e) {} return true; }
+  voice.error = '';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { voice.error = 'unsupported'; throw new Error('unsupported'); }
   // 아이폰: 소리 장치를 터치 순간에 만들고 바로 깨움
   ac = new (window.AudioContext || window.webkitAudioContext)();
   try { ac.resume(); } catch (e) {}
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
-  catch (e) { try { ac.close(); } catch (x) {} ac = null; throw e; }
+  // 전시 배경음이 마이크로 다시 들어가 혼자 편지가 써지지 않게 메아리 지우기는 켬
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } }); }
+  catch (e) { voice.error = (e && e.name) || 'error'; try { ac.close(); } catch (x) {} ac = null; throw e; }
   try { await ac.resume(); } catch (e) {}
   const src = ac.createMediaStreamSource(stream);
   an = ac.createAnalyser(); an.fftSize = 2048; an.smoothingTimeConstant = 0;
@@ -24,19 +30,23 @@ export async function startVoice() {
   buf = new Float32Array(an.fftSize); ds = new Float32Array(an.fftSize / 2);
   voice.on = true;
   timer = setInterval(read, 33);
+  // 앱 전환·잠금 뒤 마이크가 끊기면 다시 켤 수 있게
+  stream.getAudioTracks().forEach((t) => t.addEventListener('ended', () => { stopVoice(); voice.error = 'ended'; }));
   return true;
 }
 export function stopVoice() {
   if (!voice.on) return; clearInterval(timer);
   try { stream.getTracks().forEach((t) => t.stop()); } catch (e) {}
   try { ac.close(); } catch (e) {}
-  voice.on = false; voice.level = 0; voice.voiced = false; voice.blow = 0;
+  voice.on = false; voice.ready = false; voice.level = 0; voice.voiced = false; voice.blow = 0;
 }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ac) { try { ac.resume(); } catch (e) {} } });
 ['touchend', 'pointerup', 'click'].forEach((t) => addEventListener(t, () => { if (ac && ac.state !== 'running') { try { ac.resume(); } catch (e) {} } }, { capture: true, passive: true }));
 
 const D = new Float32Array(400);
 function read() {
-  if (!an || ac.state !== 'running') return;
+  voice.ready = !!an && ac.state === 'running';
+  if (!voice.ready) { voice.level *= 0.8; return; }
   an.getFloatTimeDomainData(buf);
   // 반으로 줄여(샘플 2개 평균) 계산을 가볍게
   let sq = 0;

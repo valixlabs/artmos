@@ -1,7 +1,7 @@
 // c010 Humming Letter — 권지안 (ARTMOS 온라인 전시)
 // 세로 스크롤 한 줄, 장마다 작품 한두 점과 체험 하나. 작품 사진 자체는 고치지 않고 위에 덮인 층(빛·꽃잎·선·안개)만 움직입니다.
 import { IS_MOBILE, sensor, keepAwake } from './sensors.js?v=6';
-import { voice, startVoice } from './humming-voice.js?v=1';
+import { voice, startVoice } from './humming-voice.js?v=2';
 import { snd } from './humming-sound.js?v=1';
 import * as G3 from './humming-3d.js?v=1';
 
@@ -439,13 +439,13 @@ def({
   setup(c) { this.reset(c); },
   reset(c) { LETTER.rows = [[]]; LETTER.done = false; c.pen = 0; c.lift = true; if (c.ui) { c.ui.querySelector('[data-act=save]').hidden = true; c.ui.querySelector('[data-act=again]').hidden = true; } },
   act(c, a) {
-    if (a === 'mic') startVoice().then(() => { c.ui.querySelector('[data-act=mic]').hidden = true; }).catch(() => toast('마이크를 쓸 수 없어요. 손가락으로 그어 보세요'));
+    if (a === 'mic') micOn();
     if (a === 'save') saveLetter(); if (a === 'again') this.reset(c);
   },
   rowY(c, i) { const r = c.r; return r.y + r.h * (0.16 + i * 0.17); },
   frame(c, dt) {
     const x = c.x, im = img('hl-03'), r = fit(im, artBox(c)); c.r = r;
-    c.ui.querySelector('[data-act=mic]').hidden = voice.on || !c.play;
+    c.ui.querySelector('[data-act=mic]').hidden = (voice.on && voice.ready) || !c.play;
     c.liftT = LETTER.done ? 1 : voice.on ? Math.min(0.6, voice.level * 1.2) : 0; c.liftV = (c.liftV || 0) + (c.liftT - (c.liftV || 0)) * Math.min(1, dt * 3);
     art(c, 'hl-03', r, 1, { dim2: LETTER.done ? 1 : 0.55, lift: c.liftV, lineA: 1 });
     const rh = r.h * 0.12;
@@ -468,7 +468,7 @@ def({
     LETTER.rows.forEach((row) => { let prev = null; row.forEach((p) => { if (!p) { prev = null; return; } if (prev) { x.lineWidth = p[2]; x.beginPath(); x.moveTo(r.x + 8 + prev[0] * (r.w - 16), r.y + prev[1] * r.h); x.lineTo(r.x + 8 + p[0] * (r.w - 16), r.y + p[1] * r.h); x.stroke(); } prev = p; }); });
     if (!LETTER.done && c.play) { const i = LETTER.rows.length - 1, px = r.x + 8 + c.pen * (r.w - 16), py = this.rowY(c, i); x.fillStyle = '#fff'; x.beginPath(); x.arc(px, py, 3 + (voice.on ? voice.level * 4 : 0), 0, 6.283); x.fill(); }
     x.restore();
-    meter(c, LETTER.done ? '나의 허밍 편지가 완성됐어요' : `${LETTER.rows.length}번째 줄 · ${Math.round(c.pen * 100)}%${voice.on ? (voice.voiced ? ' · 흥얼거리는 중' : '') : ''} · 소리는 녹음하지 않아요`);
+    meter(c, LETTER.done ? '나의 허밍 편지가 완성됐어요' : `${LETTER.rows.length}번째 줄 · ${Math.round(c.pen * 100)}%${voice.on && voice.ready ? (voice.voiced ? ' · 흥얼거리는 중' : ' · 듣는 중') : ' · 마이크 꺼짐'} · 소리는 녹음하지 않아요`);
   },
   nextRow(c) {
     c.pen = 0; c.lift = true; snd.chime(72 + LETTER.rows.length * 2, 0.6);
@@ -628,8 +628,9 @@ let entered = false, firstDone = false;
 function first() { if (firstDone) return; firstDone = true; snd.start(); updSnd(); }
 async function enter(withMic) {
   if (entered) return; entered = true; first();
+  // 마이크·동작 권한을 '누른 순간' 같이 요청(먼저 기다리면 마이크 소리 장치가 멈춘 채로 남았음)
+  if (withMic) micOn(true);
   try { await sensor.enable(); } catch (e) {}
-  if (withMic) startVoice().catch(() => toast('마이크 없이 볼게요. 손가락으로도 다 할 수 있어요'));
   keepAwake().catch(() => {});
   gate.classList.add('out'); setTimeout(() => (gate.hidden = true), 900);
   document.body.classList.add('in');
@@ -637,6 +638,24 @@ async function enter(withMic) {
 }
 $('#hl-enter').addEventListener('click', () => enter(true));
 $('#hl-enter2').addEventListener('click', () => enter(false));
+// ── 마이크: 위 머리의 '마이크' 버튼·9장 버튼·입장 버튼이 모두 이걸 부름(누른 순간 바로)
+function micOn(quiet) {
+  first();
+  return startVoice().then(() => { updMic(); if (!quiet) toast('마이크가 켜졌어요. 흥얼거려 보세요'); }).catch(() => {
+    const e = voice.error;
+    toast(e === 'NotAllowedError' || e === 'SecurityError' ? (IN_APP ? '마이크가 막혀 있어요. 휴대폰 설정 → ARTMOS → 마이크를 켜 주세요' : '마이크가 막혀 있어요. 주소창의 ⓘ(또는 aA) → 마이크 허용을 눌러 주세요')
+      : e === 'NotFoundError' ? '이 기기에서 마이크를 찾지 못했어요' : e === 'unsupported' ? '이 화면에서는 마이크를 쓸 수 없어요. 손가락으로도 다 할 수 있어요' : '마이크를 켜지 못했어요. 한 번 더 눌러 주세요');
+    updMic();
+  });
+}
+function updMic() {
+  const b = $('#hl-mic'); if (!b) return;
+  const on = voice.on && voice.ready;
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  b.querySelector('span').textContent = on ? '마이크' : voice.on ? '마이크 깨우기' : '마이크 켜기';
+}
+$('#hl-mic').addEventListener('click', () => micOn());
+setInterval(updMic, 500);
 function updSnd() { const b = $('#hl-snd'); b.textContent = snd.on ? '소리 켜짐' : '소리 꺼짐'; b.setAttribute('aria-pressed', snd.on); }
 $('#hl-snd').addEventListener('click', () => { first(); snd.setOn(!snd.on); updSnd(); });
 document.addEventListener('click', (e) => {
@@ -690,6 +709,7 @@ function tick(now) {
   // 진행 막대·장 점
   const tot = document.documentElement.scrollHeight - vh; $('#hl-bar').style.transform = `scaleX(${clamp(sy / Math.max(1, tot))})`;
   if (G3.G.ok) G3.end();
+  { const lv = $('#hl-mic i'); if (lv) lv.style.transform = `scaleY(${voice.on && voice.ready ? 0.15 + voice.level * 0.85 : 0.15})`; }
   drawGate(now / 1000);
   requestAnimationFrame(tick);
 }

@@ -11,6 +11,10 @@ button { font: inherit; }
 .hl-logo { color: #fff; text-decoration: none; font: 400 12px/1 Michroma, Pretendard, sans-serif; letter-spacing: .18em; }
 .hl-title { flex: 1; text-align: center; font-size: 13px; letter-spacing: .04em; opacity: .85; }
 .hl-snd { background: none; border: 1px solid #fff5; color: #fff; border-radius: 99px; padding: 5px 11px; font-size: 11px; }
+.hl-mic { display: inline-flex; align-items: center; gap: 6px; }
+.hl-mic i { display: inline-block; width: 3px; height: 12px; background: #fff; border-radius: 2px; transform-origin: 50% 100%; transform: scaleY(.15); opacity: .5; }
+.hl-mic.on { background: #fff; color: #000; border-color: #fff; }
+.hl-mic.on i { background: #000; opacity: 1; }
 .hl-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #fff; transform-origin: 0 50%; transform: scaleX(0); }
 
 /* 입장 */
