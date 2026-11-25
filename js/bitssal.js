@@ -66,7 +66,7 @@ const SHAPE_OF = { life: 'table', hunger: 'jar', demand: 'grain', street: 'lamp'
 story.innerHTML = SCENES.map((s, si) => `<section class="scene" id="s-${s.id}" data-i="${si}" data-h="${s.h}" style="height:${s.h}vh">${s.cards.map((c, ci) => cardHTML(s, c, si, ci)).join('')}</section>`).join('') + (LOCKED ? MB.paywallHTML(CELL) : '') + CREDITS;
 if (LOCKED) story.addEventListener('click', (e) => { MB.handleMembershipClick(e, { notify: (m) => { const el = document.querySelector('#paywall .mb-state'); if (el) el.textContent = m; }, refresh: () => location.reload() }); });
 else MB.enter(CELL).then(MB.passChip); // 입장권이면 이때 24시간 시작
-if (window === window.top) import('./app-shop.js?v=21').then((SHOP) => SHOP.loadShop().then(() => { const box = document.querySelector('.bs-credits > div'), html = SHOP.collectBannerHTML(CELL.id); if (box && html) box.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만
+if (window === window.top) import('./app-shop.js?v=22').then((SHOP) => SHOP.loadShop().then(() => { const box = document.querySelector('.bs-credits > div'), html = SHOP.collectBannerHTML(CELL.id); if (box && html) box.insertAdjacentHTML('afterbegin', html); })).catch(() => {}); // 웹에서만
 // 카드가 길어져도(작은 화면·번역·이야기 카드) 서로 겹치지 않게: 원래 자리보다 위로는 안 올리고, 앞 카드 밑으로만 밀어냄. 모자라면 장면을 늘림
 // 휴대폰 간격(화면 높이 배수) — 2026-11-17 소유자: 빈칸을 줄여 스크롤 속도를 맞춤(79화면 → 약 50화면). 이야기 카드 위에는 이미 얼굴 자리(82svh)가 있어서 그 앞 빈칸은 짧아도 됨
 const GAP_M = { chapToFace: 0.5, chapToStory: 0.55, storyToNext: 0.4, playToNext: 0.4, toStory: 0.45, otherToStory: 0.5, toPlay: 0.45, tailPlay: 0.6, tail: 0.45, base: 0.75 }; // chapToFace: 얼굴 있는 이야기는 얼굴 자리가 있어 짧게, 얼굴 없는 이야기는 장 모양이 보일 자리를 남김 · base: 장면 기본 길이(작품·기록 장의 카드 간격)

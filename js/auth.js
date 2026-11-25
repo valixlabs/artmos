@@ -10,7 +10,7 @@ const A = CONFIG.auth || {};
 export const AUTH_TEST = new URLSearchParams(location.search).has('authtest') || (() => { try { return sessionStorage.getItem('artmos-authtest') === '1'; } catch (e) { return false; } })();
 if (AUTH_TEST) { try { sessionStorage.setItem('artmos-authtest', '1'); } catch (e) {} }
 export const AUTH_ON = AUTH_TEST || !!(A.supabaseUrl && A.supabaseAnonKey);
-export const PROVIDERS = ['kakao', 'google']; // 화면에 보이는 소셜 로그인(2026-11-17 소유자: 카카오·구글만. Apple·네이버는 뺌)
+export const PROVIDERS = ['kakao', 'apple', 'google']; // 소셜 로그인(2026-11-25 소유자: 앱스토어 출시로 Apple 다시 넣음 — 애플 심사 4.8. 네이버는 뺌)
 const SOCIAL_ON = AUTH_TEST ? PROVIDERS : (A.providers || []).filter((p) => PROVIDERS.includes(p)); // Supabase에서 켠 것만 실제로 동작
 
 const W = {
@@ -161,7 +161,7 @@ const backBtn = (to) => `<button class="back" data-au="${to}" aria-label="${esc(
 export function loginHTML() {
   return `${testNote()}<div class="au-top"><p class="au-logo">ARTMOS</p><h1>${br(at('head'))}</h1><p>${esc(at('sub'))}</p></div>
     <div class="ob-login au-login">
-      ${PROVIDERS.map((p) => `<button class="btn au-${p}" data-au-social="${p}">${icon[p]}${esc(at(p))}</button>`).join('')}
+      ${PROVIDERS.filter((p) => p !== 'apple' || SOCIAL_ON.includes('apple')).map((p) => `<button class="btn au-${p}" data-au-social="${p}">${icon[p]}${esc(at(p))}</button>`).join('')}
       <div class="au-or"><span>${esc(at('or'))}</span></div>
       <button class="btn line" data-au="signup">${esc(at('email'))}</button>
       <p class="au-row"><span>${esc(at('haveAcc'))}</span><button class="link" data-au="login-form">${esc(at('login'))}</button></p>
